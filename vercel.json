@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/reminders",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/message-queue",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/briefing",
+      "schedule": "0 8 * * *"
+    }
+  ]
+}
