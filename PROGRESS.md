@@ -1,45 +1,57 @@
 # DILO — Progreso de Desarrollo
 
-## Sesión 1 (2026-04-08) ✅ COMPLETADA
-- [x] Proyecto Next.js 16 creado en ~/Projects/dilo-app
-- [x] Dependencias: @anthropic-ai/sdk, @supabase/supabase-js, next-intl, web-push, lucide-react, clsx, date-fns
-- [x] Git init + GitHub repo: https://github.com/Bonets-grill/dilo-app
-- [x] PWA: manifest.json + sw.js (cache + push) + icons 192/512
-- [x] i18n: next-intl con 5 idiomas (es, en, fr, it, de)
-- [x] 5 archivos de traducción COMPLETOS (es.json, en.json, fr.json, it.json, de.json)
-- [x] i18n config: locales, currencies, timezones por mercado
-- [x] Middleware de locale detection + redirect
-- [x] Layout con [locale] + NextIntlClientProvider
-- [x] Landing page traducida en 5 idiomas
-- [x] Format utils: formatCurrency, formatDate, formatTime, formatRelativeDate
-- [x] Estructura de carpetas completa (agent, tools, channels, components, etc)
-- [x] SMOKETEST:
-  - [x] npm run build → OK (sin errores)
-  - [x] /es → "Tu secretario personal con AI" ✓
-  - [x] /en → "Your personal AI secretary" ✓
-  - [x] /fr → "Ton secrétaire personnel avec IA" ✓
-  - [x] /it → "Il tuo segretario personale con AI" ✓
-  - [x] /de → "Dein persönlicher KI-Sekretär" ✓
-  - [x] /manifest.json → 200 ✓
-  - [x] formatCurrency(45.50, 'es-ES', 'EUR') → '45,50 €' ✓
-  - [x] formatCurrency(45.50, 'en-US', 'USD') → '$45.50' ✓
-  - [x] formatCurrency(19900, 'es-CO', 'COP') → '$ 19.900' ✓
-  - [x] Repo GitHub OK ✓
+## Sesión 1 (2026-04-08) ✅
+- [x] Proyecto Next.js 16 + PWA + i18n (5 idiomas) + GitHub repo
 
-## Sesión 2 (pendiente) — Base de datos + Seed + Supabase clients
-## Sesión 3 (pendiente) — Auth (login/signup)
-## Sesión 4 (pendiente) — Layout PWA nativo + Bottom Nav
-## Sesión 5 (pendiente) — Chat UI (streaming + voice)
-## Sesión 6 (pendiente) — Agent Core + System Prompt + Tool Registry
-## Sesión 7 (pendiente) — Evolution API Client + WhatsApp Connect
-## Sesión 8 (pendiente) — Messaging Tools (WhatsApp)
-## Sesión 9 (pendiente) — Reminders + Finance + Lists Tools
-## Sesión 10 (pendiente) — Remaining Tools
-## Sesión 11 (pendiente) — Push Notifications
-## Sesión 12 (pendiente) — Vistas: Recordatorios, Gastos, Listas
-## Sesión 13 (pendiente) — Skill Store UI + Stripe
-## Sesión 14 (pendiente) — Settings + Billing
-## Sesión 15 (pendiente) — Landing Page completa
-## Sesión 16 (pendiente) — Super Admin Panel
-## Sesión 17 (pendiente) — Telegram Integration
-## Sesión 18 (pendiente) — Smoketest Final + Deploy Producción
+## Sesión 2 (2026-04-08) ✅
+- [x] DB schema (16 tablas) + TypeScript types + Supabase clients + seed (17 skills + 4 packs)
+
+## Sesiones 3-5 (2026-04-08) ✅
+- [x] Auth pages (login/signup magic link + Google) + callback
+- [x] App layout: TopBar + BottomNav (5 tabs, native feel)
+- [x] Chat UI: streaming, voice input, message bubbles, tool result cards
+- [x] Channels page (WhatsApp + Telegram connect)
+- [x] Reminders page + Expenses page + Skill Store + Settings
+- [x] API /chat (mock streaming + real Claude) + /transcribe (mock + Whisper)
+
+## Sesiones 6-17 (2026-04-08) ✅
+- [x] Agent core: processMessage() with Claude streaming + tool execution loop
+- [x] System prompt: buildPersonalPrompt() in 5 languages with skill-aware upselling
+- [x] Tool registry: getAvailableTools(), executeTool(), skill-based filtering
+- [x] Basic tools (free): calculate, get_weather, get_recipe
+- [x] Evolution API client: create/delete instance, QR, send/read msgs, contacts, groups
+- [x] Telegram Bot API client: send msg, photo, document, location, webhook
+- [x] Web Push sender: sendPush(), sendPushBatch()
+- [x] Webhooks: Evolution, Stripe, Telegram
+- [x] Crons: reminders (1min), message-queue (1min), briefing (8AM)
+- [x] Super Admin: dashboard, users, skills CRUD, analytics, push broadcast
+- [x] vercel.json with cron config
+
+## Sesión 18 (2026-04-08) ✅
+- [x] Build: npm run build → 0 errors, 0 type errors
+- [x] Deploy: Vercel production → https://dilo-app-five.vercel.app
+- [x] GitHub connected to Vercel (auto-deploy on push)
+- [x] All routes generated (12 pages + 8 API routes, 5 languages)
+- [x] CODEMAP.md complete
+
+## WHAT'S READY (built, compiles, deployed)
+- Full PWA with 5 languages
+- Chat UI with streaming (mock + real Claude API ready)
+- Skill Store (16 skills + 4 packs, localized prices)
+- Auth flow (login/signup/callback)
+- Agent core with tool_use + streaming
+- Evolution API + Telegram API clients
+- All webhook handlers
+- All cron jobs
+- Super Admin panel
+- Push notification system
+
+## WHAT NEEDS REAL CREDENTIALS TO GO LIVE
+- [ ] Supabase project → create tables + seed → set env vars
+- [ ] Anthropic API key → real Claude responses
+- [ ] Evolution API instance → real WhatsApp connections
+- [ ] Stripe products/prices → real payments
+- [ ] OpenAI API key → real voice transcription
+- [ ] VAPID keys → real push notifications
+- [ ] Google OAuth → real Google login
+- [ ] Domain (dilo.app) → Vercel custom domain
