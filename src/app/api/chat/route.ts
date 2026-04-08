@@ -57,6 +57,19 @@ const tools: Anthropic.Tool[] = [
       required: ["expression"],
     },
   },
+  {
+    name: "send_whatsapp",
+    description: "Send a WhatsApp message to a contact on behalf of the user. ALWAYS show the message preview first and ask for confirmation before sending. Use when user says 'tell X that...' or 'send a message to X'.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        to: { type: "string", description: "Phone number with country code (e.g. 34612345678) or contact name" },
+        message: { type: "string", description: "The message text to send" },
+        confirmed: { type: "boolean", description: "Set to true only after user confirms. First call should be false to show preview." },
+      },
+      required: ["to", "message"],
+    },
+  },
 ];
 
 // Tool execution
@@ -112,6 +125,44 @@ async function executeTool(name: string, input: Record<string, unknown>, userId:
         return JSON.stringify({ result });
       } catch {
         return JSON.stringify({ error: "Invalid expression" });
+      }
+    }
+
+    case "send_whatsapp": {
+      const { to, message, confirmed } = input as { to: string; message: string; confirmed?: boolean };
+
+      if (!confirmed) {
+        return JSON.stringify({
+          preview: true,
+          to,
+          message,
+          instruction: "Show this preview to the user and ask for confirmation. Call this tool again with confirmed=true after user confirms.",
+        });
+      }
+
+      // Find user's WhatsApp instance
+      const { data: channel } = await supabase.from("channels")
+        .select("instance_name")
+        .eq("user_id", userId)
+        .eq("type", "whatsapp")
+        .eq("status", "connected")
+        .single();
+
+      const instanceName = channel?.instance_name || `dilo_${userId.slice(0, 8)}`;
+
+      try {
+        const evoUrl = process.env.EVOLUTION_API_URL!;
+        const evoKey = process.env.EVOLUTION_API_KEY!;
+        const res = await fetch(`${evoUrl}/message/sendText/${instanceName}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: evoKey },
+          body: JSON.stringify({ number: to, text: message }),
+        });
+        const data = await res.json();
+        if (!res.ok) return JSON.stringify({ error: "Failed to send", details: data });
+        return JSON.stringify({ success: true, sent_to: to, message });
+      } catch (e) {
+        return JSON.stringify({ error: "WhatsApp not connected. Connect WhatsApp in Channels first." });
       }
     }
 
@@ -172,16 +223,20 @@ ESTILO:
 - Máximo 2-3 párrafos cortos.
 
 HERRAMIENTAS DISPONIBLES:
-- create_reminder: Crea recordatorios REALES que se guardan y envían como notificación push. SIEMPRE usa esta herramienta cuando el usuario pida un recordatorio. Calcula la fecha/hora correcta basándote en la hora actual.
+- create_reminder: Crea recordatorios REALES que se guardan y envían como notificación. SIEMPRE usa esta herramienta cuando el usuario pida un recordatorio.
 - list_reminders: Lista los recordatorios pendientes del usuario.
 - cancel_reminder: Cancela un recordatorio.
 - calculate: Realiza cálculos matemáticos.
+- send_whatsapp: Envía un mensaje de WhatsApp a un contacto del usuario. SIEMPRE muestra preview del mensaje primero (confirmed=false) y pide confirmación. Solo envía cuando el usuario confirme (confirmed=true).
 
-IMPORTANTE: Cuando el usuario pida un recordatorio, USA la herramienta create_reminder. NO simules que lo creas, CRÉALO de verdad. Después confirma con la hora exacta.
+REGLAS IMPORTANTES:
+1. Cuando el usuario pida un recordatorio → USA create_reminder. NO simules.
+2. Cuando pida enviar WhatsApp → USA send_whatsapp con confirmed=false primero, muestra el preview, y espera confirmación.
+3. Cuando el usuario confirme ("sí", "envíalo", "ok") → USA send_whatsapp con confirmed=true.
+4. Para cálculos → USA calculate.
 
-CAPACIDADES ADICIONALES (sin herramienta, solo respuesta de texto):
-- Responder preguntas, traducir, recetas, redactar textos, explicar cosas, conversar.
-- Si piden enviar WhatsApp o control de gastos, menciona la tienda de skills.`;
+CAPACIDADES DE TEXTO (sin herramienta):
+- Responder preguntas, traducir, recetas, redactar textos, explicar cosas, conversar.`;
 
   const client = new Anthropic({ apiKey });
   const encoder = new TextEncoder();
