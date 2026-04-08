@@ -30,6 +30,9 @@ Si necesitas cambiar algo que afecte a un archivo locked, PREGUNTA PRIMERO.
 | `src/components/ui/BottomNav.tsx` | Navegación inferior 5 tabs. Funciona. | 2026-04-08 |
 | `src/app/api/evolution/route.ts` | Proxy Evolution API WhatsApp. Funciona. | 2026-04-08 |
 | `src/app/api/enhance-image/route.ts` | Mejora de fotos con Stability AI. Funciona. | 2026-04-08 |
+| `src/lib/agent/facts.ts` | Living Profile — extrae facts de conversaciones + inyecta en system prompt. | 2026-04-08 |
+| `src/app/api/cron/briefing/route.ts` | Briefing matutino (8AM) — resumen del día con gastos, recordatorios, insights. | 2026-04-08 |
+| `src/app/api/cron/insights/route.ts` | Insights nocturnos (21h) — análisis de patrones, alertas proactivas. | 2026-04-08 |
 
 ### Reglas de los locks:
 

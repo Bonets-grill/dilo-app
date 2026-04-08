@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/friendly",
       "schedule": "0 10,15,20 * * *"
+    },
+    {
+      "path": "/api/cron/insights",
+      "schedule": "0 21 * * *"
     }
   ]
 }
