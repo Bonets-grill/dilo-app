@@ -361,8 +361,10 @@ REGLAS ABSOLUTAS:
             chatMessages.push(msg);
 
             for (const tc of msg.tool_calls) {
-              const args = JSON.parse(tc.function.arguments);
-              const result = await executeTool(tc.function.name, args, userId || "anonymous");
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const fn = (tc as any).function;
+              const args = JSON.parse(fn.arguments);
+              const result = await executeTool(fn.name, args, userId || "anonymous");
               chatMessages.push({ role: "tool", tool_call_id: tc.id, content: result });
             }
 
