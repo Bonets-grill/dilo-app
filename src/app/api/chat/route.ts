@@ -562,6 +562,10 @@ export async function POST(req: NextRequest) {
   const langName = langNames[lang] || "español";
   const now = new Date().toISOString();
 
+  // Load what DILO knows about this user
+  const { loadUserFacts } = await import("@/lib/agent/facts");
+  const userFacts = userId ? await loadUserFacts(userId) : "";
+
   const systemPrompt = `Eres DILO, un asistente personal inteligente y un AMIGO de verdad.
 
 IDIOMA: Responde SIEMPRE en ${langName}.
@@ -599,7 +603,8 @@ REGLAS OPERATIVAS:
 2. RECORDATORIO → USA create_reminder SIEMPRE.
 3. WHATSAPP → USA send_whatsapp. Preview primero, enviar después.
 4. NÚMEROS DE TELÉFONO: Limpia guiones/espacios automáticamente. NUNCA preguntes por el formato.
-5. Sé EFICIENTE. Si tienes la info, actúa.`;
+5. Sé EFICIENTE. Si tienes la info, actúa.
+${userFacts}`;
 
   // encoder already declared above
   let fullResponse = "";
@@ -682,6 +687,10 @@ REGLAS OPERATIVAS:
           }).then(() => {
             supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId).then(() => {});
           });
+
+          // Extract personal facts from this exchange (fire-and-forget)
+          const { extractFacts } = await import("@/lib/agent/facts");
+          extractFacts(userId, lastMsgContent, fullResponse).catch(() => {});
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Error";
