@@ -196,40 +196,66 @@ export default function ChatPage() {
     if (!file) return;
     e.target.value = "";
 
-    // Show the uploaded image
-    const previewUrl = URL.createObjectURL(file);
-    const uploadId = crypto.randomUUID();
-    const enhanceId = crypto.randomUUID();
-    setMsgs(p => [...p,
-      { id: uploadId, role: "user", content: `![Foto subida](${previewUrl})` },
-      { id: enhanceId, role: "assistant", content: "Mejorando tu foto... ⏳" },
-    ]);
-    setEnhancing(true);
+    // Convert to base64 for preview
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64 = reader.result as string;
+      const uploadId = crypto.randomUUID();
+      const enhanceId = crypto.randomUUID();
 
-    try {
-      const fd = new FormData();
-      fd.append("image", file);
-      fd.append("mode", "enhance");
+      // Show original with inline base64
+      setMsgs(p => [...p,
+        { id: uploadId, role: "user", content: `__IMAGE__${base64}` },
+        { id: enhanceId, role: "assistant", content: "Mejorando tu foto... ⏳" },
+      ]);
+      setEnhancing(true);
 
-      const res = await fetch("/api/enhance-image", { method: "POST", body: fd });
-      const data = await res.json();
+      try {
+        // Resize image before sending (Stability max 1024x1024)
+        const resized = await resizeImage(file, 1024);
+        const fd = new FormData();
+        fd.append("image", resized);
+        fd.append("mode", "enhance");
 
-      if (data.success && data.image) {
-        setMsgs(p => p.map(m => m.id === enhanceId ? {
-          ...m,
-          content: `✨ Foto mejorada:\n\n![Foto mejorada](${data.image})`,
-        } : m));
-      } else {
-        setMsgs(p => p.map(m => m.id === enhanceId ? {
-          ...m,
-          content: `❌ No se pudo mejorar: ${data.error || "error desconocido"}`,
-        } : m));
+        const res = await fetch("/api/enhance-image", { method: "POST", body: fd });
+        const data = await res.json();
+
+        if (data.success && data.image) {
+          setMsgs(p => p.map(m => m.id === enhanceId ? {
+            ...m,
+            content: `__IMAGE__${data.image}`,
+          } : m));
+        } else {
+          setMsgs(p => p.map(m => m.id === enhanceId ? {
+            ...m,
+            content: `❌ No se pudo mejorar: ${data.error || "error"}`,
+          } : m));
+        }
+      } catch {
+        setMsgs(p => p.map(m => m.id === enhanceId ? { ...m, content: "❌ Error al mejorar" } : m));
+      } finally {
+        setEnhancing(false);
       }
-    } catch {
-      setMsgs(p => p.map(m => m.id === enhanceId ? { ...m, content: "❌ Error al mejorar la foto" } : m));
-    } finally {
-      setEnhancing(false);
-    }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function resizeImage(file: File, maxSize: number): Promise<Blob> {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let w = img.width, h = img.height;
+        if (w > maxSize || h > maxSize) {
+          if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+          else { w = Math.round(w * maxSize / h); h = maxSize; }
+        }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
+        canvas.toBlob((blob) => resolve(blob!), "image/png", 0.9);
+      };
+      img.src = URL.createObjectURL(file);
+    });
   }
 
   async function toggleRec() {
@@ -303,11 +329,32 @@ export default function ChatPage() {
           <div className="max-w-2xl mx-auto py-4 space-y-4">
             {msgs.map((m, idx) => m.role === "user" ? (
               <div key={m.id} className="flex justify-end">
-                <div className="bg-[var(--bg3)] rounded-2xl rounded-br-sm px-3.5 py-2 text-[14px] leading-relaxed max-w-[80%]">{m.content}</div>
+                {m.content.startsWith("__IMAGE__") ? (
+                  <img src={m.content.replace("__IMAGE__", "")} alt="Uploaded" className="rounded-2xl max-w-[80%] max-h-[300px] object-cover" />
+                ) : (
+                  <div className="bg-[var(--bg3)] rounded-2xl rounded-br-sm px-3.5 py-2 text-[14px] leading-relaxed max-w-[80%]">{m.content}</div>
+                )}
               </div>
             ) : (
               <div key={m.id} className="text-[14px] leading-[1.7] text-[#ccc]">
-                {m.content ? (
+                {m.content?.startsWith("__IMAGE__") ? (
+                  <div>
+                    <p className="text-xs text-[var(--dim)] mb-2">✨ Foto mejorada:</p>
+                    <img
+                      src={m.content.replace("__IMAGE__", "")}
+                      alt="Enhanced"
+                      className="rounded-xl max-w-full cursor-pointer active:opacity-80"
+                      onClick={() => {
+                        const modal = document.createElement("div");
+                        modal.className = "fixed inset-0 z-[999] bg-black/95 flex flex-col items-center justify-center p-4";
+                        modal.onclick = () => modal.remove();
+                        const src = m.content.replace("__IMAGE__", "");
+                        modal.innerHTML = `<img src="${src}" alt="Full" class="max-w-full max-h-[80vh] rounded-xl object-contain" /><a href="${src}" download="dilo-enhanced.png" class="mt-4 px-6 py-2.5 rounded-xl bg-white text-black text-sm font-medium" onclick="event.stopPropagation()">⬇ Descargar</a><button class="mt-2 text-sm text-gray-400" onclick="this.parentElement.remove()">Cerrar</button>`;
+                        document.body.appendChild(modal);
+                      }}
+                    />
+                  </div>
+                ) : m.content ? (
                   <>
                     <div className="chat-md">
                       <ReactMarkdown components={{
@@ -345,7 +392,7 @@ export default function ChatPage() {
                       </div>
                     )}
                   </>
-                ) : <Dots />}
+                ) : !m.content ? <Dots /> : null}
               </div>
             ))}
             <div ref={endRef} />
