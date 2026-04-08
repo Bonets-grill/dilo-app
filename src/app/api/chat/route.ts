@@ -354,6 +354,74 @@ export async function POST(req: NextRequest) {
   // Only send last 6 messages to avoid rate limits
   const messages = allMessages.slice(-6);
 
+  // SHORTCUT: Handle image generation directly without going through GPT
+  const lastMsg = allMessages[allMessages.length - 1]?.content?.toLowerCase() || "";
+  const isImageRequest = lastMsg.includes("imagen") || lastMsg.includes("image") || lastMsg.includes("créame") || lastMsg.includes("genera") || lastMsg.includes("dibuja") || lastMsg.includes("draw") || lastMsg.includes("logo") || lastMsg.includes("ilustra");
+
+  if (isImageRequest && allMessages[allMessages.length - 1]?.role === "user") {
+    const prompt = allMessages[allMessages.length - 1].content;
+    const encoder = new TextEncoder();
+
+    // Save user message first
+    let imgConvId = conversationId;
+    if (userId) {
+      if (!imgConvId) {
+        const { data: conv } = await supabase.from("conversations")
+          .insert({ user_id: userId, title: prompt.slice(0, 50) }).select("id").single();
+        imgConvId = conv?.id;
+      }
+      if (imgConvId) {
+        await supabase.from("messages").insert({ conversation_id: imgConvId, user_id: userId, role: "user", content: prompt });
+      }
+    }
+
+    const readable = new ReadableStream({
+      async start(controller) {
+        controller.enqueue(encoder.encode("Generando imagen...\n\n"));
+        try {
+          // Try Stability AI first
+          const stabilityKey = process.env.STABILITY_API_KEY;
+          let imageUrl: string | null = null;
+
+          if (stabilityKey && stabilityKey !== "placeholder") {
+            const res = await fetch("https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${stabilityKey}`, Accept: "application/json" },
+              body: JSON.stringify({ text_prompts: [{ text: prompt, weight: 1 }], cfg_scale: 7, height: 1024, width: 1024, steps: 30, samples: 1 }),
+            });
+            if (res.ok) {
+              const data = await res.json();
+              const base64 = data.artifacts?.[0]?.base64;
+              if (base64) imageUrl = `data:image/png;base64,${base64}`;
+            }
+          }
+
+          // Fallback to DALL-E
+          if (!imageUrl) {
+            const dalle = await openai.images.generate({ model: "dall-e-3", prompt, n: 1, size: "1024x1024", quality: "standard" });
+            imageUrl = dalle.data?.[0]?.url || null;
+          }
+
+          if (imageUrl) {
+            controller.enqueue(encoder.encode(`![Imagen generada](${imageUrl})`));
+            if (userId && imgConvId) {
+              await supabase.from("messages").insert({ conversation_id: imgConvId, user_id: userId, role: "assistant", content: `![Imagen generada](${imageUrl})`, model: "stability-xl" });
+            }
+          } else {
+            controller.enqueue(encoder.encode("No se pudo generar la imagen. Inténtalo de nuevo."));
+          }
+        } catch (e) {
+          controller.enqueue(encoder.encode(`Error: ${e instanceof Error ? e.message : "desconocido"}`));
+        }
+        controller.close();
+      },
+    });
+
+    return new Response(readable, {
+      headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": imgConvId || "" },
+    });
+  }
+
   // Save user message
   let convId = conversationId;
   const lastUserMsg = allMessages[allMessages.length - 1];
