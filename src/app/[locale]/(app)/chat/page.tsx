@@ -79,8 +79,8 @@ export default function ChatPage() {
     if (taRef.current) { taRef.current.style.height = "auto"; taRef.current.style.height = Math.min(taRef.current.scrollHeight, 100) + "px"; }
   }
 
-  async function send() {
-    const text = input.trim();
+  async function send(overrideText?: string) {
+    const text = (overrideText || input).trim();
     if (!text || busy) return;
     setInput(""); if (taRef.current) taRef.current.style.height = "auto";
     const aId = crypto.randomUUID();
@@ -142,8 +142,7 @@ export default function ChatPage() {
   }
 
   function quickReply(text: string) {
-    setInput(text);
-    setTimeout(() => send(), 100);
+    send(text);
   }
 
   const hasText = input.trim().length > 0;
