@@ -325,7 +325,7 @@ async function executeTool(name: string, input: Record<string, unknown>, userId:
         const apiKey = process.env.ANTHROPIC_API_KEY!;
         const translateClient = new Anthropic({ apiKey });
         const tr = await translateClient.messages.create({
-          model: "claude-haiku-4-5-20251001",
+          model: "claude-sonnet-4-20250514",
           max_tokens: 500,
           messages: [{ role: "user", content: `Translate the following text to ${targetLang}. Return ONLY the translation, nothing else:\n\n${message}` }],
         });
@@ -442,7 +442,11 @@ REGLAS ABSOLUTAS (NUNCA ignorar):
 6. TRADUCCIÓN: Si piden enviar en otro idioma, traduce el mensaje antes del preview.
 7. TRADUCCIÓN AL RECIBIR: Traduce mensajes recibidos al idioma del usuario (${langName}).
 
-CRÍTICO: Si el usuario dice "gasté X en Y", DEBES usar track_expense. Si dice "recuérdame X", DEBES usar create_reminder. NUNCA respondas solo con texto cuando hay un tool disponible.
+CRÍTICO:
+- Si el usuario dice "gasté X en Y", DEBES usar track_expense. NUNCA respondas solo con texto.
+- Si dice "recuérdame X", DEBES usar create_reminder. NUNCA simules.
+- NÚMEROS DE TELÉFONO: Si el usuario te da un número con guiones, espacios o +, LIMPIA los separadores y úsalo directamente. NUNCA preguntes "¿es este número?" ni pidas confirmación del formato. 334-692-325-738 = 34692325738. +34 692 325 738 = 34692325738. Solo quita guiones, espacios y el + inicial.
+- Sé EFICIENTE. No hagas preguntas innecesarias. Si tienes la info, actúa.
 
 CAPACIDADES DE TEXTO (sin herramienta):
 - Responder preguntas, traducir, recetas, redactar textos, explicar cosas, conversar.`;
@@ -463,7 +467,7 @@ CAPACIDADES DE TEXTO (sin herramienta):
         // Tool use loop (max 3 iterations)
         for (let iteration = 0; iteration < 3; iteration++) {
           const response = await client.messages.create({
-            model: "claude-haiku-4-5-20251001",
+            model: "claude-sonnet-4-20250514",
             max_tokens: 1024,
             system: systemPrompt,
             messages: claudeMessages,
@@ -513,7 +517,7 @@ CAPACIDADES DE TEXTO (sin herramienta):
         if (userId && convId && fullResponse) {
           supabase.from("messages").insert({
             conversation_id: convId, user_id: userId, role: "assistant",
-            content: fullResponse, model: "claude-haiku-4-5-20251001",
+            content: fullResponse, model: "claude-sonnet-4-20250514",
           }).then(() => {
             supabase.from("conversations")
               .update({ updated_at: new Date().toISOString() })
