@@ -259,7 +259,13 @@ export default function ChatPage() {
               <div key={m.id} className="text-[14px] leading-[1.7] text-[#ccc]">
                 {m.content ? (
                   <>
-                    <div className="chat-md"><ReactMarkdown>{m.content}</ReactMarkdown></div>
+                    <div className="chat-md">
+                      <ReactMarkdown components={{
+                        img: ({ src, alt }) => (
+                          <img src={src} alt={alt || "Generated image"} className="rounded-xl max-w-full mt-2 mb-2" loading="lazy" />
+                        ),
+                      }}>{m.content}</ReactMarkdown>
+                    </div>
                     {pendingSend && idx === msgs.length - 1 && !busy && (
                       <div className="flex gap-2 mt-3">
                         <button onClick={confirmSend} className="px-4 py-2 rounded-xl bg-green-600 text-white text-sm font-medium hover:bg-green-500 transition">

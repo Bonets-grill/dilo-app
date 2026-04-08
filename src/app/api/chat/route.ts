@@ -102,6 +102,21 @@ const tools: OpenAI.ChatCompletionTool[] = [
   {
     type: "function",
     function: {
+      name: "generate_image",
+      description: "Generate an image from a text description. Use when user asks to create, draw, design, or generate an image, logo, illustration, etc.",
+      parameters: {
+        type: "object",
+        properties: {
+          prompt: { type: "string", description: "Detailed image description in English for best results" },
+          style: { type: "string", enum: ["photographic", "digital-art", "comic-book", "fantasy-art", "analog-film", "neon-punk", "3d-model", "pixel-art"], description: "Art style. Default: photographic" },
+        },
+        required: ["prompt"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "search_contacts",
       description: "Search WhatsApp contacts by name. Use FIRST when user mentions a contact by name.",
       parameters: {
@@ -213,6 +228,47 @@ async function executeTool(name: string, input: Record<string, unknown>, userId:
         const result = Function(`"use strict"; return (${expr})`)();
         return JSON.stringify({ result });
       } catch { return JSON.stringify({ error: "Invalid expression" }); }
+    }
+
+    case "generate_image": {
+      const { prompt, style = "photographic" } = input as { prompt: string; style?: string };
+
+      // Try Stability AI first (cheaper), fallback to DALL-E
+      const stabilityKey = process.env.STABILITY_API_KEY;
+
+      if (stabilityKey && stabilityKey !== "placeholder") {
+        try {
+          const res = await fetch("https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${stabilityKey}`, Accept: "application/json" },
+            body: JSON.stringify({
+              text_prompts: [{ text: prompt, weight: 1 }],
+              cfg_scale: 7, height: 1024, width: 1024, steps: 30, samples: 1,
+              style_preset: style,
+            }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const base64 = data.artifacts?.[0]?.base64;
+            if (base64) {
+              const imageUrl = `data:image/png;base64,${base64}`;
+              return JSON.stringify({ success: true, image_url: imageUrl, prompt });
+            }
+          }
+        } catch { /* fallback to DALL-E */ }
+      }
+
+      // Fallback: DALL-E 3
+      try {
+        const dalle = await openai.images.generate({
+          model: "dall-e-3", prompt, n: 1, size: "1024x1024", quality: "standard",
+        });
+        const imageUrl = dalle.data[0]?.url;
+        if (imageUrl) return JSON.stringify({ success: true, image_url: imageUrl, prompt });
+        return JSON.stringify({ error: "Image generation failed" });
+      } catch (e) {
+        return JSON.stringify({ error: e instanceof Error ? e.message : "Image generation failed" });
+      }
     }
 
     case "search_contacts": {
