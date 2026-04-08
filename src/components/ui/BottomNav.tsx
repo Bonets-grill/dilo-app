@@ -19,8 +19,8 @@ export default function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[#111111] border-t border-white/[0.06] pb-[env(safe-area-inset-bottom)]">
-      <div className="flex items-center justify-around h-[52px] max-w-md mx-auto">
+    <nav className="flex-shrink-0 bg-[#111] border-t border-white/[0.06] pb-[env(safe-area-inset-bottom)]">
+      <div className="flex items-center justify-around h-[50px]">
         {tabs.map(({ key, href, icon: Icon }) => {
           const active = pathname.startsWith(href);
           return (
@@ -28,8 +28,8 @@ export default function BottomNav() {
               key={key}
               href={href}
               className={clsx(
-                "flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors",
-                active ? "text-white" : "text-[#666]"
+                "flex flex-col items-center justify-center gap-0.5 flex-1 h-full",
+                active ? "text-white" : "text-[#555]"
               )}
             >
               <Icon size={20} strokeWidth={active ? 2 : 1.5} />

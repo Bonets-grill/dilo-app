@@ -3,9 +3,9 @@ import TopBar from "@/components/ui/TopBar";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-dvh flex flex-col bg-[var(--background)]">
+    <div className="fixed inset-0 flex flex-col bg-[#0d0d0d]">
       <TopBar />
-      <main className="flex-1 pt-11 pb-[52px] overflow-y-auto overscroll-none" style={{ paddingTop: "calc(env(safe-area-inset-top) + 44px)", paddingBottom: "calc(env(safe-area-inset-bottom) + 52px)" }}>
+      <main className="relative flex-1 overflow-hidden">
         {children}
       </main>
       <BottomNav />
