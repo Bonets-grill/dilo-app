@@ -8,6 +8,7 @@ import { createBrowserSupabase } from "@/lib/supabase/client";
 
 interface Msg { id: string; role: "user" | "assistant"; content: string; }
 interface Conv { id: string; title: string; updated_at: string; }
+interface PendingSend { to: string; message: string; }
 
 export default function ChatPage() {
   const t = useTranslations("chat");
@@ -21,23 +22,19 @@ export default function ChatPage() {
   const [convId, setConvId] = useState<string | null>(null);
   const [convList, setConvList] = useState<Conv[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [pendingSend, setPendingSend] = useState<PendingSend | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const mrRef = useRef<MediaRecorder | null>(null);
   const supabase = createBrowserSupabase();
 
-  // Load user + conversation history
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) return;
       const uid = data.user.id;
       setUserId(uid);
-      // Load conversation list
-      supabase.from("conversations")
-        .select("id, title, updated_at")
-        .eq("user_id", uid)
-        .order("updated_at", { ascending: false })
-        .limit(20)
+      supabase.from("conversations").select("id, title, updated_at").eq("user_id", uid)
+        .order("updated_at", { ascending: false }).limit(20)
         .then(({ data: convs }) => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const list = (convs as any[] || []) as Conv[];
@@ -51,23 +48,16 @@ export default function ChatPage() {
   async function loadConversation(id: string) {
     setConvId(id);
     setShowHistory(false);
-    const { data } = await supabase
-      .from("messages")
-      .select("id, role, content")
-      .eq("conversation_id", id)
-      .order("created_at", { ascending: true });
+    setPendingSend(null);
+    const { data } = await supabase.from("messages").select("id, role, content")
+      .eq("conversation_id", id).order("created_at", { ascending: true });
     if (data) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const loaded = (data as any[]).filter((m: any) => m.role === "user" || m.role === "assistant") as Msg[];
-      setMsgs(loaded);
+      setMsgs((data as any[]).filter((m: any) => m.role === "user" || m.role === "assistant") as Msg[]);
     }
   }
 
-  function newChat() {
-    setConvId(null);
-    setMsgs([]);
-    setShowHistory(false);
-  }
+  function newChat() { setConvId(null); setMsgs([]); setShowHistory(false); setPendingSend(null); }
 
   const scrollDown = useCallback(() => {
     setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
@@ -87,6 +77,8 @@ export default function ChatPage() {
     const newMsgs = [...msgs, { id: crypto.randomUUID(), role: "user" as const, content: text }];
     setMsgs([...newMsgs, { id: aId, role: "assistant" as const, content: "" }]);
     setBusy(true);
+    setPendingSend(null);
+
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -97,15 +89,96 @@ export default function ChatPage() {
       const newConvId = res.headers.get("X-Conversation-Id");
       if (newConvId && newConvId !== convId) {
         setConvId(newConvId);
-        // Refresh conv list
         if (userId) {
-          supabase.from("conversations").select("id, title, updated_at").eq("user_id", userId).order("updated_at", { ascending: false }).limit(20).then(({ data }) => { if (data) setConvList(data); });
+          supabase.from("conversations").select("id, title, updated_at").eq("user_id", userId)
+            .order("updated_at", { ascending: false }).limit(20).then(({ data }) => { if (data) setConvList(data as Conv[]); });
         }
       }
       const reader = res.body.getReader(); const dec = new TextDecoder(); let acc = "";
-      while (true) { const { done, value } = await reader.read(); if (done) break; acc += dec.decode(value, { stream: true }); setMsgs(p => p.map(m => m.id === aId ? { ...m, content: acc } : m)); }
+      while (true) {
+        const { done, value } = await reader.read(); if (done) break;
+        acc += dec.decode(value, { stream: true });
+        setMsgs(p => p.map(m => m.id === aId ? { ...m, content: acc } : m));
+
+        // Detect if Claude is showing a WhatsApp preview — extract phone and message
+        detectPendingSend(acc);
+      }
     } catch { setMsgs(p => p.map(m => m.id === aId ? { ...m, content: "Error." } : m)); }
     finally { setBusy(false); }
+  }
+
+  function detectPendingSend(text: string) {
+    // Try multiple patterns Claude might use
+    const phonePatterns = [
+      /(?:Para:|To:|para:)\s*\+?(\d[\d\s.-]{7,})/i,
+      /(?:número|number|al)\s*\+?(\d[\d\s.-]{7,})/i,
+    ];
+    let phone: string | null = null;
+    for (const p of phonePatterns) {
+      const m = text.match(p);
+      if (m) { phone = m[1].replace(/[\s.-]/g, ""); break; }
+    }
+
+    // Extract full message (everything after "Mensaje:" until the end or next section)
+    const msgPatterns = [
+      /(?:Mensaje:|Message:)\s*"?([\s\S]*?)(?:"|¿(?:Ok|Lo envío|Te parece)|$)/i,
+    ];
+    let message: string | null = null;
+    for (const p of msgPatterns) {
+      const m = text.match(p);
+      if (m) { message = m[1].trim(); break; }
+    }
+
+    if (phone && message && message.length > 0) {
+      setPendingSend({ to: phone, message });
+    }
+  }
+
+  function hasConfirmation(text: string): boolean {
+    const lower = text.toLowerCase();
+    return (lower.includes("¿lo envío") || lower.includes("¿ok") || lower.includes("confirma")
+      || lower.includes("should i send") || lower.includes("send it?")
+      || lower.includes("¿lo mando") || lower.includes("¿te parece")
+      || lower.includes("ok?") || lower.includes("¿quieres que"))
+      && (lower.includes("para:") || lower.includes("mensaje:") || lower.includes("message:") || lower.includes("número"));
+  }
+
+  async function confirmSend() {
+    if (!pendingSend) { send("Sí, envíalo"); return; }
+
+    setBusy(true);
+    const confirmId = crypto.randomUUID();
+    setMsgs(p => [...p, { id: confirmId, role: "assistant", content: "Enviando..." }]);
+
+    try {
+      const instanceName = `dilo_${userId?.slice(0, 8)}`;
+      console.log("[DILO] Sending WhatsApp:", { to: pendingSend.to, message: pendingSend.message.slice(0, 50), instanceName });
+
+      const res = await fetch("/api/evolution", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "send", instanceName, to: pendingSend.to, text: pendingSend.message }),
+      });
+      const data = await res.json();
+      console.log("[DILO] Send result:", data);
+
+      if (data.success) {
+        setMsgs(p => p.map(m => m.id === confirmId ? { ...m, content: `✅ Mensaje enviado a ${pendingSend!.to}` } : m));
+      } else {
+        setMsgs(p => p.map(m => m.id === confirmId ? { ...m, content: `❌ Error: ${JSON.stringify(data.error || data)}` } : m));
+      }
+    } catch (e) {
+      console.error("[DILO] Send error:", e);
+      setMsgs(p => p.map(m => m.id === confirmId ? { ...m, content: "❌ Error de conexión" } : m));
+    } finally {
+      setBusy(false);
+      setPendingSend(null);
+    }
+  }
+
+  function cancelSend() {
+    setPendingSend(null);
+    setMsgs(p => [...p, { id: crypto.randomUUID(), role: "assistant", content: "Cancelado. No se envió nada." }]);
   }
 
   async function toggleRec() {
@@ -134,64 +207,8 @@ export default function ChatPage() {
     } catch { setRec(false); }
   }
 
-  function isConfirmation(text: string): boolean {
-    const lower = text.toLowerCase();
-    const hasQuestion = lower.includes("¿lo envío") || lower.includes("¿ok") || lower.includes("confirma")
-      || lower.includes("should i send") || lower.includes("send it?")
-      || lower.includes("¿lo mando") || lower.includes("¿te parece")
-      || lower.includes("lo envío") || lower.includes("ok?")
-      || lower.includes("¿quieres que") || lower.includes("¿lo envio");
-    const hasPreview = lower.includes("para:") || lower.includes("mensaje:") || lower.includes("message:")
-      || lower.includes("preview") || lower.includes("número");
-    return hasQuestion && hasPreview;
-  }
-
-  function extractSendInfo(text: string): { to: string; message: string } | null {
-    // Extract phone and message from Claude's preview
-    const phoneMatch = text.match(/(?:Para:|To:)\s*\+?(\d[\d\s-]+)/i);
-    const msgMatch = text.match(/(?:Mensaje:|Message:)\s*"?([^"]+)"?/i);
-    if (phoneMatch && msgMatch) {
-      return { to: phoneMatch[1].replace(/[\s-]/g, ""), message: msgMatch[1].trim() };
-    }
-    return null;
-  }
-
-  async function confirmSend(assistantText: string) {
-    const info = extractSendInfo(assistantText);
-    if (!info) { send("Sí, envíalo"); return; }
-
-    // Send directly via API without going through Claude again
-    setBusy(true);
-    const confirmId = crypto.randomUUID();
-    setMsgs(p => [...p, { id: confirmId, role: "assistant", content: "" }]);
-
-    try {
-      const res = await fetch("/api/evolution", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "send", instanceName: `dilo_${userId?.slice(0, 8)}`, to: info.to, text: info.message }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setMsgs(p => p.map(m => m.id === confirmId ? { ...m, content: `✅ Mensaje enviado a ${info.to}` } : m));
-      } else {
-        setMsgs(p => p.map(m => m.id === confirmId ? { ...m, content: `❌ Error al enviar: ${JSON.stringify(data.error || "desconocido")}` } : m));
-      }
-    } catch {
-      setMsgs(p => p.map(m => m.id === confirmId ? { ...m, content: "❌ Error de conexión" } : m));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function cancelSend() {
-    const cancelId = crypto.randomUUID();
-    setMsgs(p => [...p, { id: cancelId, role: "assistant", content: "Cancelado. No se envió nada." }]);
-  }
-
   const hasText = input.trim().length > 0;
 
-  // History drawer
   if (showHistory) {
     return (
       <div className="flex flex-col h-full">
@@ -201,8 +218,7 @@ export default function ChatPage() {
         </div>
         <div className="flex-1 overflow-y-auto">
           <button onClick={newChat} className="w-full flex items-center gap-3 px-4 py-3 text-left border-b border-[var(--border)] hover:bg-[var(--bg2)]">
-            <Plus size={16} className="text-[var(--muted)]" />
-            <span className="text-sm">{t("newChat")}</span>
+            <Plus size={16} className="text-[var(--muted)]" /><span className="text-sm">{t("newChat")}</span>
           </button>
           {convList.map(c => (
             <button key={c.id} onClick={() => loadConversation(c.id)} className={`w-full flex items-center gap-3 px-4 py-3 text-left border-b border-[var(--border)] hover:bg-[var(--bg2)] ${c.id === convId ? "bg-[var(--bg2)]" : ""}`}>
@@ -210,7 +226,6 @@ export default function ChatPage() {
               <span className="text-sm text-[#ccc] truncate">{c.title || "Chat"}</span>
             </button>
           ))}
-          {convList.length === 0 && <p className="px-4 py-8 text-center text-xs text-[var(--dim)]">No conversations yet</p>}
         </div>
       </div>
     );
@@ -218,7 +233,6 @@ export default function ChatPage() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header with history button */}
       <div className="flex-shrink-0 flex items-center justify-between px-4 py-2 border-b border-[var(--border)]">
         <button onClick={() => setShowHistory(true)} className="text-xs text-[var(--muted)] flex items-center gap-1.5">
           <MessageCircle size={14} /> {t("history")}
@@ -229,7 +243,6 @@ export default function ChatPage() {
         </button>
       </div>
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto overscroll-y-contain px-4">
         {msgs.length === 0 ? (
           <div className="flex items-center justify-center h-full">
@@ -246,13 +259,12 @@ export default function ChatPage() {
                 {m.content ? (
                   <>
                     <div className="chat-md"><ReactMarkdown>{m.content}</ReactMarkdown></div>
-                    {/* Show confirm/cancel buttons if assistant asks for confirmation */}
-                    {isConfirmation(m.content) && idx === msgs.length - 1 && !busy && (
+                    {hasConfirmation(m.content) && idx === msgs.length - 1 && !busy && (
                       <div className="flex gap-2 mt-3">
-                        <button onClick={() => confirmSend(m.content)} className="px-4 py-2 rounded-xl bg-green-600 text-white text-sm font-medium hover:bg-green-500 transition flex items-center gap-1.5">
+                        <button onClick={confirmSend} className="px-4 py-2 rounded-xl bg-green-600 text-white text-sm font-medium hover:bg-green-500 transition">
                           👍 Sí, enviar
                         </button>
-                        <button onClick={() => cancelSend()} className="px-4 py-2 rounded-xl bg-[var(--bg3)] text-[var(--muted)] text-sm font-medium hover:bg-[var(--border)] transition flex items-center gap-1.5">
+                        <button onClick={cancelSend} className="px-4 py-2 rounded-xl bg-[var(--bg3)] text-[var(--muted)] text-sm font-medium hover:bg-[var(--border)] transition">
                           👎 Cancelar
                         </button>
                       </div>
@@ -266,11 +278,14 @@ export default function ChatPage() {
         )}
       </div>
 
-      {/* Input */}
       <div className="flex-shrink-0 px-3 py-1.5 border-t border-[var(--border)]">
         <div className="flex items-end gap-2 max-w-2xl mx-auto">
           <div className="flex-1 flex items-end bg-[var(--bg2)] rounded-2xl border border-[var(--border)] px-3 py-1.5">
-            <textarea ref={taRef} value={input} onChange={e => onInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }} placeholder={transcribing ? "Transcribiendo..." : rec ? "Grabando..." : t("placeholder")} rows={1} disabled={transcribing} className="flex-1 bg-transparent text-[14px] text-white placeholder-[var(--dim)] resize-none leading-6 max-h-[100px] focus:outline-none disabled:opacity-50" />
+            <textarea ref={taRef} value={input} onChange={e => onInput(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+              placeholder={transcribing ? "Transcribiendo..." : rec ? "Grabando..." : t("placeholder")}
+              rows={1} disabled={transcribing}
+              className="flex-1 bg-transparent text-[14px] text-white placeholder-[var(--dim)] resize-none leading-6 max-h-[100px] focus:outline-none disabled:opacity-50" />
           </div>
           {hasText ? (
             <button onClick={() => send()} disabled={busy} className="w-9 h-9 rounded-full bg-white flex items-center justify-center flex-shrink-0 disabled:opacity-30 mb-0.5"><ArrowUp size={18} className="text-black" /></button>
