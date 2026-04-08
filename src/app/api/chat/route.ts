@@ -351,8 +351,8 @@ export async function POST(req: NextRequest) {
 
   if (!allMessages?.length) return new Response("Missing messages", { status: 400 });
 
-  // Only send last 10 messages to avoid rate limits
-  const messages = allMessages.slice(-10);
+  // Only send last 6 messages to avoid rate limits
+  const messages = allMessages.slice(-6);
 
   // Save user message
   let convId = conversationId;
