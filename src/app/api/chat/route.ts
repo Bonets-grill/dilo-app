@@ -230,14 +230,32 @@ async function executeTool(name: string, input: Record<string, unknown>, userId:
     }
 
     case "send_whatsapp": {
-      const { to, message, confirmed } = input as { to: string; message: string; confirmed?: boolean };
+      const { to, message, target_language, confirmed } = input as { to: string; message: string; target_language?: string; confirmed?: boolean };
+
+      // If target language specified and not confirmed yet, translate the message
+      let finalMessage = message;
+      if (target_language && target_language !== "es" && !confirmed) {
+        const langMap: Record<string, string> = { en: "English", fr: "French", de: "German", it: "Italian", pt: "Portuguese", zh: "Chinese", ja: "Japanese", ko: "Korean", ar: "Arabic", ru: "Russian", nl: "Dutch" };
+        const targetLang = langMap[target_language] || target_language;
+        const apiKey = process.env.ANTHROPIC_API_KEY!;
+        const translateClient = new Anthropic({ apiKey });
+        const tr = await translateClient.messages.create({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 500,
+          messages: [{ role: "user", content: `Translate the following text to ${targetLang}. Return ONLY the translation, nothing else:\n\n${message}` }],
+        });
+        const translated = tr.content[0].type === "text" ? tr.content[0].text.trim() : message;
+        finalMessage = translated;
+      }
 
       if (!confirmed) {
         return JSON.stringify({
           preview: true,
           to,
-          message,
-          instruction: "Show this preview to the user and ask for confirmation. Call this tool again with confirmed=true after user confirms.",
+          message: finalMessage,
+          original: target_language ? message : undefined,
+          translated_to: target_language || undefined,
+          instruction: "Show this preview to the user and ask for confirmation. Show the translated message.",
         });
       }
 
@@ -257,11 +275,11 @@ async function executeTool(name: string, input: Record<string, unknown>, userId:
         const res = await fetch(`${evoUrl}/message/sendText/${instanceName}`, {
           method: "POST",
           headers: { "Content-Type": "application/json", apikey: evoKey },
-          body: JSON.stringify({ number: to, text: message }),
+          body: JSON.stringify({ number: to, text: finalMessage }),
         });
         const data = await res.json();
         if (!res.ok) return JSON.stringify({ error: "Failed to send", details: data });
-        return JSON.stringify({ success: true, sent_to: to, message });
+        return JSON.stringify({ success: true, sent_to: to, message: finalMessage });
       } catch (e) {
         return JSON.stringify({ error: "WhatsApp not connected. Connect WhatsApp in Channels first." });
       }
