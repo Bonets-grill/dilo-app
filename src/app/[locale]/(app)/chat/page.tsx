@@ -108,18 +108,28 @@ export default function ChatPage() {
   }
 
   function detectPendingSend(text: string) {
-    // Strip markdown bold markers for matching
     const clean = text.replace(/\*\*/g, "");
 
-    // Find phone number after "Para:" or "To:" or similar
+    // Find phone number
     const phoneMatch = clean.match(/(?:Para|To|para|Número|Number)[:\s]+\+?(\d[\d\s.\-]{7,})/i);
     const phone = phoneMatch ? phoneMatch[1].replace(/[\s.\-]/g, "") : null;
 
-    // Find message after "Mensaje:" or "Message:" — capture everything until a question mark line or end
-    const msgMatch = clean.match(/(?:Mensaje|Message)[:\s]+"?([\s\S]*?)(?:"\s*$|"\s*\n|¿|$)/i);
-    const message = msgMatch ? msgMatch[1].trim().replace(/"+$/, "") : null;
+    // Find message — ONLY what's between quotes after Mensaje:
+    let message: string | null = null;
 
-    if (phone && phone.length >= 8 && message && message.length > 0) {
+    // Try quoted message first: Mensaje: "texto aquí"
+    const quotedMatch = clean.match(/(?:Mensaje|Message)[:\s]+"([^"]+)"/i);
+    if (quotedMatch) {
+      message = quotedMatch[1].trim();
+    } else {
+      // Try unquoted: Mensaje: texto hasta el final de línea
+      const unquotedMatch = clean.match(/(?:Mensaje|Message)[:\s]+([^\n¿]+)/i);
+      if (unquotedMatch) {
+        message = unquotedMatch[1].trim().replace(/^["']|["']$/g, "");
+      }
+    }
+
+    if (phone && phone.length >= 8 && message && message.length > 2) {
       setPendingSend({ to: phone, message });
     }
   }
