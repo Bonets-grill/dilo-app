@@ -1,0 +1,151 @@
+{
+  "app": {
+    "name": "DILO",
+    "tagline": "Your personal AI secretary"
+  },
+  "nav": {
+    "chat": "Chat",
+    "channels": "Channels",
+    "reminders": "Reminders",
+    "expenses": "Expenses",
+    "profile": "Profile",
+    "store": "Store"
+  },
+  "chat": {
+    "placeholder": "Type or speak...",
+    "voiceButton": "Tap to speak",
+    "thinking": "Thinking...",
+    "messageSent": "Message sent to {contact} via WhatsApp",
+    "reminderCreated": "Reminder set: {text} at {time}",
+    "expenseTracked": "Expense logged: {amount} in {category}",
+    "confirmSend": "Should I send it?",
+    "yes": "Yes, send",
+    "cancel": "Cancel",
+    "dailyLimit": "You've reached the 30 message daily limit.",
+    "upgrade": "Browse available skills",
+    "newChat": "New conversation",
+    "history": "History"
+  },
+  "channels": {
+    "title": "Your Channels",
+    "whatsapp": "WhatsApp",
+    "telegram": "Telegram",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "scanQR": "Scan the QR code with WhatsApp",
+    "scanInstructions": "Open WhatsApp → Linked Devices → Link a Device",
+    "connecting": "Connecting...",
+    "telegramInstructions": "Search @DiloBot on Telegram and send /start"
+  },
+  "reminders": {
+    "title": "Reminders",
+    "empty": "No pending reminders",
+    "upcoming": "Upcoming",
+    "past": "Past",
+    "via": "via {channel}",
+    "times": "{count} alerts",
+    "cancel": "Cancel reminder",
+    "create": "Create reminder"
+  },
+  "expenses": {
+    "title": "Expenses",
+    "thisMonth": "This month",
+    "budget": "Budget",
+    "remaining": "Remaining",
+    "noBudget": "No budget set",
+    "addExpense": "Add expense",
+    "categories": {
+      "food": "Food",
+      "transport": "Transport",
+      "entertainment": "Entertainment",
+      "home": "Home",
+      "health": "Health",
+      "shopping": "Shopping",
+      "bills": "Bills",
+      "other": "Other"
+    }
+  },
+  "store": {
+    "title": "Skill Store",
+    "active": "Active",
+    "activate": "Activate",
+    "packs": "Packs",
+    "individual": "Individual skills",
+    "perMonth": "/mo",
+    "savings": "Save {percent}%",
+    "includes": "Includes",
+    "skillNeeded": "You need the \"{skill}\" skill for that.",
+    "viewInStore": "View in store"
+  },
+  "auth": {
+    "login": "Log in",
+    "signup": "Sign up",
+    "email": "Email",
+    "name": "Name",
+    "google": "Continue with Google",
+    "magicLink": "Send magic link",
+    "checkEmail": "Check your email for the access link",
+    "logout": "Log out"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "theme": "Theme",
+    "dark": "Dark",
+    "light": "Light",
+    "plan": "Plan",
+    "free": "Free",
+    "premium": "Premium",
+    "currency": "Currency",
+    "timezone": "Timezone",
+    "reminderChannel": "Reminder channel",
+    "mySkills": "My active skills",
+    "privacy": "Privacy & data",
+    "about": "About DILO"
+  },
+  "landing": {
+    "hero": "Your personal AI secretary",
+    "subtitle": "Connect your WhatsApp. Speak. It handles the rest.",
+    "cta": "Start for free",
+    "features": {
+      "messaging": "Sends messages for you",
+      "reading": "Reads and summarizes your chats",
+      "reminders": "Smart reminders",
+      "expenses": "Track your spending",
+      "writing": "Translates and drafts",
+      "voice": "Works by voice"
+    },
+    "howItWorks": "How it works",
+    "steps": {
+      "step1title": "Install the app",
+      "step1desc": "Add DILO to your home screen in 1 tap",
+      "step2title": "Connect your WhatsApp",
+      "step2desc": "Scan a QR code and you're set",
+      "step3title": "Talk to your assistant",
+      "step3desc": "Text or voice, in your language"
+    },
+    "pricing": {
+      "title": "Pricing",
+      "free": "Free",
+      "freeDesc": "30 messages/day, basic skills",
+      "skills": "Skills from",
+      "skillsDesc": "Activate only what you need"
+    }
+  },
+  "common": {
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "yesterday": "Yesterday",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "back": "Back",
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "retry": "Retry",
+    "confirm": "Confirm"
+  }
+}

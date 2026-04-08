@@ -1,0 +1,151 @@
+{
+  "app": {
+    "name": "DILO",
+    "tagline": "Dein persönlicher KI-Sekretär"
+  },
+  "nav": {
+    "chat": "Chat",
+    "channels": "Kanäle",
+    "reminders": "Erinnerungen",
+    "expenses": "Ausgaben",
+    "profile": "Profil",
+    "store": "Shop"
+  },
+  "chat": {
+    "placeholder": "Schreib oder sprich...",
+    "voiceButton": "Zum Sprechen tippen",
+    "thinking": "Denke nach...",
+    "messageSent": "Nachricht an {contact} über WhatsApp gesendet",
+    "reminderCreated": "Erinnerung erstellt: {text} um {time}",
+    "expenseTracked": "Ausgabe erfasst: {amount} in {category}",
+    "confirmSend": "Soll ich es senden?",
+    "yes": "Ja, senden",
+    "cancel": "Abbrechen",
+    "dailyLimit": "Du hast das Limit von 30 Nachrichten heute erreicht.",
+    "upgrade": "Verfügbare Skills ansehen",
+    "newChat": "Neues Gespräch",
+    "history": "Verlauf"
+  },
+  "channels": {
+    "title": "Deine Kanäle",
+    "whatsapp": "WhatsApp",
+    "telegram": "Telegram",
+    "connected": "Verbunden",
+    "disconnected": "Getrennt",
+    "connect": "Verbinden",
+    "disconnect": "Trennen",
+    "scanQR": "Scanne den QR-Code mit WhatsApp",
+    "scanInstructions": "Öffne WhatsApp → Verknüpfte Geräte → Gerät verknüpfen",
+    "connecting": "Verbinde...",
+    "telegramInstructions": "Suche @DiloBot auf Telegram und sende /start"
+  },
+  "reminders": {
+    "title": "Erinnerungen",
+    "empty": "Keine ausstehenden Erinnerungen",
+    "upcoming": "Kommende",
+    "past": "Vergangene",
+    "via": "über {channel}",
+    "times": "{count} Benachrichtigungen",
+    "cancel": "Erinnerung abbrechen",
+    "create": "Erinnerung erstellen"
+  },
+  "expenses": {
+    "title": "Ausgaben",
+    "thisMonth": "Diesen Monat",
+    "budget": "Budget",
+    "remaining": "Verbleibend",
+    "noBudget": "Kein Budget festgelegt",
+    "addExpense": "Ausgabe hinzufügen",
+    "categories": {
+      "food": "Essen",
+      "transport": "Transport",
+      "entertainment": "Unterhaltung",
+      "home": "Zuhause",
+      "health": "Gesundheit",
+      "shopping": "Einkaufen",
+      "bills": "Rechnungen",
+      "other": "Sonstiges"
+    }
+  },
+  "store": {
+    "title": "Skill-Shop",
+    "active": "Aktiv",
+    "activate": "Aktivieren",
+    "packs": "Pakete",
+    "individual": "Einzelne Skills",
+    "perMonth": "/Monat",
+    "savings": "{percent}% sparen",
+    "includes": "Enthält",
+    "skillNeeded": "Du brauchst den Skill \"{skill}\" dafür.",
+    "viewInStore": "Im Shop ansehen"
+  },
+  "auth": {
+    "login": "Anmelden",
+    "signup": "Konto erstellen",
+    "email": "E-Mail",
+    "name": "Name",
+    "google": "Mit Google fortfahren",
+    "magicLink": "Magic Link senden",
+    "checkEmail": "Prüfe deine E-Mail für den Zugangslink",
+    "logout": "Abmelden"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "language": "Sprache",
+    "theme": "Design",
+    "dark": "Dunkel",
+    "light": "Hell",
+    "plan": "Abo",
+    "free": "Kostenlos",
+    "premium": "Premium",
+    "currency": "Währung",
+    "timezone": "Zeitzone",
+    "reminderChannel": "Erinnerungskanal",
+    "mySkills": "Meine aktiven Skills",
+    "privacy": "Datenschutz",
+    "about": "Über DILO"
+  },
+  "landing": {
+    "hero": "Dein persönlicher KI-Sekretär",
+    "subtitle": "Verbinde dein WhatsApp. Sprich. Er erledigt den Rest.",
+    "cta": "Kostenlos starten",
+    "features": {
+      "messaging": "Sendet Nachrichten für dich",
+      "reading": "Liest und fasst deine Chats zusammen",
+      "reminders": "Intelligente Erinnerungen",
+      "expenses": "Verfolge deine Ausgaben",
+      "writing": "Übersetzt und verfasst",
+      "voice": "Funktioniert per Sprache"
+    },
+    "howItWorks": "So funktioniert's",
+    "steps": {
+      "step1title": "Installiere die App",
+      "step1desc": "Füge DILO mit 1 Tipp zum Startbildschirm hinzu",
+      "step2title": "Verbinde dein WhatsApp",
+      "step2desc": "QR-Code scannen und fertig",
+      "step3title": "Sprich mit deinem Assistenten",
+      "step3desc": "Text oder Sprache, in deiner Sprache"
+    },
+    "pricing": {
+      "title": "Preise",
+      "free": "Kostenlos",
+      "freeDesc": "30 Nachrichten/Tag, Basis-Skills",
+      "skills": "Skills ab",
+      "skillsDesc": "Aktiviere nur, was du brauchst"
+    }
+  },
+  "common": {
+    "today": "Heute",
+    "tomorrow": "Morgen",
+    "yesterday": "Gestern",
+    "save": "Speichern",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "close": "Schließen",
+    "back": "Zurück",
+    "loading": "Laden...",
+    "error": "Etwas ist schiefgelaufen",
+    "retry": "Erneut versuchen",
+    "confirm": "Bestätigen"
+  }
+}
