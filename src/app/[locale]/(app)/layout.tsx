@@ -1,14 +1,14 @@
 import BottomNav from "@/components/ui/BottomNav";
-import TopBar from "@/components/ui/TopBar";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="fixed inset-0 flex flex-col bg-[#0d0d0d]">
-      <TopBar />
-      <main className="relative flex-1 overflow-hidden">
+    <div className="h-dvh flex flex-col bg-[var(--bg)]">
+      <div className="flex-shrink-0 h-[env(safe-area-inset-top)]" />
+      <main className="flex-1 min-h-0 overflow-hidden">
         {children}
       </main>
       <BottomNav />
+      <div className="flex-shrink-0 h-[env(safe-area-inset-bottom)]" />
     </div>
   );
 }

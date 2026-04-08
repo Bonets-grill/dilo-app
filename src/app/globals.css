@@ -1,37 +1,40 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0d0d0d;
-  --foreground: #ececec;
-  --surface: #171717;
-  --surface-2: #1e1e1e;
-  --border: rgba(255,255,255,0.08);
-  --muted: #8e8e8e;
-  --accent: #7c6ef0;
+  --bg: #0d0d0d;
+  --bg2: #171717;
+  --bg3: #1e1e1e;
+  --border: #2a2a2a;
+  --muted: #888;
+  --dim: #555;
+  --accent: #8b5cf6;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--bg);
+  --color-foreground: #ececec;
   --font-sans: var(--font-inter);
 }
 
-html {
-  color-scheme: dark;
-}
+html { color-scheme: dark; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg);
+  color: #ececec;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
 }
 
-/* Smooth scrollbar */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
-
-/* Native feel */
+::-webkit-scrollbar { width: 0; }
+input, textarea, select { font-size: 16px !important; }
 * { -webkit-touch-callout: none; }
-input, textarea, select { font-size: 16px; } /* prevent iOS zoom */
+
+/* Markdown inside chat */
+.chat-md p { margin: 0.4em 0; }
+.chat-md ul, .chat-md ol { margin: 0.4em 0; padding-left: 1.2em; }
+.chat-md li { margin: 0.15em 0; }
+.chat-md strong { color: #fff; }
+.chat-md hr { border-color: #333; margin: 0.8em 0; }
+.chat-md code { background: #2a2a2a; padding: 0.1em 0.3em; border-radius: 4px; font-size: 0.9em; }
+.chat-md h1, .chat-md h2, .chat-md h3 { font-weight: 600; margin: 0.6em 0 0.3em; }

@@ -63,7 +63,8 @@ export default function StorePage() {
   }
 
   return (
-    <div className="px-4 py-6 max-w-lg mx-auto">
+    <div className="h-full overflow-y-auto overscroll-y-contain">
+    <div className="px-4 py-5 max-w-lg mx-auto">
       <h2 className="text-xl font-bold mb-6">{t("title")}</h2>
 
       {/* Packs */}
@@ -116,6 +117,7 @@ export default function StorePage() {
           </div>
         ))}
       </div>
+    </div>
     </div>
   );
 }

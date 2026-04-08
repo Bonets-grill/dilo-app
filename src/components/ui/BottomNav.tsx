@@ -4,7 +4,6 @@ import { useTranslations } from "next-intl";
 import { usePathname } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
 import { MessageCircle, Plug, Bell, Wallet, User } from "lucide-react";
-import { clsx } from "clsx";
 
 const tabs = [
   { key: "chat", href: "/chat", icon: MessageCircle },
@@ -19,21 +18,14 @@ export default function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex-shrink-0 bg-[#111] border-t border-white/[0.06] pb-[env(safe-area-inset-bottom)]">
-      <div className="flex items-center justify-around h-[50px]">
+    <nav className="flex-shrink-0 border-t border-[var(--border)] bg-[var(--bg)]">
+      <div className="flex items-stretch h-12">
         {tabs.map(({ key, href, icon: Icon }) => {
           const active = pathname.startsWith(href);
           return (
-            <Link
-              key={key}
-              href={href}
-              className={clsx(
-                "flex flex-col items-center justify-center gap-0.5 flex-1 h-full",
-                active ? "text-white" : "text-[#555]"
-              )}
-            >
-              <Icon size={20} strokeWidth={active ? 2 : 1.5} />
-              <span className="text-[10px]">{t(key)}</span>
+            <Link key={key} href={href} className={`flex-1 flex flex-col items-center justify-center gap-0.5 ${active ? "text-white" : "text-[var(--dim)]"}`}>
+              <Icon size={19} strokeWidth={active ? 2 : 1.5} />
+              <span className="text-[9px] leading-none">{t(key)}</span>
             </Link>
           );
         })}
