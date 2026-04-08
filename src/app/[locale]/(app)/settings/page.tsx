@@ -75,7 +75,11 @@ export default function SettingsPage() {
           <div className="flex items-center gap-3 px-3.5 py-2.5"><Info size={16} className="text-[var(--dim)]" /><span className="text-sm">{t("about")}</span></div>
         </div>
 
-        <button className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+        <button onClick={async () => {
+          const supabase = (await import("@/lib/supabase/client")).createBrowserSupabase();
+          await supabase.auth.signOut();
+          window.location.href = `/${locale}/login`;
+        }} className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
           <LogOut size={16} />{at("logout")}
         </button>
       </div>
