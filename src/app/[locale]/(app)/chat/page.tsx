@@ -112,27 +112,34 @@ export default function ChatPage() {
   function detectPendingSend(text: string) {
     const clean = text.replace(/\*\*/g, "");
 
-    // Find phone number
-    const phoneMatch = clean.match(/(?:Para|To|para|Número|Number)[:\s]+\+?(\d[\d\s.\-]{7,})/i);
-    const phone = phoneMatch ? phoneMatch[1].replace(/[\s.\-]/g, "") : null;
+    // Strategy 1: "Para: NUMBER / Mensaje: TEXT"
+    const paraMatch = clean.match(/(?:Para|To|para|Número)[:\s]+\+?(\d[\d\s.\-]{7,})/i);
+    const msgMatch = clean.match(/(?:Mensaje|Message)[:\s]+"([^"]+)"/i)
+      || clean.match(/(?:Mensaje|Message)[:\s]+([^\n¿]+)/i);
 
-    // Find message — ONLY what's between quotes after Mensaje:
-    let message: string | null = null;
-
-    // Try quoted message first: Mensaje: "texto aquí"
-    const quotedMatch = clean.match(/(?:Mensaje|Message)[:\s]+"([^"]+)"/i);
-    if (quotedMatch) {
-      message = quotedMatch[1].trim();
-    } else {
-      // Try unquoted: Mensaje: texto hasta el final de línea
-      const unquotedMatch = clean.match(/(?:Mensaje|Message)[:\s]+([^\n¿]+)/i);
-      if (unquotedMatch) {
-        message = unquotedMatch[1].trim().replace(/^["']|["']$/g, "");
-      }
+    if (paraMatch && msgMatch) {
+      setPendingSend({ to: paraMatch[1].replace(/[\s.\-]/g, ""), message: msgMatch[1].trim().replace(/^["']|["']$/g, "") });
+      return;
     }
 
-    if (phone && phone.length >= 8 && message && message.length > 2) {
-      setPendingSend({ to: phone, message });
+    // Strategy 2: Find any quoted message + phone from context or previous messages
+    const phoneFromAnywhere = clean.match(/\b(\d{10,15})\b/);
+    const quotedMsg = clean.match(/"([^"]{5,})"/);
+
+    if (phoneFromAnywhere && quotedMsg) {
+      setPendingSend({ to: phoneFromAnywhere[1], message: quotedMsg[1].trim() });
+      return;
+    }
+
+    // Strategy 3: Check user's last message for the phone number, use Claude's quoted text as message
+    if (quotedMsg && msgs.length > 0) {
+      const lastUserMsgs = msgs.filter(m => m.role === "user");
+      const lastUserMsg = lastUserMsgs[lastUserMsgs.length - 1]?.content || "";
+      const phoneInUser = lastUserMsg.match(/\+?(\d[\d\s.\-]{8,})/);
+      if (phoneInUser) {
+        setPendingSend({ to: phoneInUser[1].replace(/[\s.\-+]/g, ""), message: quotedMsg[1].trim() });
+        return;
+      }
     }
   }
 
@@ -327,7 +334,7 @@ export default function ChatPage() {
                         ),
                       }}>{m.content}</ReactMarkdown>
                     </div>
-                    {pendingSend && idx === msgs.length - 1 && !busy && (
+                    {pendingSend && idx >= msgs.length - 2 && !busy && (
                       <div className="flex gap-2 mt-3">
                         <button onClick={confirmSend} className="px-4 py-2 rounded-xl bg-green-600 text-white text-sm font-medium hover:bg-green-500 transition">
                           👍 Sí, enviar
