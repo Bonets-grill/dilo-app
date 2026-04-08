@@ -58,6 +58,17 @@ const tools: Anthropic.Tool[] = [
     },
   },
   {
+    name: "read_whatsapp",
+    description: "Read recent WhatsApp messages from a contact or all chats. Use when user asks 'read my messages', 'what did X say', 'any new messages', etc.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        phone: { type: "string", description: "Phone number to read messages from. If empty, reads recent messages from all chats." },
+        limit: { type: "number", description: "Number of messages to read. Default 10." },
+      },
+    },
+  },
+  {
     name: "send_whatsapp",
     description: "Send a WhatsApp message to a contact on behalf of the user. ALWAYS show the message preview first and ask for confirmation before sending. Use when user says 'tell X that...' or 'send a message to X'.",
     input_schema: {
@@ -125,6 +136,48 @@ async function executeTool(name: string, input: Record<string, unknown>, userId:
         return JSON.stringify({ result });
       } catch {
         return JSON.stringify({ error: "Invalid expression" });
+      }
+    }
+
+    case "read_whatsapp": {
+      const { phone, limit = 10 } = input as { phone?: string; limit?: number };
+      const instName = `dilo_${userId.slice(0, 8)}`;
+      const evoUrl = process.env.EVOLUTION_API_URL!;
+      const evoKey = process.env.EVOLUTION_API_KEY!;
+
+      try {
+        if (phone) {
+          // Read messages from specific contact
+          const res = await fetch(`${evoUrl}/chat/findMessages/${instName}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", apikey: evoKey },
+            body: JSON.stringify({ where: { key: { remoteJid: `${phone}@s.whatsapp.net` } }, limit }),
+          });
+          const data = await res.json();
+          const messages = Array.isArray(data) ? data : data?.messages || [];
+          const formatted = messages.slice(0, limit).map((m: Record<string, unknown>) => {
+            const k = m.key as Record<string, unknown> || {};
+            const msg = m.message as Record<string, unknown> || {};
+            return {
+              from: k.fromMe ? "Tú" : (m.pushName || phone),
+              text: (msg.conversation || (msg.extendedTextMessage as Record<string, unknown>)?.text || "[media]") as string,
+            };
+          });
+          return JSON.stringify({ messages: formatted });
+        } else {
+          // Read recent chats
+          const res = await fetch(`${evoUrl}/chat/findChats/${instName}`, {
+            headers: { apikey: evoKey },
+          });
+          const chats = await res.json();
+          const recent = Array.isArray(chats) ? chats.slice(0, limit).map((c: Record<string, unknown>) => ({
+            name: c.name || c.id,
+            lastMessage: (c.lastMessage as Record<string, unknown>)?.conversation || "",
+          })) : [];
+          return JSON.stringify({ chats: recent });
+        }
+      } catch {
+        return JSON.stringify({ error: "Could not read messages. Make sure WhatsApp is connected." });
       }
     }
 
