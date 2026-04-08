@@ -15,10 +15,25 @@ export default function ChannelsPage() {
 
   useEffect(() => {
     const supabase = createBrowserSupabase();
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(async ({ data }) => {
       if (data.user) {
-        setUserId(data.user.id);
-        setInstanceName(`dilo_${data.user.id.slice(0, 8)}`);
+        const uid = data.user.id;
+        const inst = `dilo_${uid.slice(0, 8)}`;
+        setUserId(uid);
+        setInstanceName(inst);
+
+        // Check if already connected
+        try {
+          const res = await fetch("/api/evolution", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "status", instanceName: inst }),
+          });
+          const status = await res.json();
+          if (status?.instance?.state === "open" || status?.state === "open") {
+            setWaStatus("connected");
+          }
+        } catch { /* not connected */ }
       }
     });
   }, []);
