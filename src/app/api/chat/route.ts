@@ -81,12 +81,13 @@ const tools: Anthropic.Tool[] = [
   },
   {
     name: "send_whatsapp",
-    description: "Send a WhatsApp message to a contact. Use phone number (not name). If user gave a name, use search_contacts first to find the number. ALWAYS show preview and ask confirmation before sending.",
+    description: "Send a WhatsApp message to a contact. Use phone number (not name). If user gave a name, use search_contacts first. ALWAYS show preview and ask confirmation. If user asks to send in a specific language (e.g. 'send in English', 'envíalo en francés'), translate the message to that language BEFORE showing preview.",
     input_schema: {
       type: "object" as const,
       properties: {
-        to: { type: "string", description: "Phone number with country code (e.g. 34612345678) or contact name" },
-        message: { type: "string", description: "The message text to send" },
+        to: { type: "string", description: "Phone number with country code (e.g. 34612345678)" },
+        message: { type: "string", description: "The message text to send. If user requested a specific language, this should ALREADY be translated to that language." },
+        target_language: { type: "string", description: "Language the message is written in (e.g. 'en', 'fr', 'de', 'it', 'es'). Used for context." },
         confirmed: { type: "boolean", description: "Set to true only after user confirms. First call should be false to show preview." },
       },
       required: ["to", "message"],
@@ -334,6 +335,8 @@ REGLAS IMPORTANTES:
 2. Cuando pida enviar WhatsApp → USA send_whatsapp con confirmed=false primero, muestra el preview, y espera confirmación.
 3. Cuando el usuario confirme ("sí", "envíalo", "ok") → USA send_whatsapp con confirmed=true.
 4. Para cálculos → USA calculate.
+5. TRADUCCIÓN AL ENVIAR: Si el usuario dice "envíalo en inglés" o "manda en francés", TRADUCE el mensaje al idioma pedido y muestra el preview ya traducido. El campo message del tool debe contener el mensaje YA traducido.
+6. TRADUCCIÓN AL RECIBIR: Cuando muestres mensajes recibidos de WhatsApp, tradúcelos automáticamente al idioma del usuario (${langName}).
 
 CAPACIDADES DE TEXTO (sin herramienta):
 - Responder preguntas, traducir, recetas, redactar textos, explicar cosas, conversar.`;

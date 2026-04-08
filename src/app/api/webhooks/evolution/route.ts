@@ -12,7 +12,6 @@ export async function POST(req: NextRequest) {
     const event = body.event;
 
     if (event === "messages.upsert" || body.data?.messageType) {
-      // Incoming WhatsApp message
       const msg = body.data || body;
       const key = msg.key || {};
       const fromMe = key.fromMe;
@@ -23,40 +22,40 @@ export async function POST(req: NextRequest) {
         || msg.message?.imageMessage?.caption
         || "";
       const pushName = msg.pushName || "";
-      const instanceName = body.instance || body.instanceName || "";
+      const instanceId = body.instanceId || msg.instanceId || "";
 
-      // Only process incoming messages (not our own)
       if (!fromMe && text) {
         console.log(`[WA IN] From ${pushName} (${phone}): ${text}`);
 
-        // Find user by instance name
-        const userId = instanceName.replace("dilo_", "");
+        // Find user by instance
+        const { data: channel } = await supabase
+          .from("channels")
+          .select("user_id")
+          .eq("instance_id", instanceId)
+          .single();
 
-        // Save to a simple inbox table or log
-        // For now, store as an analytics event so the user can see it
+        const userId = channel?.user_id;
+
+        // Store incoming message
         await supabase.from("analytics_events").insert({
-          user_id: userId.length > 8 ? undefined : undefined, // we don't have full UUID from instance name
+          user_id: userId || null,
           event_type: "whatsapp_incoming",
           event_data: {
-            from: phone,
+            from_phone: phone,
             from_name: pushName,
             text,
-            instance: instanceName,
+            instance_id: instanceId,
             timestamp: new Date().toISOString(),
           },
         });
-      }
-    }
 
-    if (event === "connection.update" || body.data?.state) {
-      const state = body.data?.state || body.state;
-      const instance = body.instance || body.instanceName;
-      console.log(`[WA] Connection: ${instance} → ${state}`);
+        // TODO: Send push notification to user about incoming message
+      }
     }
 
     return NextResponse.json({ status: "ok" });
   } catch (err) {
     console.error("[Evolution Webhook] Error:", err);
-    return NextResponse.json({ status: "error" }, { status: 200 }); // Always return 200 to avoid retries
+    return NextResponse.json({ status: "error" }, { status: 200 });
   }
 }
