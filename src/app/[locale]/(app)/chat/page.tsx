@@ -108,39 +108,30 @@ export default function ChatPage() {
   }
 
   function detectPendingSend(text: string) {
-    // Try multiple patterns Claude might use
-    const phonePatterns = [
-      /(?:Para:|To:|para:)\s*\+?(\d[\d\s.-]{7,})/i,
-      /(?:número|number|al)\s*\+?(\d[\d\s.-]{7,})/i,
-    ];
-    let phone: string | null = null;
-    for (const p of phonePatterns) {
-      const m = text.match(p);
-      if (m) { phone = m[1].replace(/[\s.-]/g, ""); break; }
-    }
+    // Strip markdown bold markers for matching
+    const clean = text.replace(/\*\*/g, "");
 
-    // Extract full message (everything after "Mensaje:" until the end or next section)
-    const msgPatterns = [
-      /(?:Mensaje:|Message:)\s*"?([\s\S]*?)(?:"|¿(?:Ok|Lo envío|Te parece)|$)/i,
-    ];
-    let message: string | null = null;
-    for (const p of msgPatterns) {
-      const m = text.match(p);
-      if (m) { message = m[1].trim(); break; }
-    }
+    // Find phone number after "Para:" or "To:" or similar
+    const phoneMatch = clean.match(/(?:Para|To|para|Número|Number)[:\s]+\+?(\d[\d\s.\-]{7,})/i);
+    const phone = phoneMatch ? phoneMatch[1].replace(/[\s.\-]/g, "") : null;
 
-    if (phone && message && message.length > 0) {
+    // Find message after "Mensaje:" or "Message:" — capture everything until a question mark line or end
+    const msgMatch = clean.match(/(?:Mensaje|Message)[:\s]+"?([\s\S]*?)(?:"\s*$|"\s*\n|¿|$)/i);
+    const message = msgMatch ? msgMatch[1].trim().replace(/"+$/, "") : null;
+
+    if (phone && phone.length >= 8 && message && message.length > 0) {
       setPendingSend({ to: phone, message });
     }
   }
 
   function hasConfirmation(text: string): boolean {
-    const lower = text.toLowerCase();
-    return (lower.includes("¿lo envío") || lower.includes("¿ok") || lower.includes("confirma")
-      || lower.includes("should i send") || lower.includes("send it?")
-      || lower.includes("¿lo mando") || lower.includes("¿te parece")
-      || lower.includes("ok?") || lower.includes("¿quieres que"))
-      && (lower.includes("para:") || lower.includes("mensaje:") || lower.includes("message:") || lower.includes("número"));
+    const lower = text.toLowerCase().replace(/\*\*/g, "");
+    const hasAsk = lower.includes("envío") || lower.includes("envio") || lower.includes("confirma")
+      || lower.includes("send") || lower.includes("mando") || lower.includes("vale")
+      || lower.includes("ok?") || lower.includes("quieres que") || lower.includes("dime sí");
+    const hasPreview = lower.includes("para:") || lower.includes("mensaje:") || lower.includes("message:")
+      || lower.includes("número") || lower.includes("number");
+    return hasAsk && hasPreview;
   }
 
   async function confirmSend() {
