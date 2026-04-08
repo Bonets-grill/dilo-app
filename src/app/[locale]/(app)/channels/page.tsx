@@ -152,6 +152,29 @@ export default function ChannelsPage() {
           {waStatus === "disconnected" && !qrCode && (
             <p className="text-xs text-[var(--dim)]">{t("scanInstructions")}</p>
           )}
+
+          <div className="mt-3 pt-3 border-t border-[var(--border)]">
+            <p className="text-[10px] text-[var(--dim)] leading-relaxed">
+              💡 Escanea el QR desde un PC o tablet. Si solo tienes el móvil, usa la opción de WhatsApp Cloud abajo — los mensajes salen desde el número de DILO.
+            </p>
+          </div>
+        </div>
+
+        {/* WhatsApp Cloud API (sin QR) */}
+        <div className="rounded-xl bg-[var(--bg2)] border border-[var(--border)] p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                <span className="text-lg">☁️</span>
+              </div>
+              <div>
+                <p className="text-sm font-medium">WhatsApp Cloud</p>
+                <p className="text-xs text-[var(--dim)]">Sin QR — mensajes desde número DILO</p>
+              </div>
+            </div>
+            <span className="px-2 py-1 rounded text-[10px] bg-yellow-500/10 text-yellow-400">Próximamente</span>
+          </div>
+          <p className="text-xs text-[var(--dim)] leading-relaxed">Los mensajes se envían desde el número oficial de DILO. No necesitas escanear QR. Solo pon tu número y listo.</p>
         </div>
 
         {/* Telegram */}
