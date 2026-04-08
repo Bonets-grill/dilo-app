@@ -11,6 +11,44 @@
 - Actualiza PROGRESS.md al completar cada sesión
 - Commit + push a GitHub al final de cada sesión
 
+## LOCKED — NO TOCAR SIN PERMISO EXPLÍCITO DEL USUARIO
+
+Los siguientes archivos y funciones están **VERIFICADOS Y FUNCIONANDO en producción**.
+**PROHIBIDO modificarlos** a menos que el usuario pida específicamente cambiar ESA funcionalidad.
+Si necesitas cambiar algo que afecte a un archivo locked, PREGUNTA PRIMERO.
+
+### Archivos locked:
+
+| Archivo | Qué hace | Fecha lock |
+|---------|----------|------------|
+| `src/app/api/transcribe/route.ts` | STT con AssemblyAI (primario) + OpenAI Whisper (fallback). Funciona en producción. | 2026-04-08 |
+| `src/app/api/chat/route.ts` | Chat con GPT-4o-mini, smart router, tools, image gen con `__IMAGE__` prefix, `__PENDING_SEND__` marker para botones WhatsApp. NO meter imágenes base64 en mensajes al LLM. | 2026-04-08 |
+| `src/app/[locale]/(app)/chat/page.tsx` | UI del chat: streaming, botones enviar/grabar/foto, confirm/cancel WhatsApp via `__PENDING_SEND__` marker, `__IMAGE__` rendering. | 2026-04-08 |
+| `src/app/[locale]/(app)/settings/page.tsx` | Settings: idioma, logout, ir a store. Funciona. | 2026-04-08 |
+| `src/app/[locale]/(app)/channels/page.tsx` | Conexión WhatsApp QR + Telegram. Funciona. | 2026-04-08 |
+| `src/app/[locale]/(app)/store/page.tsx` | Skill store UI con packs e individual skills. Funciona. | 2026-04-08 |
+| `src/components/ui/BottomNav.tsx` | Navegación inferior 5 tabs. Funciona. | 2026-04-08 |
+| `src/app/api/evolution/route.ts` | Proxy Evolution API WhatsApp. Funciona. | 2026-04-08 |
+| `src/app/api/enhance-image/route.ts` | Mejora de fotos con Stability AI. Funciona. | 2026-04-08 |
+
+### Reglas de los locks:
+
+1. **NUNCA modificar un archivo locked** sin que el usuario lo pida explícitamente
+2. **Si un fix requiere tocar un locked**, explica QUÉ cambiarías y POR QUÉ antes de hacerlo
+3. **Al arreglar algo, NO romper lo que ya funciona** — verifica que las funciones existentes siguen intactas
+4. **Después de cada cambio**, hacer `npm run build` para verificar que compila
+5. **Nuevas features** van en archivos NUEVOS siempre que sea posible, no modificando los locked
+
+### Convenciones que NO se deben cambiar:
+
+- Imágenes generadas usan prefijo `__IMAGE__` (NO markdown `![](...)`)
+- Mensajes con imágenes se filtran como `"[Foto]"` antes de enviar al LLM
+- Botones WhatsApp confirm/cancel usan `__PENDING_SEND__` marker del servidor
+- STT: AssemblyAI primario, OpenAI Whisper fallback
+- Smart router bypassa el LLM para gastos, calculadora, recordatorios, imágenes
+
+---
+
 ## Proyecto
 
 - **Nombre**: DILO — Personal AI Secretary
