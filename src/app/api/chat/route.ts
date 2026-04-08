@@ -263,7 +263,7 @@ async function executeTool(name: string, input: Record<string, unknown>, userId:
         const dalle = await openai.images.generate({
           model: "dall-e-3", prompt, n: 1, size: "1024x1024", quality: "standard",
         });
-        const imageUrl = dalle.data[0]?.url;
+        const imageUrl = dalle.data?.[0]?.url;
         if (imageUrl) return JSON.stringify({ success: true, image_url: imageUrl, prompt });
         return JSON.stringify({ error: "Image generation failed" });
       } catch (e) {
