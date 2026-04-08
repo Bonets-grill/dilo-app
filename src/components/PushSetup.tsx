@@ -35,10 +35,11 @@ export default function PushSetup() {
       if (!user) return;
 
       const subJson = sub.toJSON();
-      await supabase.from("push_subscriptions").upsert({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase.from("push_subscriptions") as any).upsert({
         user_id: user.id,
         endpoint: subJson.endpoint!,
-        keys: subJson.keys as Record<string, string>,
+        keys: subJson.keys,
         user_agent: navigator.userAgent,
       }, { onConflict: "endpoint" });
 
