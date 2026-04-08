@@ -4,6 +4,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { useState, useRef, useEffect } from "react";
 import { ArrowUp, Mic, Square } from "lucide-react";
 import { clsx } from "clsx";
+import ReactMarkdown from "react-markdown";
 
 interface Msg { id: string; role: "user" | "assistant"; content: string; }
 
@@ -34,10 +35,7 @@ export default function ChatPage() {
       const r = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [...messages, uMsg].map(m => ({ role: m.role, content: m.content })),
-          locale,
-        }),
+        body: JSON.stringify({ messages: [...messages, uMsg].map(m => ({ role: m.role, content: m.content })), locale }),
       });
       if (!r.ok || !r.body) throw new Error();
       const reader = r.body.getReader(); const dec = new TextDecoder(); let acc = "";
@@ -46,53 +44,58 @@ export default function ChatPage() {
     finally { setStreaming(false); }
   }
 
-  async function startRecording() {
+  async function toggleRecording() {
     if (recording) {
-      // Stop recording
       recorderRef.current?.stop();
       return;
     }
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4" });
+
+      // Find supported mimeType for this browser
+      let mimeType = "audio/webm";
+      if (!MediaRecorder.isTypeSupported("audio/webm")) {
+        mimeType = "audio/mp4";
+        if (!MediaRecorder.isTypeSupported("audio/mp4")) {
+          mimeType = ""; // Let browser decide
+        }
+      }
+
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       const chunks: Blob[] = [];
       recorderRef.current = recorder;
 
       recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
-
       recorder.onstop = async () => {
         stream.getTracks().forEach(t => t.stop());
         setRecording(false);
-        setTranscribing(true);
+        if (chunks.length === 0) return;
 
+        setTranscribing(true);
         const blob = new Blob(chunks, { type: recorder.mimeType });
+        const ext = recorder.mimeType.includes("mp4") ? "m4a" : "webm";
         const formData = new FormData();
-        formData.append("audio", blob, `audio.${recorder.mimeType.includes("webm") ? "webm" : "m4a"}`);
+        formData.append("audio", blob, `recording.${ext}`);
         formData.append("locale", locale);
 
         try {
           const res = await fetch("/api/transcribe", { method: "POST", body: formData });
           if (res.ok) {
             const { text } = await res.json();
-            if (text && text.trim()) {
-              setInput(text.trim());
-              // Auto-focus the textarea
-              setTimeout(() => taRef.current?.focus(), 100);
-            }
+            if (text?.trim()) setInput(prev => prev ? prev + " " + text.trim() : text.trim());
           }
-        } catch { /* silently fail */ }
+        } catch { /* silent */ }
         finally { setTranscribing(false); }
       };
 
-      recorder.start();
+      recorder.start(1000); // collect in 1s chunks
       setRecording(true);
 
-      // Auto-stop after 30 seconds
-      setTimeout(() => {
-        if (recorder.state === "recording") recorder.stop();
-      }, 30000);
-    } catch {
+      // Auto stop after 30s
+      setTimeout(() => { if (recorder.state === "recording") recorder.stop(); }, 30000);
+    } catch (err) {
+      console.error("Mic error:", err);
       setRecording(false);
     }
   }
@@ -107,7 +110,7 @@ export default function ChatPage() {
             <p className="text-[15px] text-[#444]">{t("placeholder")}</p>
           </div>
         ) : (
-          <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+          <div className="max-w-2xl mx-auto px-4 py-4 space-y-5">
             {messages.map(m => (
               <div key={m.id}>
                 {m.role === "user" ? (
@@ -115,8 +118,8 @@ export default function ChatPage() {
                     <div className="px-4 py-2.5 rounded-3xl bg-[#2f2f2f] text-[15px] leading-relaxed max-w-[85%]">{m.content}</div>
                   </div>
                 ) : (
-                  <div className="text-[15px] leading-[1.75] text-[#ccc]">
-                    {m.content || <Dots />}
+                  <div className="text-[15px] leading-[1.75] text-[#ccc] prose prose-invert prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0 prose-headings:my-2 prose-hr:my-3 prose-strong:text-white">
+                    {m.content ? <ReactMarkdown>{m.content}</ReactMarkdown> : <Dots />}
                   </div>
                 )}
               </div>
@@ -132,7 +135,7 @@ export default function ChatPage() {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-            placeholder={transcribing ? "Transcribiendo..." : t("placeholder")}
+            placeholder={transcribing ? "Transcribiendo..." : recording ? "Grabando..." : t("placeholder")}
             rows={1}
             disabled={transcribing}
             className="flex-1 bg-transparent text-[15px] text-white placeholder-[#555] resize-none leading-6 max-h-[120px] focus:outline-none disabled:opacity-50"
@@ -143,14 +146,15 @@ export default function ChatPage() {
             </button>
           ) : (
             <button
-              onClick={startRecording}
+              onClick={toggleRecording}
               disabled={transcribing}
               className={clsx(
                 "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition",
-                recording ? "bg-red-500 animate-pulse" : transcribing ? "bg-[#333] opacity-50" : "bg-[#333]"
+                recording ? "bg-red-500 animate-pulse" : "bg-[#333]",
+                transcribing && "opacity-50"
               )}
             >
-              {recording ? <Square size={14} className="text-white" /> : <Mic size={15} className="text-white" />}
+              {recording ? <Square size={12} className="text-white" /> : <Mic size={15} className="text-white" />}
             </button>
           )}
         </div>
