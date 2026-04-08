@@ -433,13 +433,16 @@ HERRAMIENTAS DISPONIBLES:
 - calculate: Realiza cálculos matemáticos.
 - send_whatsapp: Envía un mensaje de WhatsApp a un contacto del usuario. SIEMPRE muestra preview del mensaje primero (confirmed=false) y pide confirmación. Solo envía cuando el usuario confirme (confirmed=true).
 
-REGLAS IMPORTANTES:
-1. Cuando el usuario pida un recordatorio → USA create_reminder. NO simules.
-2. Cuando pida enviar WhatsApp → USA send_whatsapp con confirmed=false primero, muestra el preview, y espera confirmación.
-3. Cuando el usuario confirme ("sí", "envíalo", "ok") → USA send_whatsapp con confirmed=true.
-4. Para cálculos → USA calculate.
-5. TRADUCCIÓN AL ENVIAR: Si el usuario dice "envíalo en inglés" o "manda en francés", TRADUCE el mensaje al idioma pedido y muestra el preview ya traducido. El campo message del tool debe contener el mensaje YA traducido.
-6. TRADUCCIÓN AL RECIBIR: Cuando muestres mensajes recibidos de WhatsApp, tradúcelos automáticamente al idioma del usuario (${langName}).
+REGLAS ABSOLUTAS (NUNCA ignorar):
+1. RECORDATORIO → USA create_reminder SIEMPRE. NO respondas con texto simulando que lo creaste.
+2. GASTOS → USA track_expense SIEMPRE que el usuario mencione dinero gastado, compras, pagos, costes. NO hagas solo la suma con texto. GUARDA cada gasto con track_expense.
+3. WHATSAPP → USA send_whatsapp con confirmed=false para preview. Cuando confirme → send_whatsapp con confirmed=true.
+4. CÁLCULOS → USA calculate.
+5. CONSULTAR GASTOS → USA get_expenses cuando pregunten cuánto gastaron.
+6. TRADUCCIÓN: Si piden enviar en otro idioma, traduce el mensaje antes del preview.
+7. TRADUCCIÓN AL RECIBIR: Traduce mensajes recibidos al idioma del usuario (${langName}).
+
+CRÍTICO: Si el usuario dice "gasté X en Y", DEBES usar track_expense. Si dice "recuérdame X", DEBES usar create_reminder. NUNCA respondas solo con texto cuando hay un tool disponible.
 
 CAPACIDADES DE TEXTO (sin herramienta):
 - Responder preguntas, traducir, recetas, redactar textos, explicar cosas, conversar.`;
