@@ -30,34 +30,36 @@ export default function ChatPage() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) return;
-      setUserId(data.user.id);
+      const uid = data.user.id;
+      setUserId(uid);
       // Load conversation list
       supabase.from("conversations")
         .select("id, title, updated_at")
-        .eq("user_id", data.user.id)
+        .eq("user_id", uid)
         .order("updated_at", { ascending: false })
         .limit(20)
         .then(({ data: convs }) => {
-          if (convs) setConvList(convs);
-          // Auto-load latest conversation
-          if (convs && convs.length > 0) {
-            loadConversation(convs[0].id, data.user!.id);
-          }
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const list = (convs as any[] || []) as Conv[];
+          setConvList(list);
+          if (list.length > 0) loadConversation(list[0].id);
         });
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function loadConversation(id: string, uid?: string) {
+  async function loadConversation(id: string) {
     setConvId(id);
     setShowHistory(false);
-    const { data: messages } = await supabase
+    const { data } = await supabase
       .from("messages")
       .select("id, role, content")
       .eq("conversation_id", id)
       .order("created_at", { ascending: true });
-    if (messages) {
-      setMsgs(messages.filter(m => m.role === "user" || m.role === "assistant") as Msg[]);
+    if (data) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const loaded = (data as any[]).filter((m: any) => m.role === "user" || m.role === "assistant") as Msg[];
+      setMsgs(loaded);
     }
   }
 
