@@ -47,6 +47,39 @@ const tools: Anthropic.Tool[] = [
     },
   },
   {
+    name: "track_expense",
+    description: "Record an expense for the user. Use this EVERY TIME the user mentions spending money, buying something, or any cost. Can record multiple expenses at once. ALWAYS use this tool, never just do math.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        expenses: {
+          type: "array",
+          description: "Array of expenses to record",
+          items: {
+            type: "object",
+            properties: {
+              amount: { type: "number", description: "Amount spent" },
+              category: { type: "string", enum: ["food", "transport", "entertainment", "home", "health", "shopping", "bills", "other"], description: "Category" },
+              description: { type: "string", description: "What was purchased" },
+            },
+            required: ["amount", "description"],
+          },
+        },
+      },
+      required: ["expenses"],
+    },
+  },
+  {
+    name: "get_expenses",
+    description: "Get user's expense summary. Use when user asks 'how much did I spend', 'my expenses', 'gastos de hoy', etc.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        period: { type: "string", enum: ["today", "week", "month"], description: "Time period. Default 'today'." },
+      },
+    },
+  },
+  {
     name: "calculate",
     description: "Perform a mathematical calculation.",
     input_schema: {
@@ -139,6 +172,58 @@ async function executeTool(name: string, input: Record<string, unknown>, userId:
         .update({ status: "cancelled" })
         .eq("id", reminders[0].id);
       return JSON.stringify({ success: true, cancelled: reminders[0].text });
+    }
+
+    case "track_expense": {
+      const { expenses } = input as { expenses: Array<{ amount: number; category?: string; description: string }> };
+      const results = [];
+      for (const exp of expenses) {
+        const { error } = await supabase.from("expenses").insert({
+          user_id: userId,
+          amount: exp.amount,
+          currency: "EUR",
+          category: exp.category || "other",
+          description: exp.description,
+          date: new Date().toISOString().split("T")[0],
+        });
+        if (error) {
+          results.push({ description: exp.description, error: error.message });
+        } else {
+          results.push({ description: exp.description, amount: exp.amount, saved: true });
+        }
+      }
+      // Get today's total
+      const today = new Date().toISOString().split("T")[0];
+      const { data: todayExpenses } = await supabase.from("expenses")
+        .select("amount")
+        .eq("user_id", userId)
+        .eq("date", today);
+      const todayTotal = todayExpenses?.reduce((sum, e) => sum + Number(e.amount), 0) || 0;
+      return JSON.stringify({ saved: results, today_total: todayTotal });
+    }
+
+    case "get_expenses": {
+      const { period = "today" } = input as { period?: string };
+      const now = new Date();
+      let fromDate: string;
+      if (period === "week") {
+        const d = new Date(now); d.setDate(d.getDate() - 7);
+        fromDate = d.toISOString().split("T")[0];
+      } else if (period === "month") {
+        fromDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+      } else {
+        fromDate = now.toISOString().split("T")[0];
+      }
+      const { data } = await supabase.from("expenses")
+        .select("amount, category, description, date")
+        .eq("user_id", userId)
+        .gte("date", fromDate)
+        .order("date", { ascending: false });
+      const total = data?.reduce((sum, e) => sum + Number(e.amount), 0) || 0;
+      // Group by category
+      const byCategory: Record<string, number> = {};
+      data?.forEach(e => { byCategory[e.category] = (byCategory[e.category] || 0) + Number(e.amount); });
+      return JSON.stringify({ period, total, by_category: byCategory, expenses: data?.slice(0, 20) || [] });
     }
 
     case "calculate": {
