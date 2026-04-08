@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import webpush from "web-push";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
+
+const VAPID_PUBLIC = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
+const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY || "";
+
+if (VAPID_PUBLIC && VAPID_PRIVATE && VAPID_PUBLIC !== "placeholder") {
+  webpush.setVapidDetails("mailto:hello@dilo.app", VAPID_PUBLIC, VAPID_PRIVATE);
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,19 +30,22 @@ export async function POST(req: NextRequest) {
         || msg.message?.imageMessage?.caption
         || "";
       const pushName = msg.pushName || "";
-      const instanceId = body.instanceId || msg.instanceId || "";
+      const instanceName = body.instance || body.instanceName || "";
 
       if (!fromMe && text) {
         console.log(`[WA IN] From ${pushName} (${phone}): ${text}`);
 
-        // Find user by instance
-        const { data: channel } = await supabase
-          .from("channels")
-          .select("user_id")
-          .eq("instance_id", instanceId)
-          .single();
+        // Find user by instance name pattern dilo_XXXXXXXX
+        const shortId = instanceName.replace("dilo_", "");
 
-        const userId = channel?.user_id;
+        // Find all users whose ID starts with this prefix
+        const { data: users } = await supabase
+          .from("users")
+          .select("id")
+          .like("id", `${shortId}%`)
+          .limit(1);
+
+        const userId = users?.[0]?.id;
 
         // Store incoming message
         await supabase.from("analytics_events").insert({
@@ -44,12 +55,43 @@ export async function POST(req: NextRequest) {
             from_phone: phone,
             from_name: pushName,
             text,
-            instance_id: instanceId,
+            instance: instanceName,
             timestamp: new Date().toISOString(),
           },
         });
 
-        // TODO: Send push notification to user about incoming message
+        // Send PUSH notification to user
+        if (userId) {
+          const { data: subs } = await supabase
+            .from("push_subscriptions")
+            .select("endpoint, keys")
+            .eq("user_id", userId);
+
+          if (subs && subs.length > 0) {
+            const payload = JSON.stringify({
+              title: `💬 ${pushName || phone}`,
+              body: text.slice(0, 200),
+              url: "/chat",
+              tag: `wa-${phone}`,
+            });
+
+            for (const sub of subs) {
+              try {
+                await webpush.sendNotification(
+                  { endpoint: sub.endpoint, keys: sub.keys as { p256dh: string; auth: string } },
+                  payload
+                );
+                console.log(`[Push] Sent to user ${userId}`);
+              } catch (e) {
+                console.error("[Push] Failed:", e);
+                // Remove invalid subscription
+                if ((e as { statusCode?: number }).statusCode === 410) {
+                  await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
+                }
+              }
+            }
+          }
+        }
       }
     }
 
