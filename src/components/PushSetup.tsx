@@ -25,7 +25,7 @@ export default function PushSetup() {
       if (!vapidKey || vapidKey === "placeholder") return;
 
       const sub = await reg.pushManager.subscribe({
-        userVisibility: true,
+        userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapidKey),
       });
 
