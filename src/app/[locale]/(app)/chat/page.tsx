@@ -134,6 +134,18 @@ export default function ChatPage() {
     } catch { setRec(false); }
   }
 
+  function isConfirmation(text: string): boolean {
+    const lower = text.toLowerCase();
+    return lower.includes("¿lo envío") || lower.includes("¿ok") || lower.includes("confirma")
+      || lower.includes("should i send") || lower.includes("send it?")
+      || lower.includes("¿lo mando") || lower.includes("¿te parece");
+  }
+
+  function quickReply(text: string) {
+    setInput(text);
+    setTimeout(() => send(), 100);
+  }
+
   const hasText = input.trim().length > 0;
 
   // History drawer
@@ -182,13 +194,28 @@ export default function ChatPage() {
           </div>
         ) : (
           <div className="max-w-2xl mx-auto py-4 space-y-4">
-            {msgs.map(m => m.role === "user" ? (
+            {msgs.map((m, idx) => m.role === "user" ? (
               <div key={m.id} className="flex justify-end">
                 <div className="bg-[var(--bg3)] rounded-2xl rounded-br-sm px-3.5 py-2 text-[14px] leading-relaxed max-w-[80%]">{m.content}</div>
               </div>
             ) : (
               <div key={m.id} className="text-[14px] leading-[1.7] text-[#ccc]">
-                {m.content ? <div className="chat-md"><ReactMarkdown>{m.content}</ReactMarkdown></div> : <Dots />}
+                {m.content ? (
+                  <>
+                    <div className="chat-md"><ReactMarkdown>{m.content}</ReactMarkdown></div>
+                    {/* Show confirm/cancel buttons if assistant asks for confirmation */}
+                    {isConfirmation(m.content) && idx === msgs.length - 1 && !busy && (
+                      <div className="flex gap-2 mt-3">
+                        <button onClick={() => quickReply("Sí, envíalo")} className="px-4 py-2 rounded-xl bg-green-600 text-white text-sm font-medium hover:bg-green-500 transition flex items-center gap-1.5">
+                          👍 Sí, enviar
+                        </button>
+                        <button onClick={() => quickReply("No, cancela")} className="px-4 py-2 rounded-xl bg-[var(--bg3)] text-[var(--muted)] text-sm font-medium hover:bg-[var(--border)] transition flex items-center gap-1.5">
+                          👎 Cancelar
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : <Dots />}
               </div>
             ))}
             <div ref={endRef} />
