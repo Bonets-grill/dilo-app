@@ -260,7 +260,7 @@ export default function ChatPage() {
                 {m.content ? (
                   <>
                     <div className="chat-md"><ReactMarkdown>{m.content}</ReactMarkdown></div>
-                    {hasConfirmation(m.content) && idx === msgs.length - 1 && !busy && (
+                    {pendingSend && idx === msgs.length - 1 && !busy && (
                       <div className="flex gap-2 mt-3">
                         <button onClick={confirmSend} className="px-4 py-2 rounded-xl bg-green-600 text-white text-sm font-medium hover:bg-green-500 transition">
                           👍 Sí, enviar
