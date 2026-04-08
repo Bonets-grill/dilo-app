@@ -2,11 +2,12 @@
 
 import { useTranslations, useLocale } from "next-intl";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ArrowUp, Mic, Square } from "lucide-react";
+import { ArrowUp, Mic, Square, Plus, MessageCircle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { createBrowserSupabase } from "@/lib/supabase/client";
 
 interface Msg { id: string; role: "user" | "assistant"; content: string; }
+interface Conv { id: string; title: string; updated_at: string; }
 
 export default function ChatPage() {
   const t = useTranslations("chat");
@@ -18,114 +19,160 @@ export default function ChatPage() {
   const [transcribing, setTranscribing] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [convId, setConvId] = useState<string | null>(null);
+  const [convList, setConvList] = useState<Conv[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const mrRef = useRef<MediaRecorder | null>(null);
+  const supabase = createBrowserSupabase();
 
-  // Get authenticated user
+  // Load user + conversation history
   useEffect(() => {
-    const supabase = createBrowserSupabase();
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) setUserId(data.user.id);
+      if (!data.user) return;
+      setUserId(data.user.id);
+      // Load conversation list
+      supabase.from("conversations")
+        .select("id, title, updated_at")
+        .eq("user_id", data.user.id)
+        .order("updated_at", { ascending: false })
+        .limit(20)
+        .then(({ data: convs }) => {
+          if (convs) setConvList(convs);
+          // Auto-load latest conversation
+          if (convs && convs.length > 0) {
+            loadConversation(convs[0].id, data.user!.id);
+          }
+        });
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function loadConversation(id: string, uid?: string) {
+    setConvId(id);
+    setShowHistory(false);
+    const { data: messages } = await supabase
+      .from("messages")
+      .select("id, role, content")
+      .eq("conversation_id", id)
+      .order("created_at", { ascending: true });
+    if (messages) {
+      setMsgs(messages.filter(m => m.role === "user" || m.role === "assistant") as Msg[]);
+    }
+  }
+
+  function newChat() {
+    setConvId(null);
+    setMsgs([]);
+    setShowHistory(false);
+  }
 
   const scrollDown = useCallback(() => {
     setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
   }, []);
-
   useEffect(scrollDown, [msgs, scrollDown]);
 
   function onInput(v: string) {
     setInput(v);
-    if (taRef.current) {
-      taRef.current.style.height = "auto";
-      taRef.current.style.height = Math.min(taRef.current.scrollHeight, 100) + "px";
-    }
+    if (taRef.current) { taRef.current.style.height = "auto"; taRef.current.style.height = Math.min(taRef.current.scrollHeight, 100) + "px"; }
   }
 
   async function send() {
     const text = input.trim();
     if (!text || busy) return;
     setInput(""); if (taRef.current) taRef.current.style.height = "auto";
-
-    const uId = crypto.randomUUID();
     const aId = crypto.randomUUID();
-    const newMsgs = [...msgs, { id: uId, role: "user" as const, content: text }];
+    const newMsgs = [...msgs, { id: crypto.randomUUID(), role: "user" as const, content: text }];
     setMsgs([...newMsgs, { id: aId, role: "assistant" as const, content: "" }]);
     setBusy(true);
-
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: newMsgs.map(m => ({ role: m.role, content: m.content })),
-          locale,
-          userId,
-          conversationId: convId,
-        }),
+        body: JSON.stringify({ messages: newMsgs.map(m => ({ role: m.role, content: m.content })), locale, userId, conversationId: convId }),
       });
       if (!res.body) throw new Error();
-
-      // Get conversation ID from header
       const newConvId = res.headers.get("X-Conversation-Id");
-      if (newConvId) setConvId(newConvId);
-
-      const reader = res.body.getReader();
-      const dec = new TextDecoder();
-      let acc = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        acc += dec.decode(value, { stream: true });
-        setMsgs(p => p.map(m => m.id === aId ? { ...m, content: acc } : m));
+      if (newConvId && newConvId !== convId) {
+        setConvId(newConvId);
+        // Refresh conv list
+        if (userId) {
+          supabase.from("conversations").select("id, title, updated_at").eq("user_id", userId).order("updated_at", { ascending: false }).limit(20).then(({ data }) => { if (data) setConvList(data); });
+        }
       }
-    } catch {
-      setMsgs(p => p.map(m => m.id === aId ? { ...m, content: "Error de conexión." } : m));
-    } finally {
-      setBusy(false);
-    }
+      const reader = res.body.getReader(); const dec = new TextDecoder(); let acc = "";
+      while (true) { const { done, value } = await reader.read(); if (done) break; acc += dec.decode(value, { stream: true }); setMsgs(p => p.map(m => m.id === aId ? { ...m, content: acc } : m)); }
+    } catch { setMsgs(p => p.map(m => m.id === aId ? { ...m, content: "Error." } : m)); }
+    finally { setBusy(false); }
   }
 
   async function toggleRec() {
     if (rec) { mrRef.current?.stop(); return; }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus"
-        : MediaRecorder.isTypeSupported("audio/mp4") ? "audio/mp4" : "";
+      const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : MediaRecorder.isTypeSupported("audio/mp4") ? "audio/mp4" : "";
       const mr = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
       const chunks: Blob[] = [];
       mrRef.current = mr;
       mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
       mr.onstop = async () => {
-        stream.getTracks().forEach(t => t.stop());
-        setRec(false);
+        stream.getTracks().forEach(t => t.stop()); setRec(false);
         if (!chunks.length) return;
         setTranscribing(true);
         try {
-          const blob = new Blob(chunks, { type: mr.mimeType });
-          const fd = new FormData();
-          fd.append("audio", blob, mr.mimeType.includes("mp4") ? "a.m4a" : "a.webm");
-          fd.append("locale", locale);
+          const blob = new Blob(chunks, { type: mr.mimeType }); const fd = new FormData();
+          fd.append("audio", blob, mr.mimeType.includes("mp4") ? "a.m4a" : "a.webm"); fd.append("locale", locale);
           const res = await fetch("/api/transcribe", { method: "POST", body: fd });
-          if (res.ok) {
-            const { text } = await res.json();
-            if (text?.trim()) { setInput(p => (p ? p + " " : "") + text.trim()); taRef.current?.focus(); }
-          }
-        } catch { /* silent */ }
+          if (res.ok) { const { text } = await res.json(); if (text?.trim()) { setInput(p => (p ? p + " " : "") + text.trim()); taRef.current?.focus(); } }
+        } catch { /* */ }
         setTranscribing(false);
       };
-      mr.start();
-      setRec(true);
+      mr.start(); setRec(true);
       setTimeout(() => { if (mr.state === "recording") mr.stop(); }, 30000);
     } catch { setRec(false); }
   }
 
   const hasText = input.trim().length > 0;
 
+  // History drawer
+  if (showHistory) {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
+          <h2 className="text-sm font-semibold">{t("history")}</h2>
+          <button onClick={() => setShowHistory(false)} className="text-xs text-[var(--muted)]">✕</button>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          <button onClick={newChat} className="w-full flex items-center gap-3 px-4 py-3 text-left border-b border-[var(--border)] hover:bg-[var(--bg2)]">
+            <Plus size={16} className="text-[var(--muted)]" />
+            <span className="text-sm">{t("newChat")}</span>
+          </button>
+          {convList.map(c => (
+            <button key={c.id} onClick={() => loadConversation(c.id)} className={`w-full flex items-center gap-3 px-4 py-3 text-left border-b border-[var(--border)] hover:bg-[var(--bg2)] ${c.id === convId ? "bg-[var(--bg2)]" : ""}`}>
+              <MessageCircle size={14} className="text-[var(--dim)] flex-shrink-0" />
+              <span className="text-sm text-[#ccc] truncate">{c.title || "Chat"}</span>
+            </button>
+          ))}
+          {convList.length === 0 && <p className="px-4 py-8 text-center text-xs text-[var(--dim)]">No conversations yet</p>}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full">
+      {/* Header with history button */}
+      <div className="flex-shrink-0 flex items-center justify-between px-4 py-2 border-b border-[var(--border)]">
+        <button onClick={() => setShowHistory(true)} className="text-xs text-[var(--muted)] flex items-center gap-1.5">
+          <MessageCircle size={14} /> {t("history")}
+        </button>
+        <span className="text-sm font-semibold">DILO</span>
+        <button onClick={newChat} className="text-xs text-[var(--muted)] flex items-center gap-1.5">
+          <Plus size={14} /> {t("newChat")}
+        </button>
+      </div>
+
+      {/* Messages */}
       <div className="flex-1 overflow-y-auto overscroll-y-contain px-4">
         {msgs.length === 0 ? (
           <div className="flex items-center justify-center h-full">
@@ -146,6 +193,8 @@ export default function ChatPage() {
           </div>
         )}
       </div>
+
+      {/* Input */}
       <div className="flex-shrink-0 px-3 py-1.5 border-t border-[var(--border)]">
         <div className="flex items-end gap-2 max-w-2xl mx-auto">
           <div className="flex-1 flex items-end bg-[var(--bg2)] rounded-2xl border border-[var(--border)] px-3 py-1.5">
