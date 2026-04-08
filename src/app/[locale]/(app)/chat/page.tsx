@@ -85,7 +85,7 @@ export default function ChatPage() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: newMsgs.map(m => ({ role: m.role, content: m.content })), locale, userId, conversationId: convId }),
+        body: JSON.stringify({ messages: newMsgs.map(m => ({ role: m.role, content: m.content.startsWith("__IMAGE__") ? "[Foto]" : m.content })), locale, userId, conversationId: convId }),
       });
       if (!res.body) throw new Error();
       const newConvId = res.headers.get("X-Conversation-Id");
@@ -100,57 +100,28 @@ export default function ChatPage() {
       while (true) {
         const { done, value } = await reader.read(); if (done) break;
         acc += dec.decode(value, { stream: true });
-        setMsgs(p => p.map(m => m.id === aId ? { ...m, content: acc } : m));
 
-        // Detect if Claude is showing a WhatsApp preview — extract phone and message
-        detectPendingSend(acc);
+        // Extract structured pending-send marker from server (reliable)
+        const markerMatch = acc.match(/__PENDING_SEND__(.+?)__END_PENDING__/);
+        if (markerMatch) {
+          try {
+            const data = JSON.parse(markerMatch[1]);
+            setPendingSend({ to: data.to, message: data.message });
+          } catch { /* ignore */ }
+        }
+
+        // Display text without the marker
+        let displayText = acc.replace(/\n?__PENDING_SEND__.*?__END_PENDING__/, "");
+
+        // If response contains __IMAGE__, strip the "Generando imagen..." prefix
+        if (displayText.includes("__IMAGE__")) {
+          displayText = displayText.replace(/^.*?__IMAGE__/, "__IMAGE__");
+        }
+
+        setMsgs(p => p.map(m => m.id === aId ? { ...m, content: displayText } : m));
       }
     } catch { setMsgs(p => p.map(m => m.id === aId ? { ...m, content: "Error." } : m)); }
     finally { setBusy(false); }
-  }
-
-  function detectPendingSend(text: string) {
-    const clean = text.replace(/\*\*/g, "");
-
-    // Strategy 1: "Para: NUMBER / Mensaje: TEXT"
-    const paraMatch = clean.match(/(?:Para|To|para|Número)[:\s]+\+?(\d[\d\s.\-]{7,})/i);
-    const msgMatch = clean.match(/(?:Mensaje|Message)[:\s]+"([^"]+)"/i)
-      || clean.match(/(?:Mensaje|Message)[:\s]+([^\n¿]+)/i);
-
-    if (paraMatch && msgMatch) {
-      setPendingSend({ to: paraMatch[1].replace(/[\s.\-]/g, ""), message: msgMatch[1].trim().replace(/^["']|["']$/g, "") });
-      return;
-    }
-
-    // Strategy 2: Find any quoted message + phone from context or previous messages
-    const phoneFromAnywhere = clean.match(/\b(\d{10,15})\b/);
-    const quotedMsg = clean.match(/"([^"]{5,})"/);
-
-    if (phoneFromAnywhere && quotedMsg) {
-      setPendingSend({ to: phoneFromAnywhere[1], message: quotedMsg[1].trim() });
-      return;
-    }
-
-    // Strategy 3: Check user's last message for the phone number, use Claude's quoted text as message
-    if (quotedMsg && msgs.length > 0) {
-      const lastUserMsgs = msgs.filter(m => m.role === "user");
-      const lastUserMsg = lastUserMsgs[lastUserMsgs.length - 1]?.content || "";
-      const phoneInUser = lastUserMsg.match(/\+?(\d[\d\s.\-]{8,})/);
-      if (phoneInUser) {
-        setPendingSend({ to: phoneInUser[1].replace(/[\s.\-+]/g, ""), message: quotedMsg[1].trim() });
-        return;
-      }
-    }
-  }
-
-  function hasConfirmation(text: string): boolean {
-    const lower = text.toLowerCase().replace(/\*\*/g, "");
-    const hasAsk = lower.includes("envío") || lower.includes("envio") || lower.includes("confirma")
-      || lower.includes("send") || lower.includes("mando") || lower.includes("vale")
-      || lower.includes("ok?") || lower.includes("quieres que") || lower.includes("dime sí");
-    const hasPreview = lower.includes("para:") || lower.includes("mensaje:") || lower.includes("message:")
-      || lower.includes("número") || lower.includes("number");
-    return hasAsk && hasPreview;
   }
 
   async function confirmSend() {

@@ -352,7 +352,13 @@ export async function POST(req: NextRequest) {
   if (!allMessages?.length) return new Response("Missing messages", { status: 400 });
 
   // Only send last 6 messages to avoid rate limits
-  const messages = allMessages.slice(-6);
+  // Strip __IMAGE__ base64 content to avoid token explosion (429 errors)
+  const messages = allMessages.slice(-6).map((m: { role: string; content: string }) => ({
+    ...m,
+    content: m.content.startsWith("__IMAGE__") ? "[Foto adjunta]"
+      : m.content.startsWith("![") ? "[Imagen generada]"
+      : m.content.replace(/Generando imagen\.\.\./, "").trim() || m.content,
+  })).filter((m: { content: string }) => m.content);
 
   // ═══════════════════════════════════════════
   // SMART ROUTER — bypass LLM for simple actions
@@ -491,7 +497,7 @@ export async function POST(req: NextRequest) {
 
     const readable = new ReadableStream({
       async start(controller) {
-        controller.enqueue(encoder.encode("Generando imagen...\n\n"));
+        controller.enqueue(encoder.encode("Generando imagen..."));
         try {
           // Try Stability AI first
           const stabilityKey = process.env.STABILITY_API_KEY;
@@ -517,9 +523,9 @@ export async function POST(req: NextRequest) {
           }
 
           if (imageUrl) {
-            controller.enqueue(encoder.encode(`![Imagen generada](${imageUrl})`));
+            controller.enqueue(encoder.encode(`__IMAGE__${imageUrl}`));
             if (userId && imgConvId) {
-              await supabase.from("messages").insert({ conversation_id: imgConvId, user_id: userId, role: "assistant", content: `![Imagen generada](${imageUrl})`, model: "stability-xl" });
+              await supabase.from("messages").insert({ conversation_id: imgConvId, user_id: userId, role: "assistant", content: `__IMAGE__${imageUrl}`, model: "stability-xl" });
             }
           } else {
             controller.enqueue(encoder.encode("No se pudo generar la imagen. Inténtalo de nuevo."));
@@ -597,6 +603,7 @@ REGLAS OPERATIVAS:
 
   // encoder already declared above
   let fullResponse = "";
+  let pendingSendMarker: { to: string; message: string } | null = null;
 
   const readable = new ReadableStream({
     async start(controller) {
@@ -632,6 +639,16 @@ REGLAS OPERATIVAS:
               const args = JSON.parse(fn.arguments);
               const result = await executeTool(fn.name, args, userId || "anonymous");
               chatMessages.push({ role: "tool", tool_call_id: tc.id, content: result });
+
+              // Track WhatsApp preview for confirm/cancel buttons
+              if (fn.name === "send_whatsapp") {
+                try {
+                  const parsed = JSON.parse(result);
+                  if (parsed.preview) {
+                    pendingSendMarker = { to: parsed.to, message: parsed.message };
+                  }
+                } catch { /* ignore */ }
+              }
             }
 
             // If there's also text content, stream it
@@ -649,6 +666,12 @@ REGLAS OPERATIVAS:
             controller.enqueue(encoder.encode(msg.content));
           }
           break;
+        }
+
+        // Append structured marker so client can show confirm/cancel buttons
+        if (pendingSendMarker) {
+          const marker = `\n__PENDING_SEND__${JSON.stringify(pendingSendMarker)}__END_PENDING__`;
+          controller.enqueue(encoder.encode(marker));
         }
 
         // Save assistant response
