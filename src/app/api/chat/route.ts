@@ -13,8 +13,11 @@ const supabase = createClient(
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
+import { EXTENDED_TOOLS, executeExtendedTool } from "@/lib/skills";
+
 // Tool definitions for OpenAI function calling
 const tools: OpenAI.ChatCompletionTool[] = [
+  ...EXTENDED_TOOLS,
   {
     type: "function",
     function: {
@@ -659,7 +662,9 @@ ${userFacts}`;
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const fn = (tc as any).function;
               const args = JSON.parse(fn.arguments);
-              const result = await executeTool(fn.name, args, userId || "anonymous");
+              // Try extended skills first, fallback to built-in tools
+              const extResult = await executeExtendedTool(fn.name, args, userId || "anonymous");
+              const result = extResult ?? await executeTool(fn.name, args, userId || "anonymous");
               chatMessages.push({ role: "tool", tool_call_id: tc.id, content: result });
 
               // Track WhatsApp preview for confirm/cancel buttons
