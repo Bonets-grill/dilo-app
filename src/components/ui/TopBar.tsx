@@ -1,25 +1,27 @@
 "use client";
 
-import { useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
-import { Store } from "lucide-react";
+import { usePathname } from "@/i18n/navigation";
+
+const titles: Record<string, string> = {
+  "/chat": "DILO",
+  "/channels": "Channels",
+  "/reminders": "Reminders",
+  "/expenses": "Expenses",
+  "/settings": "Settings",
+  "/store": "Store",
+};
 
 export default function TopBar() {
-  const t = useTranslations("nav");
+  const pathname = usePathname();
+  const title = Object.entries(titles).find(([k]) => pathname.startsWith(k))?.[1] || "DILO";
+  const isChat = pathname.startsWith("/chat");
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0f]/95 backdrop-blur-lg border-b border-white/[0.06] pt-[env(safe-area-inset-top)]">
-      <div className="flex items-center justify-between h-14 px-4 max-w-lg mx-auto">
-        <h1 className="text-lg font-bold bg-gradient-to-r from-purple-400 to-cyan-300 bg-clip-text text-transparent">
-          DILO
-        </h1>
-        <Link
-          href="/store"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-500/10 text-purple-300 text-xs font-medium hover:bg-purple-500/20 transition"
-        >
-          <Store size={14} />
-          {t("store")}
-        </Link>
+    <header className="fixed top-0 left-0 right-0 z-50 pt-[env(safe-area-inset-top)]">
+      <div className="h-11 flex items-center justify-center px-4 bg-[var(--background)]/80 backdrop-blur-xl border-b border-white/[0.04]">
+        <span className={`text-[15px] font-semibold ${isChat ? "text-white" : "text-gray-300"}`}>
+          {title}
+        </span>
       </div>
     </header>
   );
