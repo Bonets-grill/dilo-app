@@ -2,7 +2,7 @@
 
 import { useTranslations, useLocale } from "next-intl";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ArrowUp, Mic, Square, Plus, MessageCircle } from "lucide-react";
+import { ArrowUp, Mic, Square, Plus, MessageCircle, ImagePlus } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { createBrowserSupabase } from "@/lib/supabase/client";
 
@@ -26,6 +26,8 @@ export default function ChatPage() {
   const endRef = useRef<HTMLDivElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const mrRef = useRef<MediaRecorder | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [enhancing, setEnhancing] = useState(false);
   const supabase = createBrowserSupabase();
 
   useEffect(() => {
@@ -182,6 +184,47 @@ export default function ChatPage() {
     setMsgs(p => [...p, { id: crypto.randomUUID(), role: "assistant", content: "Cancelado. No se envió nada." }]);
   }
 
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+
+    // Show the uploaded image
+    const previewUrl = URL.createObjectURL(file);
+    const uploadId = crypto.randomUUID();
+    const enhanceId = crypto.randomUUID();
+    setMsgs(p => [...p,
+      { id: uploadId, role: "user", content: `![Foto subida](${previewUrl})` },
+      { id: enhanceId, role: "assistant", content: "Mejorando tu foto... ⏳" },
+    ]);
+    setEnhancing(true);
+
+    try {
+      const fd = new FormData();
+      fd.append("image", file);
+      fd.append("mode", "enhance");
+
+      const res = await fetch("/api/enhance-image", { method: "POST", body: fd });
+      const data = await res.json();
+
+      if (data.success && data.image) {
+        setMsgs(p => p.map(m => m.id === enhanceId ? {
+          ...m,
+          content: `✨ Foto mejorada:\n\n![Foto mejorada](${data.image})`,
+        } : m));
+      } else {
+        setMsgs(p => p.map(m => m.id === enhanceId ? {
+          ...m,
+          content: `❌ No se pudo mejorar: ${data.error || "error desconocido"}`,
+        } : m));
+      }
+    } catch {
+      setMsgs(p => p.map(m => m.id === enhanceId ? { ...m, content: "❌ Error al mejorar la foto" } : m));
+    } finally {
+      setEnhancing(false);
+    }
+  }
+
   async function toggleRec() {
     if (rec) { mrRef.current?.stop(); return; }
     try {
@@ -303,8 +346,12 @@ export default function ChatPage() {
         )}
       </div>
 
+      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
       <div className="flex-shrink-0 px-3 py-1.5 border-t border-[var(--border)]">
         <div className="flex items-end gap-2 max-w-2xl mx-auto">
+          <button onClick={() => fileRef.current?.click()} disabled={enhancing} className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 mb-0.5 bg-[var(--bg3)] ${enhancing ? "opacity-40" : ""}`}>
+            <ImagePlus size={16} className="text-white" />
+          </button>
           <div className="flex-1 flex items-end bg-[var(--bg2)] rounded-2xl border border-[var(--border)] px-3 py-1.5">
             <textarea ref={taRef} value={input} onChange={e => onInput(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
