@@ -136,13 +136,53 @@ export default function ChatPage() {
 
   function isConfirmation(text: string): boolean {
     const lower = text.toLowerCase();
-    return lower.includes("¿lo envío") || lower.includes("¿ok") || lower.includes("confirma")
+    return (lower.includes("¿lo envío") || lower.includes("¿ok") || lower.includes("confirma")
       || lower.includes("should i send") || lower.includes("send it?")
-      || lower.includes("¿lo mando") || lower.includes("¿te parece");
+      || lower.includes("¿lo mando") || lower.includes("¿te parece"))
+      && (lower.includes("para:") || lower.includes("mensaje:") || lower.includes("message:"));
   }
 
-  function quickReply(text: string) {
-    send(text);
+  function extractSendInfo(text: string): { to: string; message: string } | null {
+    // Extract phone and message from Claude's preview
+    const phoneMatch = text.match(/(?:Para:|To:)\s*\+?(\d[\d\s-]+)/i);
+    const msgMatch = text.match(/(?:Mensaje:|Message:)\s*"?([^"]+)"?/i);
+    if (phoneMatch && msgMatch) {
+      return { to: phoneMatch[1].replace(/[\s-]/g, ""), message: msgMatch[1].trim() };
+    }
+    return null;
+  }
+
+  async function confirmSend(assistantText: string) {
+    const info = extractSendInfo(assistantText);
+    if (!info) { send("Sí, envíalo"); return; }
+
+    // Send directly via API without going through Claude again
+    setBusy(true);
+    const confirmId = crypto.randomUUID();
+    setMsgs(p => [...p, { id: confirmId, role: "assistant", content: "" }]);
+
+    try {
+      const res = await fetch("/api/evolution", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "send", instanceName: `dilo_${userId?.slice(0, 8)}`, to: info.to, text: info.message }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMsgs(p => p.map(m => m.id === confirmId ? { ...m, content: `✅ Mensaje enviado a ${info.to}` } : m));
+      } else {
+        setMsgs(p => p.map(m => m.id === confirmId ? { ...m, content: `❌ Error al enviar: ${JSON.stringify(data.error || "desconocido")}` } : m));
+      }
+    } catch {
+      setMsgs(p => p.map(m => m.id === confirmId ? { ...m, content: "❌ Error de conexión" } : m));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function cancelSend() {
+    const cancelId = crypto.randomUUID();
+    setMsgs(p => [...p, { id: cancelId, role: "assistant", content: "Cancelado. No se envió nada." }]);
   }
 
   const hasText = input.trim().length > 0;
@@ -205,10 +245,10 @@ export default function ChatPage() {
                     {/* Show confirm/cancel buttons if assistant asks for confirmation */}
                     {isConfirmation(m.content) && idx === msgs.length - 1 && !busy && (
                       <div className="flex gap-2 mt-3">
-                        <button onClick={() => quickReply("Sí, envíalo")} className="px-4 py-2 rounded-xl bg-green-600 text-white text-sm font-medium hover:bg-green-500 transition flex items-center gap-1.5">
+                        <button onClick={() => confirmSend(m.content)} className="px-4 py-2 rounded-xl bg-green-600 text-white text-sm font-medium hover:bg-green-500 transition flex items-center gap-1.5">
                           👍 Sí, enviar
                         </button>
-                        <button onClick={() => quickReply("No, cancela")} className="px-4 py-2 rounded-xl bg-[var(--bg3)] text-[var(--muted)] text-sm font-medium hover:bg-[var(--border)] transition flex items-center gap-1.5">
+                        <button onClick={() => cancelSend()} className="px-4 py-2 rounded-xl bg-[var(--bg3)] text-[var(--muted)] text-sm font-medium hover:bg-[var(--border)] transition flex items-center gap-1.5">
                           👎 Cancelar
                         </button>
                       </div>
