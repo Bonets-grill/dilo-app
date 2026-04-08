@@ -262,7 +262,25 @@ export default function ChatPage() {
                     <div className="chat-md">
                       <ReactMarkdown components={{
                         img: ({ src, alt }) => (
-                          <img src={src} alt={alt || "Generated image"} className="rounded-xl max-w-full mt-2 mb-2" loading="lazy" />
+                          <div className="mt-2 mb-2">
+                            <img
+                              src={src}
+                              alt={alt || "Generated image"}
+                              className="rounded-xl max-w-full cursor-pointer active:opacity-80"
+                              loading="lazy"
+                              onClick={() => {
+                                const modal = document.createElement("div");
+                                modal.className = "fixed inset-0 z-[999] bg-black/95 flex flex-col items-center justify-center p-4";
+                                modal.onclick = () => modal.remove();
+                                modal.innerHTML = `
+                                  <img src="${src}" alt="Full" class="max-w-full max-h-[80vh] rounded-xl object-contain" />
+                                  <a href="${src}" download="dilo-image.png" class="mt-4 px-6 py-2.5 rounded-xl bg-white text-black text-sm font-medium" onclick="event.stopPropagation()">⬇ Descargar</a>
+                                  <button class="mt-2 text-sm text-gray-400" onclick="this.parentElement.remove()">Cerrar</button>
+                                `;
+                                document.body.appendChild(modal);
+                              }}
+                            />
+                          </div>
                         ),
                       }}>{m.content}</ReactMarkdown>
                     </div>
