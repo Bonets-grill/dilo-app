@@ -136,10 +136,14 @@ export default function ChatPage() {
 
   function isConfirmation(text: string): boolean {
     const lower = text.toLowerCase();
-    return (lower.includes("¿lo envío") || lower.includes("¿ok") || lower.includes("confirma")
+    const hasQuestion = lower.includes("¿lo envío") || lower.includes("¿ok") || lower.includes("confirma")
       || lower.includes("should i send") || lower.includes("send it?")
-      || lower.includes("¿lo mando") || lower.includes("¿te parece"))
-      && (lower.includes("para:") || lower.includes("mensaje:") || lower.includes("message:"));
+      || lower.includes("¿lo mando") || lower.includes("¿te parece")
+      || lower.includes("lo envío") || lower.includes("ok?")
+      || lower.includes("¿quieres que") || lower.includes("¿lo envio");
+    const hasPreview = lower.includes("para:") || lower.includes("mensaje:") || lower.includes("message:")
+      || lower.includes("preview") || lower.includes("número");
+    return hasQuestion && hasPreview;
   }
 
   function extractSendInfo(text: string): { to: string; message: string } | null {
