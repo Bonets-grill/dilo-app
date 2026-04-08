@@ -347,13 +347,16 @@ async function executeTool(name: string, input: Record<string, unknown>, userId:
 }
 
 export async function POST(req: NextRequest) {
-  const { messages, locale = "es", conversationId, userId } = await req.json();
+  const { messages: allMessages, locale = "es", conversationId, userId } = await req.json();
 
-  if (!messages?.length) return new Response("Missing messages", { status: 400 });
+  if (!allMessages?.length) return new Response("Missing messages", { status: 400 });
+
+  // Only send last 10 messages to avoid rate limits
+  const messages = allMessages.slice(-10);
 
   // Save user message
   let convId = conversationId;
-  const lastUserMsg = messages[messages.length - 1];
+  const lastUserMsg = allMessages[allMessages.length - 1];
   if (userId && lastUserMsg?.role === "user") {
     try {
       if (!convId) {
