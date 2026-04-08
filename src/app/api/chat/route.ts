@@ -69,8 +69,19 @@ const tools: Anthropic.Tool[] = [
     },
   },
   {
+    name: "search_contacts",
+    description: "Search the user's WhatsApp contacts by name. Use this FIRST when the user mentions a contact by name instead of phone number. Shows matching contacts so the user can pick the right one.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        query: { type: "string", description: "Name to search for (e.g. 'Juan', 'mama', 'dentista')" },
+      },
+      required: ["query"],
+    },
+  },
+  {
     name: "send_whatsapp",
-    description: "Send a WhatsApp message to a contact on behalf of the user. ALWAYS show the message preview first and ask for confirmation before sending. Use when user says 'tell X that...' or 'send a message to X'.",
+    description: "Send a WhatsApp message to a contact. Use phone number (not name). If user gave a name, use search_contacts first to find the number. ALWAYS show preview and ask confirmation before sending.",
     input_schema: {
       type: "object" as const,
       properties: {
@@ -136,6 +147,42 @@ async function executeTool(name: string, input: Record<string, unknown>, userId:
         return JSON.stringify({ result });
       } catch {
         return JSON.stringify({ error: "Invalid expression" });
+      }
+    }
+
+    case "search_contacts": {
+      const { query } = input as { query: string };
+      const instName = `dilo_${userId.slice(0, 8)}`;
+      const evoUrl = process.env.EVOLUTION_API_URL!;
+      const evoKey = process.env.EVOLUTION_API_KEY!;
+
+      try {
+        const res = await fetch(`${evoUrl}/chat/findContacts/${instName}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: evoKey },
+          body: JSON.stringify({}),
+        });
+        const contacts = await res.json();
+        const q = query.toLowerCase();
+        const matches = Array.isArray(contacts)
+          ? contacts
+              .filter((c: Record<string, unknown>) => {
+                const name = String(c.pushName || c.name || "").toLowerCase();
+                const phone = String(c.id || "").replace("@s.whatsapp.net", "");
+                return name.includes(q) || phone.includes(q);
+              })
+              .slice(0, 10)
+              .map((c: Record<string, unknown>) => ({
+                name: c.pushName || c.name || "Sin nombre",
+                phone: String(c.id || "").replace("@s.whatsapp.net", ""),
+              }))
+          : [];
+        if (matches.length === 0) {
+          return JSON.stringify({ found: 0, message: `No contacts matching "${query}"` });
+        }
+        return JSON.stringify({ found: matches.length, contacts: matches });
+      } catch {
+        return JSON.stringify({ error: "Could not search contacts. Make sure WhatsApp is connected." });
       }
     }
 
