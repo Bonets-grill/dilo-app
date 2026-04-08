@@ -73,9 +73,12 @@ export function detectIntent(text: string): RouteResult {
     return { type: "reminder" }; // Complex — needs LLM to parse time
   }
 
-  // REMINDER QUERY: "qué recordatorios tengo"
-  if (/(?:que\s+recordatorios|mis\s+recordatorios|recordatorios\s+pendientes|what\s+reminders)/i.test(lower)) {
-    return { type: "reminder_query" };
+  // REMINDER QUERY: "qué recordatorios tengo", "cuáles son mis recordatorios", "dime mis recordatorios"
+  if (/recordatorio/i.test(lower) && /(?:tengo|cuales|que|mis|pendientes|ver|mostrar|lista|dime|show|list|what|my)/i.test(lower)) {
+    // But NOT if it's creating a reminder ("recuérdame", "ponme un recordatorio")
+    if (!/(?:recuerdame|recordatorio\s+(?:de|para|a\s+las)|ponme|crea|pon\s+un|set|create|remind\s+me)/i.test(lower)) {
+      return { type: "reminder_query" };
+    }
   }
 
   // CALCULATOR: "cuánto es 45 + 30", "calcula 100 * 0.21"

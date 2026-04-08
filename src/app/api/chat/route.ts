@@ -176,9 +176,13 @@ async function executeTool(name: string, input: Record<string, unknown>, userId:
     }
 
     case "list_reminders": {
-      const { data } = await supabase.from("reminders").select("id, text, due_at, status, repeat_count, repeats_sent")
+      const { data: pending } = await supabase.from("reminders").select("id, text, due_at, status, repeat_count, repeats_sent")
         .eq("user_id", userId).eq("status", "pending").order("due_at", { ascending: true }).limit(10);
-      return JSON.stringify({ reminders: data || [] });
+      const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+      const { data: recent } = await supabase.from("reminders").select("id, text, due_at, status")
+        .eq("user_id", userId).eq("status", "sent").gte("created_at", weekAgo)
+        .order("due_at", { ascending: false }).limit(5);
+      return JSON.stringify({ pending: pending || [], recently_sent: recent || [] });
     }
 
     case "cancel_reminder": {
@@ -442,15 +446,28 @@ export async function POST(req: NextRequest) {
   // ── REMINDER QUERY (direct, no LLM) ──
   if (intent.type === "reminder_query") {
     let cid = await saveMsg("user", lastMsgContent, conversationId);
-    const { data } = await supabase.from("reminders").select("text, due_at, status")
+
+    // Show pending reminders
+    const { data: pending } = await supabase.from("reminders").select("text, due_at, status")
       .eq("user_id", userId).eq("status", "pending").order("due_at", { ascending: true }).limit(10);
 
+    // Also show recently sent/created (last 7 days) so user sees everything
+    const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+    const { data: recent } = await supabase.from("reminders").select("text, due_at, status")
+      .eq("user_id", userId).eq("status", "sent").gte("created_at", weekAgo)
+      .order("due_at", { ascending: false }).limit(5);
+
     let response: string;
-    if (!data?.length) {
+    const pendingLines = pending?.map(r => `• ${r.text} — ${new Date(r.due_at).toLocaleString("es-ES", { dateStyle: "short", timeStyle: "short" })}`) || [];
+    const sentLines = recent?.map(r => `• ~~${r.text}~~ ✓ (enviado ${new Date(r.due_at).toLocaleString("es-ES", { dateStyle: "short", timeStyle: "short" })})`) || [];
+
+    if (pendingLines.length === 0 && sentLines.length === 0) {
       response = "No tienes recordatorios pendientes.";
     } else {
-      const lines = data.map(r => `• ${r.text} — ${new Date(r.due_at).toLocaleString("es-ES", { dateStyle: "short", timeStyle: "short" })}`).join("\n");
-      response = `**Recordatorios pendientes:**\n\n${lines}`;
+      const parts: string[] = [];
+      if (pendingLines.length > 0) parts.push(`**Pendientes:**\n${pendingLines.join("\n")}`);
+      if (sentLines.length > 0) parts.push(`**Enviados recientemente:**\n${sentLines.join("\n")}`);
+      response = parts.join("\n\n");
     }
 
     cid = await saveMsg("assistant", response, cid);
