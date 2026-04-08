@@ -37,11 +37,15 @@ CREATE INDEX IF NOT EXISTS idx_user_facts_confidence ON public.user_facts(user_i
 -- RLS
 ALTER TABLE public.user_facts ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users see own facts" ON public.user_facts
-  FOR SELECT USING (auth.uid() = user_id);
+DO $$ BEGIN
+  CREATE POLICY "Users see own facts" ON public.user_facts
+    FOR SELECT USING (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE POLICY "Service role manages facts" ON public.user_facts
-  FOR ALL USING (true) WITH CHECK (true);
+DO $$ BEGIN
+  CREATE POLICY "Service role manages facts" ON public.user_facts
+    FOR ALL USING (true) WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- Prevent duplicate facts per user
 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_facts_unique

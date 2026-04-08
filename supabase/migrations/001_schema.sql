@@ -292,24 +292,58 @@ ALTER TABLE public.skill_catalog ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.skill_packs ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies: users only see their own data
-CREATE POLICY users_own ON public.users FOR ALL USING (id = auth.uid());
-CREATE POLICY user_skills_own ON public.user_skills FOR ALL USING (user_id = auth.uid());
-CREATE POLICY channels_own ON public.channels FOR ALL USING (user_id = auth.uid());
-CREATE POLICY conversations_own ON public.conversations FOR ALL USING (user_id = auth.uid());
-CREATE POLICY messages_own ON public.messages FOR ALL USING (user_id = auth.uid());
-CREATE POLICY contacts_own ON public.contacts FOR ALL USING (user_id = auth.uid());
-CREATE POLICY reminders_own ON public.reminders FOR ALL USING (user_id = auth.uid());
-CREATE POLICY expenses_own ON public.expenses FOR ALL USING (user_id = auth.uid());
-CREATE POLICY budgets_own ON public.budgets FOR ALL USING (user_id = auth.uid());
-CREATE POLICY lists_own ON public.lists FOR ALL USING (user_id = auth.uid());
-CREATE POLICY list_items_own ON public.list_items FOR ALL USING (
-  list_id IN (SELECT id FROM public.lists WHERE user_id = auth.uid())
-);
-CREATE POLICY mqueue_own ON public.message_queue FOR ALL USING (user_id = auth.uid());
-CREATE POLICY push_subs_own ON public.push_subscriptions FOR ALL USING (user_id = auth.uid());
-CREATE POLICY analytics_insert ON public.analytics_events FOR INSERT WITH CHECK (true);
-CREATE POLICY analytics_read ON public.analytics_events FOR SELECT USING (user_id = auth.uid());
+DO $$ BEGIN
+  CREATE POLICY users_own ON public.users FOR ALL USING (id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY user_skills_own ON public.user_skills FOR ALL USING (user_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY channels_own ON public.channels FOR ALL USING (user_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY conversations_own ON public.conversations FOR ALL USING (user_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY messages_own ON public.messages FOR ALL USING (user_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY contacts_own ON public.contacts FOR ALL USING (user_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY reminders_own ON public.reminders FOR ALL USING (user_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY expenses_own ON public.expenses FOR ALL USING (user_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY budgets_own ON public.budgets FOR ALL USING (user_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY lists_own ON public.lists FOR ALL USING (user_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY list_items_own ON public.list_items FOR ALL USING (
+    list_id IN (SELECT id FROM public.lists WHERE user_id = auth.uid())
+  );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY mqueue_own ON public.message_queue FOR ALL USING (user_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY push_subs_own ON public.push_subscriptions FOR ALL USING (user_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY analytics_insert ON public.analytics_events FOR INSERT WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY analytics_read ON public.analytics_events FOR SELECT USING (user_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- Catalog/Packs: public read, no public write
-CREATE POLICY catalog_read ON public.skill_catalog FOR SELECT USING (true);
-CREATE POLICY packs_read ON public.skill_packs FOR SELECT USING (true);
+DO $$ BEGIN
+  CREATE POLICY catalog_read ON public.skill_catalog FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE POLICY packs_read ON public.skill_packs FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
