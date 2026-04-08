@@ -111,48 +111,51 @@ export default function ChatPage() {
     }
   }
 
-  async function handleVoice() {
-    if (isRecording) return;
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      const chunks: Blob[] = [];
-
-      setIsRecording(true);
-
-      mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
-      mediaRecorder.onstop = async () => {
-        stream.getTracks().forEach((track) => track.stop());
-        setIsRecording(false);
-
-        const blob = new Blob(chunks, { type: "audio/webm" });
-        const formData = new FormData();
-        formData.append("audio", blob);
-
-        try {
-          const res = await fetch("/api/transcribe", {
-            method: "POST",
-            body: formData,
-          });
-          if (res.ok) {
-            const { text } = await res.json();
-            if (text) setInput((prev) => prev + text);
-          }
-        } catch {
-          // Transcription failed silently
-        }
-      };
-
-      mediaRecorder.start();
-      setTimeout(() => {
-        if (mediaRecorder.state === "recording") {
-          mediaRecorder.stop();
-        }
-      }, 10000); // Max 10 seconds
-    } catch {
-      setIsRecording(false);
+  function handleVoice() {
+    if (isRecording) {
+      return;
     }
+
+    // Use Web Speech API (built into browser, no API key needed)
+    const SpeechRecognition = (window as unknown as Record<string, unknown>).SpeechRecognition
+      || (window as unknown as Record<string, unknown>).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert("Voice not supported in this browser. Try Chrome or Safari.");
+      return;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const recognition = new (SpeechRecognition as any)();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = document.documentElement.lang || "es";
+
+    setIsRecording(true);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    recognition.onresult = (event: any) => {
+      let transcript = "";
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setInput(transcript);
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+    };
+
+    recognition.onerror = () => {
+      setIsRecording(false);
+    };
+
+    recognition.start();
+
+    // Auto-stop after 10 seconds
+    setTimeout(() => {
+      try { recognition.stop(); } catch { /* already stopped */ }
+    }, 10000);
   }
 
   return (
