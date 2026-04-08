@@ -354,9 +354,123 @@ export async function POST(req: NextRequest) {
   // Only send last 6 messages to avoid rate limits
   const messages = allMessages.slice(-6);
 
-  // SHORTCUT: Handle image generation directly without going through GPT
-  const lastMsg = allMessages[allMessages.length - 1]?.content?.toLowerCase() || "";
-  const isImageRequest = lastMsg.includes("imagen") || lastMsg.includes("image") || lastMsg.includes("créame") || lastMsg.includes("genera") || lastMsg.includes("dibuja") || lastMsg.includes("draw") || lastMsg.includes("logo") || lastMsg.includes("ilustra");
+  // ═══════════════════════════════════════════
+  // SMART ROUTER — bypass LLM for simple actions
+  // ═══════════════════════════════════════════
+  const { detectIntent } = await import("@/lib/agent/router");
+  const lastMsgContent = allMessages[allMessages.length - 1]?.content || "";
+  const intent = allMessages[allMessages.length - 1]?.role === "user" ? detectIntent(lastMsgContent) : { type: "chat" as const };
+
+  // Helper: save message + create conv if needed
+  async function saveMsg(role: string, content: string, convIdRef: string | null): Promise<string | null> {
+    let cid = convIdRef;
+    if (!userId) return cid;
+    if (!cid) {
+      const { data: conv } = await supabase.from("conversations")
+        .insert({ user_id: userId, title: lastMsgContent.slice(0, 50) }).select("id").single();
+      cid = conv?.id || null;
+    }
+    if (cid) await supabase.from("messages").insert({ conversation_id: cid, user_id: userId, role, content });
+    return cid;
+  }
+
+  const encoder = new TextEncoder();
+
+  // ── EXPENSE (direct, no LLM) ──
+  if (intent.type === "expense" && intent.data?.expenses) {
+    const expenses = intent.data.expenses as Array<{ amount: number; description: string; category: string }>;
+    let cid = await saveMsg("user", lastMsgContent, conversationId);
+
+    for (const exp of expenses) {
+      await supabase.from("expenses").insert({
+        user_id: userId, amount: exp.amount, currency: "EUR",
+        category: exp.category, description: exp.description,
+        date: new Date().toISOString().split("T")[0],
+      });
+    }
+
+    const today = new Date().toISOString().split("T")[0];
+    const { data: todayExp } = await supabase.from("expenses").select("amount").eq("user_id", userId).eq("date", today);
+    const todayTotal = todayExp?.reduce((s, e) => s + Number(e.amount), 0) || 0;
+
+    const lines = expenses.map(e => `• ${e.description}: €${e.amount.toFixed(2)}`).join("\n");
+    const response = `✅ Gastos registrados:\n${lines}\n\n**Total hoy: €${todayTotal.toFixed(2)}**`;
+    cid = await saveMsg("assistant", response, cid);
+
+    return new Response(response, {
+      headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" },
+    });
+  }
+
+  // ── EXPENSE QUERY (direct, no LLM) ──
+  if (intent.type === "expense_query") {
+    const period = (intent.data?.period as string) || "today";
+    let cid = await saveMsg("user", lastMsgContent, conversationId);
+
+    const now = new Date();
+    let fromDate: string;
+    if (period === "week") { const d = new Date(now); d.setDate(d.getDate() - 7); fromDate = d.toISOString().split("T")[0]; }
+    else if (period === "month") { fromDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`; }
+    else { fromDate = now.toISOString().split("T")[0]; }
+
+    const { data } = await supabase.from("expenses").select("amount, category, description, date")
+      .eq("user_id", userId).gte("date", fromDate).order("date", { ascending: false });
+
+    const total = data?.reduce((s, e) => s + Number(e.amount), 0) || 0;
+    const periodLabel = period === "week" ? "esta semana" : period === "month" ? "este mes" : "hoy";
+    let response: string;
+
+    if (!data?.length) {
+      response = `No tienes gastos registrados ${periodLabel}.`;
+    } else {
+      const lines = data.slice(0, 15).map(e => `• ${e.description}: €${Number(e.amount).toFixed(2)}`).join("\n");
+      response = `**Gastos ${periodLabel}: €${total.toFixed(2)}**\n\n${lines}`;
+    }
+
+    cid = await saveMsg("assistant", response, cid);
+    return new Response(response, {
+      headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" },
+    });
+  }
+
+  // ── REMINDER QUERY (direct, no LLM) ──
+  if (intent.type === "reminder_query") {
+    let cid = await saveMsg("user", lastMsgContent, conversationId);
+    const { data } = await supabase.from("reminders").select("text, due_at, status")
+      .eq("user_id", userId).eq("status", "pending").order("due_at", { ascending: true }).limit(10);
+
+    let response: string;
+    if (!data?.length) {
+      response = "No tienes recordatorios pendientes.";
+    } else {
+      const lines = data.map(r => `• ${r.text} — ${new Date(r.due_at).toLocaleString("es-ES", { dateStyle: "short", timeStyle: "short" })}`).join("\n");
+      response = `**Recordatorios pendientes:**\n\n${lines}`;
+    }
+
+    cid = await saveMsg("assistant", response, cid);
+    return new Response(response, {
+      headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" },
+    });
+  }
+
+  // ── CALCULATOR (direct, no LLM) ──
+  if (intent.type === "calculator" && intent.data?.expression) {
+    let cid = await saveMsg("user", lastMsgContent, conversationId);
+    try {
+      const expr = String(intent.data.expression).replace(/[^0-9+\-*/().,%\s]/g, "").replace(/,/g, ".");
+      const result = Function(`"use strict"; return (${expr})`)();
+      const response = `**${intent.data.expression} = ${result}**`;
+      cid = await saveMsg("assistant", response, cid);
+      return new Response(response, {
+        headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" },
+      });
+    } catch { /* fall through to LLM */ }
+  }
+
+  // ── IMAGE (direct, no LLM) ──
+  const lastMsg = lastMsgContent.toLowerCase();
+  const isImageRequest = /(?:crea|genera|dibuja|hazme|diseña|haz).*(?:imagen|foto|ilustracion|logo|dibujo)/i.test(lastMsg)
+    || /(?:create|generate|draw|make).*(?:image|photo|picture|logo)/i.test(lastMsg);
 
   if (isImageRequest && allMessages[allMessages.length - 1]?.role === "user") {
     const prompt = allMessages[allMessages.length - 1].content;
@@ -456,7 +570,7 @@ REGLAS ABSOLUTAS:
 4. NÚMEROS DE TELÉFONO: Limpia guiones/espacios automáticamente. 34-692-325-738 = 34692325738. NUNCA preguntes por el formato.
 5. Sé EFICIENTE. Si tienes la info, actúa.`;
 
-  const encoder = new TextEncoder();
+  // encoder already declared above
   let fullResponse = "";
 
   const readable = new ReadableStream({
