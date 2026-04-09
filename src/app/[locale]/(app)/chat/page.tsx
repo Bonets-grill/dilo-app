@@ -2,7 +2,7 @@
 
 import { useTranslations, useLocale } from "next-intl";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ArrowUp, Mic, Square, Plus, MessageCircle, ImagePlus } from "lucide-react";
+import { ArrowUp, Mic, Square, Plus, MessageCircle, ImagePlus, MapPin } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { createBrowserSupabase } from "@/lib/supabase/client";
 
@@ -28,6 +28,8 @@ export default function ChatPage() {
   const mrRef = useRef<MediaRecorder | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [enhancing, setEnhancing] = useState(false);
+  const [showLocationBanner, setShowLocationBanner] = useState(false);
+  const [gettingLocation, setGettingLocation] = useState(false);
   const supabase = createBrowserSupabase();
 
   useEffect(() => {
