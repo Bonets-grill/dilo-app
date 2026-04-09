@@ -23,6 +23,7 @@ export type RouteType =
   | "calculator"
   | "whatsapp_send"
   | "whatsapp_read"
+  | "web_search"
   | "chat";
 
 export interface RouteResult {
@@ -100,6 +101,15 @@ export function detectIntent(text: string): RouteResult {
   // WHATSAPP READ: "lee mis mensajes", "qué me escribió"
   if (/(?:lee\s+mis\s+mensajes|mensajes\s+nuevos|que\s+me\s+escribi|read\s+my\s+messages|unread)/i.test(lower)) {
     return { type: "whatsapp_read" };
+  }
+
+  // WEB SEARCH: "busca en internet/google", "qué precio tiene", "vuelos a", "noticias de"
+  if (/(?:busca|buscar|busque|busqueda|search|googlea|investiga)\s/i.test(lower)
+    || /(?:vuelos?\s+(?:a|de|desde|para|barato)|flight)/i.test(lower)
+    || /(?:precio|coste|cuesta|cuanto\s+vale|cuanto\s+cuesta|how\s+much)/i.test(lower) && /(?:comprar|producto|servicio|vuelo|hotel|coche)/i.test(lower)
+    || /(?:noticias|news|que\s+paso\s+con|que\s+ha\s+pasado)/i.test(lower)
+    || /(?:clima|tiempo\s+(?:en|para|manana)|weather|temperatura|llueve|lluvia)/i.test(lower)) {
+    return { type: "web_search", data: { query: text } };
   }
 
   // DEFAULT: needs LLM

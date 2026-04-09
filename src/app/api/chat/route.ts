@@ -479,6 +479,31 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  // ── WEB SEARCH (Serper → Google real results, then LLM summarizes) ──
+  if (intent.type === "web_search") {
+    let cid = await saveMsg("user", lastMsgContent, conversationId);
+    const { executeWebSearch } = await import("@/lib/skills/web-search");
+    const searchResult = await executeWebSearch("web_search", { query: intent.data?.query || lastMsgContent });
+    const parsed = JSON.parse(searchResult);
+
+    // Use LLM to give a natural response based on real search results
+    const searchCompletion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      max_tokens: 500,
+      messages: [
+        { role: "system", content: `Eres DILO. El usuario preguntó algo y tú buscaste en Google. Responde basándote SOLO en los resultados de búsqueda. Sé específico: incluye precios reales, links, fechas. Si no hay resultados útiles, dilo honestamente. Responde en ${langNames[locale.split("-")[0]] || "español"}.` },
+        { role: "user", content: lastMsgContent },
+        { role: "assistant", content: `Resultados de búsqueda:\n${parsed.results || parsed.answer || "Sin resultados"}` },
+      ],
+    });
+    const response = searchCompletion.choices[0]?.message?.content || parsed.results || parsed.answer || "No encontré resultados.";
+
+    cid = await saveMsg("assistant", response, cid);
+    return new Response(response, {
+      headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" },
+    });
+  }
+
   // ── CALCULATOR (direct, no LLM) ──
   if (intent.type === "calculator" && intent.data?.expression) {
     let cid = await saveMsg("user", lastMsgContent, conversationId);
