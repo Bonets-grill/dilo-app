@@ -5,11 +5,11 @@ export const WEB_SEARCH_TOOLS: OpenAI.ChatCompletionTool[] = [
     type: "function",
     function: {
       name: "web_search",
-      description: "Search the web for current information about any topic. Use when user asks about news, facts, prices, weather, or anything you don't know.",
+      description: "Search the web for current, real-time information. Use for news, prices, flights, weather, products, events, or anything that needs up-to-date data. ALWAYS use this instead of guessing.",
       parameters: {
         type: "object",
         properties: {
-          query: { type: "string", description: "Search query" },
+          query: { type: "string", description: "Search query (be specific for better results)" },
         },
         required: ["query"],
       },
@@ -26,7 +26,53 @@ export async function executeWebSearch(
   const query = input.query as string;
   if (!query) return JSON.stringify({ error: "Query is required" });
 
-  // Strategy 1: Groq AI knowledge (fast, free tier available)
+  // Strategy 1: Serper.dev — Real Google Search results
+  const serperKey = process.env.SERPER_API_KEY;
+  if (serperKey) {
+    try {
+      const res = await fetch("https://google.serper.dev/search", {
+        method: "POST",
+        headers: {
+          "X-API-KEY": serperKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ q: query, num: 5 }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const results: string[] = [];
+
+        // Knowledge Graph (instant answer)
+        if (data.knowledgeGraph) {
+          const kg = data.knowledgeGraph;
+          results.push(`${kg.title || ""}: ${kg.description || ""}`);
+          if (kg.attributes) {
+            for (const [k, v] of Object.entries(kg.attributes)) {
+              results.push(`${k}: ${v}`);
+            }
+          }
+        }
+
+        // Answer Box
+        if (data.answerBox) {
+          results.push(data.answerBox.answer || data.answerBox.snippet || "");
+        }
+
+        // Organic results
+        if (data.organic) {
+          for (const r of data.organic.slice(0, 5)) {
+            results.push(`${r.title}: ${r.snippet} (${r.link})`);
+          }
+        }
+
+        if (results.length > 0) {
+          return JSON.stringify({ results: results.join("\n\n"), query, source: "google" });
+        }
+      }
+    } catch { /* fallback */ }
+  }
+
+  // Strategy 2: Groq AI knowledge (fast, free)
   const groqKey = process.env.GROQ_API_KEY;
   if (groqKey) {
     try {
@@ -54,7 +100,7 @@ export async function executeWebSearch(
     } catch { /* fallback */ }
   }
 
-  // Strategy 2: DuckDuckGo Instant Answers (free, no key needed)
+  // Strategy 3: DuckDuckGo Instant Answers (free, no key)
   try {
     const res = await fetch(
       `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`
