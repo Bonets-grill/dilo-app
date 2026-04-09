@@ -39,7 +39,7 @@ async function searchGooglePlaces(city: string, cuisine?: string): Promise<Resta
   for (const query of queries) {
     try {
       const res = await fetch(
-        `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${key}&language=es&region=es`
+        `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query + " España")}&key=${key}&language=es&region=es`
       );
       if (!res.ok) continue;
       const data = await res.json();
@@ -112,8 +112,21 @@ async function searchSerperPlaces(city: string, cuisine?: string): Promise<Resta
 
 /** Find restaurants — tries Google Places first, falls back to Serper */
 export async function findRestaurants(city: string, cuisine?: string): Promise<string> {
+  // Reject vague locations
+  const vague = ["aquí", "aqui", "cerca", "mi zona", "here", "nearby"];
+  if (vague.some(v => city.toLowerCase().includes(v))) {
+    return "¿En qué ciudad o pueblo estás? Así te busco los mejores restaurantes de tu zona.";
+  }
+
   // Try Google Places first (has review counts for Bayesian)
   let restaurants = await searchGooglePlaces(city, cuisine);
+
+  // Filter: only keep results from Spain (remove USA, etc)
+  restaurants = restaurants.filter(r => {
+    const addr = r.address.toLowerCase();
+    return !addr.includes("ee. uu") && !addr.includes("usa") && !addr.includes(", us")
+      && !addr.includes("united states") && !addr.includes("france") && !addr.includes("uk");
+  });
 
   // Fallback to Serper Places
   if (restaurants.length === 0) {
