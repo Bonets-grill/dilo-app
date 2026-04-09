@@ -24,6 +24,10 @@ export default function SettingsPage() {
   const [alpacaSuccess, setAlpacaSuccess] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
 
+  // Learning stats
+  const [learningScore, setLearningScore] = useState(0);
+  const [learningData, setLearningData] = useState<{ total_knowledge: number; total_signals: number; win_rate: number; days_learning: number } | null>(null);
+
   useEffect(() => {
     const supabase = createBrowserSupabase();
     supabase.auth.getUser().then(({ data }) => {
@@ -34,6 +38,10 @@ export default function SettingsPage() {
           setAlpacaConnected(d.connected);
           setAlpacaPaper(d.paperMode !== false);
         });
+        fetch(`/api/trading/learning?userId=${uid}`).then(r => r.json()).then(d => {
+          setLearningScore(d.learning_score || 0);
+          setLearningData(d);
+        }).catch(() => {});
       }
     });
   }, []);
@@ -120,6 +128,59 @@ export default function SettingsPage() {
             )}
           </div>
         </div>
+
+        {/* DILO Trading Intelligence */}
+        {alpacaConnected && (
+          <div className="rounded-xl bg-[var(--bg2)] border border-[var(--border)] overflow-hidden">
+            <div className="px-3.5 py-2.5 flex items-center gap-3 border-b border-[var(--border)]">
+              <span className="text-base">🧠</span>
+              <span className="text-sm flex-1">DILO Trading Intelligence</span>
+              <span className="text-xs text-[var(--accent)] font-medium">{learningScore}%</span>
+            </div>
+            <div className="px-3.5 py-3 space-y-3">
+              {/* Progress bar */}
+              <div>
+                <div className="flex justify-between text-[10px] text-[var(--dim)] mb-1">
+                  <span>Nivel de conocimiento</span>
+                  <span>{learningScore < 20 ? "Principiante" : learningScore < 40 ? "Aprendiendo" : learningScore < 60 ? "Intermedio" : learningScore < 80 ? "Avanzado" : "Experto"}</span>
+                </div>
+                <div className="w-full h-2.5 bg-[var(--bg1)] rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-1000"
+                    style={{
+                      width: `${learningScore}%`,
+                      background: learningScore < 30 ? "#ef4444" : learningScore < 60 ? "#f59e0b" : learningScore < 80 ? "#3b82f6" : "#10b981",
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Stats grid */}
+              {learningData && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-[var(--bg1)] rounded-lg px-2.5 py-2 text-center">
+                    <p className="text-[18px] font-bold text-white">{learningData.total_knowledge}</p>
+                    <p className="text-[9px] text-[var(--dim)]">Datos analizados</p>
+                  </div>
+                  <div className="bg-[var(--bg1)] rounded-lg px-2.5 py-2 text-center">
+                    <p className="text-[18px] font-bold text-white">{learningData.total_signals}</p>
+                    <p className="text-[9px] text-[var(--dim)]">Señales generadas</p>
+                  </div>
+                  <div className="bg-[var(--bg1)] rounded-lg px-2.5 py-2 text-center">
+                    <p className="text-[18px] font-bold" style={{ color: learningData.win_rate >= 55 ? "#10b981" : learningData.win_rate >= 40 ? "#f59e0b" : "#ef4444" }}>{learningData.win_rate}%</p>
+                    <p className="text-[9px] text-[var(--dim)]">Win Rate</p>
+                  </div>
+                  <div className="bg-[var(--bg1)] rounded-lg px-2.5 py-2 text-center">
+                    <p className="text-[18px] font-bold text-white">{learningData.days_learning}</p>
+                    <p className="text-[9px] text-[var(--dim)]">Días aprendiendo</p>
+                  </div>
+                </div>
+              )}
+
+              <p className="text-[9px] text-[var(--dim)]">DILO analiza mercados cada día a las 7:00 AM y trackea sus propias señales para mejorar continuamente.</p>
+            </div>
+          </div>
+        )}
 
         {/* Language selector */}
         <div className="rounded-xl bg-[var(--bg2)] border border-[var(--border)] overflow-hidden">

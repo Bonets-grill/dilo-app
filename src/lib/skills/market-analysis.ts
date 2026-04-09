@@ -11,6 +11,7 @@ import {
   getEarningsCalendar,
   getPeers,
 } from "@/lib/finnhub/client";
+import { analyzeSMC, isEngineAvailable, formatSMCAnalysis } from "@/lib/trading/engine-client";
 
 const DISCLAIMER = "\n\n_Datos de analistas profesionales de Wall Street via Finnhub. La decisión final es tuya. Todo trading conlleva riesgo._";
 
@@ -181,6 +182,18 @@ async function doAnalyzeStock(symbol: string): Promise<string> {
   const riskLevel = beta > 1.5 ? 5 : beta > 1.2 ? 4 : beta > 0.8 ? 3 : beta > 0.5 ? 2 : 1;
   const riskLabels = ["", "Muy bajo", "Bajo", "Moderado", "Alto", "Muy alto"];
   result += `**Nivel de riesgo:** ${"⚡".repeat(riskLevel)}${"○".repeat(5 - riskLevel)} ${riskLabels[riskLevel]} (Beta: ${beta.toFixed(2)})\n`;
+
+  // SMC Analysis from Python Trading Engine
+  try {
+    const engineUp = await isEngineAvailable();
+    if (engineUp) {
+      const smcData = await analyzeSMC(sym);
+      if (smcData && !smcData.error) {
+        result += `\n---\n\n`;
+        result += formatSMCAnalysis(smcData);
+      }
+    }
+  } catch { /* Engine unavailable — continue with Finnhub data only */ }
 
   return result + DISCLAIMER;
 }
