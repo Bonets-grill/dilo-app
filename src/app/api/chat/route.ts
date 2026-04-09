@@ -506,7 +506,14 @@ export async function POST(req: NextRequest) {
     let cid = await saveMsg("user", lastMsgContent, conversationId);
     const { findCheapestGasByCity } = await import("@/lib/skills/gasolineras");
     const fuelType = (intent.data?.fuelType as "gasolina95" | "gasoleoA") || "gasolina95";
-    const city = userCity || "Madrid";
+    // Try to get city from message, then from user_facts, then ask
+    const cityFromMsg = lastMsgContent.match(/(?:en|cerca de|de|desde)\s+([A-ZÁÉÍÓÚa-záéíóú\s]{3,30})/i)?.[1]?.trim();
+    const city = cityFromMsg || userCity || null;
+    if (!city) {
+      const response = "¿En qué ciudad estás? Así te busco las gasolineras más baratas de tu zona.";
+      cid = await saveMsg("assistant", response, cid);
+      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+    }
     const response = await findCheapestGasByCity(city, fuelType);
     cid = await saveMsg("assistant", response, cid);
     return new Response(response, {
