@@ -88,7 +88,9 @@ export async function compareShoppingList(products: string[], city?: string): Pr
   let cheapTotal = 0;
 
   for (const { product, item } of cheapest) {
-    response += `- **${product}**: ${item.price} en ${item.source}\n`;
+    response += `- **${product}**: ${item.price} en ${item.source}`;
+    if (item.link) response += ` — [Comprar](${item.link})`;
+    response += `\n`;
     cheapTotal += item.priceNum;
   }
 
@@ -105,7 +107,9 @@ export async function compareShoppingList(products: string[], city?: string): Pr
       const total = items.reduce((s, i) => s + i.item.priceNum, 0);
       response += `\n**${store}** (${items.length} productos, ${total.toFixed(2)} €):\n`;
       for (const { product, item } of items) {
-        response += `- ${product}: ${item.price}\n`;
+        response += `- ${product}: ${item.price}`;
+        if (item.link) response += ` — [Ver](${item.link})`;
+        response += `\n`;
       }
     }
   }
