@@ -567,40 +567,25 @@ export async function POST(req: NextRequest) {
     return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
   }
 
-  // ── CONECTAR BANCO (Tink Open Banking) ──
-  if (intent.type === "conectar_banco") {
-    let cid = await saveMsg("user", lastMsgContent, conversationId);
-    if (!userId) {
-      const response = "Necesitas iniciar sesión para conectar tu banco.";
-      cid = await saveMsg("assistant", response, cid);
-      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
-    }
-    // Generate bank connection link via Tink
-    let link: string | null = null;
-    try {
-      const { generateBankConnectionLink } = await import("@/lib/skills/banking");
-      const redirectUrl = "https://dilo-app-five.vercel.app/api/tink/callback";
-      link = await generateBankConnectionLink(userId, redirectUrl);
-    } catch (err) {
-      console.error("[CHAT] Bank connection error:", err);
-    }
-    const response = link
-      ? `**🏦 Conectar tu banco**\n\nHaz click para vincular tu cuenta bancaria de forma segura:\n\n👉 [Conectar banco](${link})\n\n*Usamos Tink (por Visa) — conexión segura y regulada por la UE. Solo leemos tus transacciones, nunca podemos mover dinero.*`
-      : "No se pudo generar el enlace de conexión. Inténtalo de nuevo.";
-    cid = await saveMsg("assistant", response, cid);
-    return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
-  }
-
-  // ── SUSCRIPCIONES (detectar cargos recurrentes) ──
+  // ── SUSCRIPCIONES (manual — el usuario dice qué paga) ──
   if (intent.type === "suscripciones") {
     let cid = await saveMsg("user", lastMsgContent, conversationId);
     if (!userId) {
-      const response = "Necesitas iniciar sesión para ver tus suscripciones.";
+      const response = "Necesitas iniciar sesión para gestionar tus suscripciones.";
       cid = await saveMsg("assistant", response, cid);
       return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
     }
-    const { detectSubscriptions } = await import("@/lib/skills/banking");
-    const response = await detectSubscriptions(userId);
+    const { addSubscriptions, listSubscriptions, cancelSubscription } = await import("@/lib/skills/subscriptions");
+    const lower = lastMsgContent.toLowerCase();
+    let response: string;
+    if (/cancel/i.test(lower)) {
+      const name = lower.replace(/.*cancel\w*\s+/i, "").trim();
+      response = await cancelSubscription(userId, name);
+    } else if (/(?:pago|tengo|añad|registro|subscri)/i.test(lower) && /\d/.test(lower)) {
+      response = await addSubscriptions(userId, lastMsgContent);
+    } else {
+      response = await listSubscriptions(userId);
+    }
     cid = await saveMsg("assistant", response, cid);
     return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
   }

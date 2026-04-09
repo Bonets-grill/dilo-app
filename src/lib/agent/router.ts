@@ -34,7 +34,6 @@ export type RouteType =
   | "ayudas_publicas"
   | "cupones_delivery"
   | "comparar_producto"
-  | "conectar_banco"
   | "suscripciones"
   | "cupones"
   | "alerta_precio"
@@ -152,12 +151,9 @@ export function detectIntent(text: string): RouteResult {
     return { type: "cupones_delivery" };
   }
 
-  // BANCO: "conectar banco", "mis suscripciones", "cargos recurrentes"
-  if (/(?:conectar?\s+(?:mi\s+)?banco|vincular?\s+(?:mi\s+)?banco|open\s*banking|link\s+bank)/i.test(lower)) {
-    return { type: "conectar_banco" };
-  }
-  if (/(?:suscripcion|cargo\s+recurrente|pago\s+mensual|que\s+pago|cuanto\s+pago|detectar?\s+suscripcion)/i.test(lower)) {
-    return { type: "suscripciones" };
+  // SUSCRIPCIONES: "mis suscripciones", "pago mensual", "cuánto pago al mes"
+  if (/(?:suscripcion|cargo\s+recurrente|pago\s+mensual|que\s+pago|cuanto\s+pago|detectar?\s+suscripcion|pago\s+netflix|pago\s+spotify|pago\s+gym)/i.test(lower)) {
+    return { type: "suscripciones", data: { query: text } };
   }
 
   // CUPONES: "cupón para Zara", "código descuento Amazon", "ofertas"
