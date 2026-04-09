@@ -637,13 +637,26 @@ export async function POST(req: NextRequest) {
     return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
   }
 
+  // ── Helper: extract REAL city name from message (filter out vague phrases) ──
+  function extractCityFromMessage(msg: string): string | null {
+    const vague = ["donde estoy", "aqui", "aquí", "cerca", "mi zona", "mi ciudad", "mi pueblo", "mi barrio", "ahora mismo", "ahora", "here", "nearby", "my area"];
+    const match = msg.match(/(?:en|cerca de|de|desde)\s+([A-ZÁÉÍÓÚa-záéíóúñÑ\s]{3,40})/i);
+    if (!match) return null;
+    const candidate = match[1].trim().toLowerCase();
+    // Filter out vague phrases
+    if (vague.some(v => candidate.includes(v))) return null;
+    // Filter out common non-city words
+    if (/^(donde|aqui|aquí|cerca|mi |ahora|la |el |los |las |un |una )/.test(candidate)) return null;
+    return match[1].trim();
+  }
+
   // ── RESTAURANTES (Serper Places + Bayesian weighted rating) ──
   if (intent.type === "restaurantes") {
     let cid = await saveMsg("user", lastMsgContent, conversationId);
-    const cityFromMsg = lastMsgContent.match(/(?:en|cerca de|de|desde)\s+([A-ZÁÉÍÓÚa-záéíóú\s]{3,30})/i)?.[1]?.trim();
+    const cityFromMsg = extractCityFromMessage(lastMsgContent);
     const city = cityFromMsg || userCity || null;
     if (!city) {
-      const response = "¿En qué ciudad buscas restaurantes?";
+      const response = "¿En qué ciudad buscas restaurantes? Ejemplo: 'Restaurantes en Icod de los Vinos'.";
       cid = await saveMsg("assistant", response, cid);
       return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
     }
@@ -661,11 +674,10 @@ export async function POST(req: NextRequest) {
     let cid = await saveMsg("user", lastMsgContent, conversationId);
     const { findCheapestGasByCity } = await import("@/lib/skills/gasolineras");
     const fuelType = (intent.data?.fuelType as "gasolina95" | "gasoleoA") || "gasolina95";
-    // Try to get city from message, then from user_facts, then ask
-    const cityFromMsg = lastMsgContent.match(/(?:en|cerca de|de|desde)\s+([A-ZÁÉÍÓÚa-záéíóú\s]{3,30})/i)?.[1]?.trim();
+    const cityFromMsg = extractCityFromMessage(lastMsgContent);
     const city = cityFromMsg || userCity || null;
     if (!city) {
-      const response = "¿En qué ciudad estás? Así te busco las gasolineras más baratas de tu zona.";
+      const response = "¿En qué ciudad estás? Ejemplo: 'Gasolina barata en Icod de los Vinos'.";
       cid = await saveMsg("assistant", response, cid);
       return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
     }
