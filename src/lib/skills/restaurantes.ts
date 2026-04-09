@@ -23,43 +23,55 @@ function bayesianRating(rating: number, reviews: number, avgRating: number, minR
   return (reviews / (reviews + minReviews)) * rating + (minReviews / (reviews + minReviews)) * avgRating;
 }
 
-/** Search restaurants using Google Places API */
+/** Search restaurants using Google Places API — two queries for better coverage */
 async function searchGooglePlaces(city: string, cuisine?: string): Promise<Restaurant[]> {
   const key = process.env.GOOGLE_MAPS_API_KEY;
   if (!key) return [];
 
-  const query = cuisine
-    ? `restaurante ${cuisine} en ${city}`
-    : `mejores restaurantes en ${city}`;
+  // Two queries to maximize coverage
+  const queries = cuisine
+    ? [`restaurante ${cuisine} en ${city}`, `mejores ${cuisine} ${city}`]
+    : [`restaurantes en ${city}`, `mejores restaurantes ${city}`];
 
-  try {
-    const res = await fetch(
-      `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${key}&language=es&region=es`
-    );
-    if (!res.ok) return [];
-    const data = await res.json();
-    if (data.status !== "OK") return [];
+  const allResults: Restaurant[] = [];
+  const seen = new Set<string>();
 
-    return (data.results || [])
-      .filter((r: Record<string, unknown>) => r.rating && r.user_ratings_total)
-      .map((r: Record<string, unknown>) => {
-        const lat = (r.geometry as Record<string, Record<string, number>>)?.location?.lat;
-        const lng = (r.geometry as Record<string, Record<string, number>>)?.location?.lng;
+  for (const query of queries) {
+    try {
+      const res = await fetch(
+        `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${key}&language=es&region=es`
+      );
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (data.status !== "OK") continue;
+
+      for (const r of (data.results || [])) {
+        if (!r.rating || !r.user_ratings_total) continue;
+        const name = String(r.name || "");
+        if (seen.has(name.toLowerCase())) continue;
+        seen.add(name.toLowerCase());
+
+        const lat = r.geometry?.location?.lat;
+        const lng = r.geometry?.location?.lng;
         const mapsLink = lat && lng
           ? `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`
-          : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(String(r.name))}+${encodeURIComponent(city)}`;
+          : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}+${encodeURIComponent(city)}`;
         const priceLevels = ["", "€", "€€", "€€€", "€€€€"];
-        return {
-          name: String(r.name || ""),
+
+        allResults.push({
+          name,
           rating: Number(r.rating) || 0,
           reviews: Number(r.user_ratings_total) || 0,
           bayesianScore: 0,
           address: String(r.formatted_address || ""),
           link: mapsLink,
           priceLevel: priceLevels[Number(r.price_level) || 0] || "",
-        };
-      });
-  } catch { return []; }
+        });
+      }
+    } catch { continue; }
+  }
+
+  return allResults;
 }
 
 /** Fallback: Serper Places */
