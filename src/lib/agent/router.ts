@@ -82,7 +82,9 @@ export function detectIntent(text: string): RouteResult {
   }
 
   // REMINDER: "recuérdame en 5 minutos", "ponme un recordatorio"
-  if (/(?:recuerdame|recordatorio|alarma|avisame|remind\s+me)/i.test(lower)) {
+  // But NOT "avísame cuando baje" (that's a price alert)
+  if (/(?:recuerdame|recordatorio|alarma|remind\s+me)/i.test(lower)
+    || (/avisame/i.test(lower) && !/(?:baj[ea]|precio|cuesta|oferta)/i.test(lower))) {
     return { type: "reminder" }; // Complex — needs LLM to parse time
   }
 
