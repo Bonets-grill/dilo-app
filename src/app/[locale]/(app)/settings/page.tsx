@@ -40,12 +40,21 @@ export default function SettingsPage() {
 
   async function saveAlpacaKeys() {
     if (!alpacaKeyId.trim() || !alpacaSecret.trim()) { setAlpacaError("Introduce ambas keys"); return; }
+    // Get fresh userId
+    let uid = userId;
+    if (!uid) {
+      const supabase = createBrowserSupabase();
+      const { data } = await supabase.auth.getUser();
+      uid = data.user?.id || null;
+      if (uid) setUserId(uid);
+    }
+    if (!uid) { setAlpacaError("Necesitas iniciar sesión"); return; }
     setAlpacaSaving(true); setAlpacaError(""); setAlpacaSuccess(false);
     try {
       const res = await fetch("/api/trading/keys", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, keyId: alpacaKeyId.trim(), secretKey: alpacaSecret.trim() }),
+        body: JSON.stringify({ userId: uid, keyId: alpacaKeyId.trim(), secretKey: alpacaSecret.trim() }),
       });
       const data = await res.json();
       if (!res.ok) { setAlpacaError(data.error); }
