@@ -138,6 +138,36 @@ export const TRADING_TOOLS: OpenAI.ChatCompletionTool[] = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "trading_setup_profile",
+      description: "Set up or update the user's personalized trading profile. Use when user wants to activate trading mode, configure their account, or change their trading parameters. Collects: account size, type, monthly goal, risk level, markets, pairs, timezone.",
+      parameters: {
+        type: "object",
+        properties: {
+          account_size: { type: "number", description: "Account size in EUR (e.g. 5000, 10000, 20000, 50000)" },
+          account_type: { type: "string", enum: ["personal", "funded", "prop_firm"], description: "Type of trading account" },
+          monthly_goal: { type: "number", description: "Monthly profit goal in EUR" },
+          risk_per_trade_pct: { type: "number", description: "Risk per trade as % of account (0.3, 0.5, or 1.0)" },
+          markets: { type: "array", items: { type: "string" }, description: "Markets to trade: forex, indices, stocks, crypto" },
+          preferred_pairs: { type: "array", items: { type: "string" }, description: "Specific instruments: GBP/JPY, EUR/GBP, US500, XAUUSD, AAPL, etc." },
+          timezone: { type: "string", description: "User timezone (e.g. Atlantic/Canary, Europe/Madrid)" },
+          trading_style: { type: "string", enum: ["scalping", "daytrading", "swing"], description: "Trading style" },
+          experience_level: { type: "string", enum: ["beginner", "intermediate", "advanced"], description: "Experience level" },
+        },
+        required: ["account_size", "account_type", "monthly_goal", "risk_per_trade_pct", "markets", "preferred_pairs"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "trading_get_profile",
+      description: "Get the user's current trading profile and session status. Use to check their configuration, daily progress, or if session is still open.",
+      parameters: { type: "object", properties: {}, required: [] },
+    },
+  },
 ];
 
 // ══════════════════════════════════════
@@ -160,6 +190,8 @@ export async function executeTrading(
       case "trading_rules_set": return await doRulesSet(userId, input);
       case "trading_rules_check": return await doRulesCheck(auth, userId, input);
       case "trading_place_order": return await doPlaceOrder(auth, userId, input);
+      case "trading_setup_profile": return await doSetupProfile(userId, input);
+      case "trading_get_profile": return await doGetProfile(userId);
       default: return JSON.stringify({ error: `Unknown trading tool: ${toolName}` });
     }
   } catch (err) {
@@ -631,4 +663,98 @@ async function doPlaceOrder(auth: AlpacaAuth, userId: string, input: Record<stri
   const result = await placeOrder(auth, order);
 
   return `Orden ejecutada:\n- ${side === "buy" ? "COMPRA" : "VENTA"} ${qty} x ${symbol}\n- Status: ${result.status}\n- ID: ${result.id}` + DISCLAIMER;
+}
+
+// ── Setup Trading Profile ──
+
+async function doSetupProfile(userId: string, input: Record<string, unknown>): Promise<string> {
+  const { saveTradingProfile } = await import("@/lib/trading/profile");
+
+  const profile = await saveTradingProfile(userId, {
+    account_size: input.account_size as number,
+    account_type: input.account_type as string,
+    monthly_goal: input.monthly_goal as number,
+    risk_per_trade_pct: input.risk_per_trade_pct as number,
+    markets: input.markets as string[],
+    preferred_pairs: input.preferred_pairs as string[],
+    timezone: input.timezone as string | undefined,
+    trading_style: input.trading_style as string | undefined,
+    experience_level: input.experience_level as string | undefined,
+  });
+
+  const dailyGoal = profile.daily_goal;
+  const riskAmount = profile.risk_per_trade_amount;
+  const profitPerWin = riskAmount * profile.max_rr_ratio;
+
+  let result = `**🎯 Modo Trading Activado**\n\n`;
+  result += `| Parámetro | Configuración |\n|---|---|\n`;
+  result += `| Cuenta | €${profile.account_size.toLocaleString()} (${profile.account_type === "funded" ? "FONDEADA" : profile.account_type === "prop_firm" ? "PROP FIRM" : "Personal"}) |\n`;
+  result += `| Objetivo mensual | €${profile.monthly_goal.toLocaleString()} |\n`;
+  result += `| Objetivo diario | €${dailyGoal.toFixed(0)} |\n`;
+  result += `| Riesgo por trade | ${profile.risk_per_trade_pct}% = €${riskAmount.toFixed(0)} |\n`;
+  result += `| Ratio mínimo | 1:${profile.max_rr_ratio} (beneficio mín. €${profitPerWin.toFixed(0)}) |\n`;
+  result += `| Máx. trades/día | ${profile.max_trades_per_day} |\n`;
+  result += `| Drawdown diario máx | ${profile.max_daily_loss_pct}% (€${(profile.account_size * profile.max_daily_loss_pct / 100).toFixed(0)}) |\n`;
+  result += `| Estilo | ${profile.trading_style} |\n`;
+  result += `| Mercados | ${profile.preferred_pairs.join(", ")} |\n\n`;
+
+  if (profile.sessions.length > 0) {
+    result += `**Sesiones de trading:**\n`;
+    for (const s of profile.sessions) {
+      result += `- **${s.name}**: ${s.start}–${s.end} → ${s.markets.join(", ")}\n`;
+    }
+    result += `\n`;
+  }
+
+  result += `**Matemática de tu plan:**\n`;
+  result += `- 1 trade ganador a 1:${profile.max_rr_ratio} = +€${profitPerWin.toFixed(0)}\n`;
+  result += `- Win rate necesario (~55-65%) con ${profile.max_trades_per_day} trades/día\n`;
+  result += `- En 20 días hábiles → €${(dailyGoal * 20).toFixed(0)}/mes\n\n`;
+
+  result += `DILO ahora protegerá tu cuenta: si alcanzas el objetivo o el límite de pérdida, cerraré la sesión automáticamente.\n\n`;
+  result += `Dime **"oportunidades"** para que analice el mercado con tu perfil.`;
+
+  return result;
+}
+
+// ── Get Trading Profile ──
+
+async function doGetProfile(userId: string): Promise<string> {
+  const { getTradingProfile, resetDailyCounters } = await import("@/lib/trading/profile");
+
+  const profile = await getTradingProfile(userId);
+  if (!profile || !profile.onboarding_complete) {
+    return "No tienes un perfil de trading configurado. Dime 'activar modo trading' y te haré unas preguntas para personalizarlo.";
+  }
+
+  // Reset if new day
+  const today = new Date().toISOString().slice(0, 10);
+  if (profile.last_reset_date !== today) {
+    await resetDailyCounters(userId);
+    profile.trades_today = 0;
+    profile.pnl_today = 0;
+    profile.session_closed = false;
+  }
+
+  const pnlIcon = profile.pnl_today >= 0 ? "🟢" : "🔴";
+  const progressPct = profile.daily_goal > 0 ? (profile.pnl_today / profile.daily_goal * 100) : 0;
+  const progressBar = "█".repeat(Math.max(0, Math.min(10, Math.round(progressPct / 10)))) + "░".repeat(Math.max(0, 10 - Math.round(progressPct / 10)));
+
+  let result = `**📊 Estado de tu sesión de trading**\n\n`;
+  result += `| Métrica | Valor |\n|---|---|\n`;
+  result += `| Cuenta | €${profile.account_size.toLocaleString()} (${profile.account_type}) |\n`;
+  result += `| Trades hoy | ${profile.trades_today} / ${profile.max_trades_per_day} |\n`;
+  result += `| P&L hoy | ${pnlIcon} ${profile.pnl_today >= 0 ? "+" : ""}€${profile.pnl_today.toFixed(0)} |\n`;
+  result += `| Objetivo | €${profile.daily_goal.toFixed(0)} [${progressBar}] ${progressPct.toFixed(0)}% |\n`;
+  result += `| Sesión | ${profile.session_closed ? "⛔ CERRADA" : "✅ ABIERTA"} |\n\n`;
+
+  if (profile.session_closed) {
+    result += profile.pnl_today >= profile.daily_goal
+      ? `Objetivo alcanzado. Buen trabajo. Descansa y vuelve mañana.`
+      : `Sesión cerrada por límite de riesgo. Protege tu cuenta.`;
+  } else {
+    result += `Dime **"oportunidades"** para analizar el mercado o **"analiza [ACTIVO]"** para un análisis específico.`;
+  }
+
+  return result;
 }

@@ -1015,11 +1015,21 @@ ${userFacts}`;
 
   // Build tools list — only include trading tools if user has Alpaca connected
   let userTools = baseTools;
+  let tradingProfilePrompt = "";
   if (userId) {
     const { hasAlpacaConnection } = await import("@/lib/oauth/alpaca");
     const hasAlpaca = await hasAlpacaConnection(userId);
     if (hasAlpaca) {
       userTools = [...baseTools, ...TRADING_TOOLS, ...MARKET_ANALYSIS_TOOLS];
+
+      // Load personalized trading profile if exists
+      const { getTradingProfile, generateTradingPrompt, resetDailyCounters } = await import("@/lib/trading/profile");
+      const profile = await getTradingProfile(userId);
+      if (profile?.onboarding_complete) {
+        const today = new Date().toISOString().slice(0, 10);
+        if (profile.last_reset_date !== today) await resetDailyCounters(userId);
+        tradingProfilePrompt = "\n\n" + generateTradingPrompt(profile);
+      }
     }
   }
 
@@ -1031,7 +1041,7 @@ ${userFacts}`;
     async start(controller) {
       try {
         let chatMessages: OpenAI.ChatCompletionMessageParam[] = [
-          { role: "system", content: systemPrompt },
+          { role: "system", content: systemPrompt + tradingProfilePrompt },
           ...messages.map((m: { role: string; content: string }) => ({
             role: m.role as "user" | "assistant",
             content: m.content,

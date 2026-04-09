@@ -181,6 +181,11 @@ export function detectIntent(text: string): RouteResult {
     return { type: "trading_connect" };
   }
 
+  // TRADING MODE: "activar modo trading", "configurar trading", "quiero hacer trading"
+  if (/(?:activar?\s+(?:modo\s+)?trading|configurar?\s+(?:mi\s+)?trading|quiero\s+(?:hacer\s+)?trading|modo\s+(?:de\s+)?(?:inversion|trading|bolsa)|operar\s+en\s+bolsa)/i.test(lower)) {
+    return { type: "trading" };
+  }
+
   // TRADING: "mi portfolio", "mis posiciones", "mis acciones", "rendimiento trading", "reglas de riesgo", "compra acciones", "vende acciones"
   if (/(?:mi\s+portfolio|mis\s+posiciones|mis\s+acciones|como\s+van\s+mis\s+(?:acciones|posiciones|trades|inversiones)|my\s+portfolio|my\s+positions|my\s+stocks)/i.test(lower)
     || /(?:rendimiento|performance|win\s+rate|profit\s+factor|estadisticas?\s+(?:de\s+)?trading)/i.test(lower)
