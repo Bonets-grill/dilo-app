@@ -74,6 +74,15 @@ export async function saveTradingProfile(userId: string, input: {
   const profitPerWin = riskAmount * 2; // assuming 1:2 RR
   const maxTrades = Math.max(2, Math.ceil(dailyGoal / profitPerWin) + 1);
 
+  // Max daily loss = max trades × risk per trade (if ALL trades lose)
+  const maxDailyLossAmount = maxTrades * riskAmount;
+  const maxDailyLossPct = (maxDailyLossAmount / input.account_size) * 100;
+
+  // For funded/prop firms, cap at 3% regardless
+  const cappedDailyLossPct = input.account_type === "funded" || input.account_type === "prop_firm"
+    ? Math.min(maxDailyLossPct, 3)
+    : Math.min(maxDailyLossPct, 5);
+
   const profile = {
     user_id: userId,
     account_size: input.account_size,
@@ -85,7 +94,7 @@ export async function saveTradingProfile(userId: string, input: {
     risk_per_trade_amount: riskAmount,
     max_rr_ratio: 2,
     max_trades_per_day: maxTrades,
-    max_daily_loss_pct: input.account_type === "funded" || input.account_type === "prop_firm" ? 4 : 5,
+    max_daily_loss_pct: cappedDailyLossPct,
     max_total_drawdown_pct: input.account_type === "funded" || input.account_type === "prop_firm" ? 8 : 10,
     markets: input.markets,
     preferred_pairs: input.preferred_pairs,
