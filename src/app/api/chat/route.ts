@@ -13,7 +13,7 @@ const supabase = createClient(
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
-import { EXTENDED_TOOLS, TRADING_TOOLS, executeExtendedTool } from "@/lib/skills";
+import { EXTENDED_TOOLS, TRADING_TOOLS, MARKET_ANALYSIS_TOOLS, executeExtendedTool } from "@/lib/skills";
 
 // Tool definitions for OpenAI function calling (base — trading added dynamically)
 const baseTools: OpenAI.ChatCompletionTool[] = [
@@ -995,8 +995,11 @@ REGLAS OPERATIVAS:
    - "análisis de riesgo" → USA trading_risk_analysis OBLIGATORIAMENTE
    - "regla de riesgo" / "límite" → USA trading_rules_set OBLIGATORIAMENTE
    - "compra X" / "vende X" → USA trading_place_order (confirmed=false primero, SIEMPRE preview)
-   - "qué compro" / "oportunidades" / "analiza el mercado" → USA web_search para investigar mercado real, luego presenta análisis estructurado con datos, riesgos, y oportunidades.
-   - FLUJO DE TRADING: 1) Investiga con web_search 2) Presenta análisis con datos reales 3) Si el usuario dice "hazlo" → trading_place_order con preview 4) Si confirma → ejecuta.
+   - "qué compro" / "oportunidades" / "analiza el mercado" → USA market_scan_opportunities OBLIGATORIAMENTE
+   - "analiza AAPL" / "qué tal Tesla?" → USA market_analyze_stock OBLIGATORIAMENTE
+   - "compara AAPL y MSFT" → USA market_compare_stocks OBLIGATORIAMENTE
+   - "earnings esta semana" → USA market_earnings_calendar OBLIGATORIAMENTE
+   - FLUJO DE TRADING: 1) Analiza con market_analyze_stock o market_scan_opportunities (datos de Finnhub/Wall Street) 2) Presenta análisis con datos reales + tu opinión profesional 3) Si el usuario dice "compra" → trading_place_order con preview 4) Si confirma → ejecuta.
 
 REGLAS DE TRADING:
 - Eres un analista de trading PROFESIONAL. Cuando el usuario pregunte por oportunidades, USA web_search para investigar el mercado REAL antes de responder.
@@ -1016,7 +1019,7 @@ ${userFacts}`;
     const { hasAlpacaConnection } = await import("@/lib/oauth/alpaca");
     const hasAlpaca = await hasAlpacaConnection(userId);
     if (hasAlpaca) {
-      userTools = [...baseTools, ...TRADING_TOOLS];
+      userTools = [...baseTools, ...TRADING_TOOLS, ...MARKET_ANALYSIS_TOOLS];
     }
   }
 

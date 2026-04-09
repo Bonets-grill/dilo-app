@@ -3,6 +3,7 @@ import { WEB_SEARCH_TOOLS, executeWebSearch } from "./web-search";
 import { GMAIL_TOOLS, executeGmail } from "./gmail";
 import { CALENDAR_TOOLS, executeCalendar } from "./google-calendar";
 import { TRADING_TOOLS, executeTrading } from "./trading";
+import { MARKET_ANALYSIS_TOOLS, executeMarketAnalysis } from "./market-analysis";
 
 // Base extended tools (always available)
 export const EXTENDED_TOOLS: OpenAI.ChatCompletionTool[] = [
@@ -13,6 +14,9 @@ export const EXTENDED_TOOLS: OpenAI.ChatCompletionTool[] = [
 
 // Trading tools (only for users with Alpaca connected)
 export { TRADING_TOOLS };
+
+// Market analysis tools (for users with Alpaca connected)
+export { MARKET_ANALYSIS_TOOLS };
 
 // Route tool execution to the right skill handler
 export async function executeExtendedTool(
@@ -39,6 +43,11 @@ export async function executeExtendedTool(
       return executeGmail(toolName, input, token);
     }
     return executeCalendar(toolName, input, token);
+  }
+
+  // Market Analysis — Finnhub data
+  if (toolName.startsWith("market_")) {
+    return executeMarketAnalysis(toolName, input);
   }
 
   // Trading — need Alpaca API keys
