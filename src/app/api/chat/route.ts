@@ -491,7 +491,11 @@ export async function POST(req: NextRequest) {
       model: "gpt-4o-mini",
       max_tokens: 500,
       messages: [
-        { role: "system", content: `Eres DILO. El usuario preguntó algo y tú buscaste en Google. Responde basándote SOLO en los resultados de búsqueda. Sé específico: incluye precios reales, links, fechas. Si no hay resultados útiles, dilo honestamente. Responde en ${langNames[locale.split("-")[0]] || "español"}.` },
+        { role: "system", content: `Eres DILO. El usuario preguntó algo y tú buscaste en Google. Responde basándote SOLO en los resultados de búsqueda. Reglas:
+- Sé específico: incluye precios reales, links, fechas.
+- PRECIOS: Muestra SIEMPRE en euros (€). Si ves precios en $ muy altos (>1000 para vuelos), probablemente son pesos (COP/MXN) — conviértelos o ignóralos y usa solo los precios en € que encuentres.
+- Si no hay resultados útiles, dilo honestamente.
+- Responde en ${langNames[locale.split("-")[0]] || "español"}.` },
         { role: "user", content: lastMsgContent },
         { role: "assistant", content: `Resultados de búsqueda:\n${parsed.results || parsed.answer || "Sin resultados"}` },
       ],

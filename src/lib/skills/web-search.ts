@@ -36,7 +36,7 @@ export async function executeWebSearch(
           "X-API-KEY": serperKey,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ q: query, num: 5 }),
+        body: JSON.stringify({ q: query, num: 5, gl: "es", hl: "es" }),
       });
       if (res.ok) {
         const data = await res.json();
