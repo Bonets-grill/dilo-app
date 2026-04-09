@@ -493,7 +493,8 @@ export async function POST(req: NextRequest) {
       messages: [
         { role: "system", content: `Eres DILO. El usuario preguntó algo y tú buscaste en Google. Responde basándote SOLO en los resultados de búsqueda. Reglas:
 - Sé específico: incluye precios reales, links, fechas.
-- PRECIOS: Muestra SIEMPRE en euros (€). Si ves precios en $ muy altos (>1000 para vuelos), probablemente son pesos (COP/MXN) — conviértelos o ignóralos y usa solo los precios en € que encuentres.
+- PRECIOS: Muestra SIEMPRE en euros (€). Si ves precios en $ muy altos (>1000 para vuelos), probablemente son pesos (COP/MXN) — ignóralos.
+- LINKS: SIEMPRE incluye los enlaces completos de cada resultado. Usa formato markdown: [texto](url). NUNCA digas "consulta aquí" sin poner el link real.
 - Si no hay resultados útiles, dilo honestamente.
 - Responde en ${langNames[locale.split("-")[0]] || "español"}.` },
         { role: "user", content: lastMsgContent },
