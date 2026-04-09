@@ -4,6 +4,8 @@ import { GMAIL_TOOLS, executeGmail } from "./gmail";
 import { CALENDAR_TOOLS, executeCalendar } from "./google-calendar";
 import { TRADING_TOOLS, executeTrading } from "./trading";
 import { MARKET_ANALYSIS_TOOLS, executeMarketAnalysis } from "./market-analysis";
+import { TRADING_CALENDAR_TOOLS, executeTradingCalendar } from "./trading-calendar";
+import { TRADING_SIGNAL_TOOLS, executeTradingSignals } from "./trading-signals";
 
 // Base extended tools (always available)
 export const EXTENDED_TOOLS: OpenAI.ChatCompletionTool[] = [
@@ -15,8 +17,13 @@ export const EXTENDED_TOOLS: OpenAI.ChatCompletionTool[] = [
 // Trading tools (only for users with Alpaca connected)
 export { TRADING_TOOLS };
 
-// Market analysis tools (for users with Alpaca connected)
-export { MARKET_ANALYSIS_TOOLS };
+// Market analysis + calendar + signals (for users with Alpaca connected)
+export const ALL_TRADING_TOOLS: OpenAI.ChatCompletionTool[] = [
+  ...TRADING_TOOLS,
+  ...MARKET_ANALYSIS_TOOLS,
+  ...TRADING_CALENDAR_TOOLS,
+  ...TRADING_SIGNAL_TOOLS,
+];
 
 // Route tool execution to the right skill handler
 export async function executeExtendedTool(
@@ -48,6 +55,18 @@ export async function executeExtendedTool(
   // Market Analysis — Finnhub data
   if (toolName.startsWith("market_")) {
     return executeMarketAnalysis(toolName, input);
+  }
+
+  // Trading Calendar
+  if (toolName === "trading_calendar") {
+    return executeTradingCalendar(toolName, input, userId);
+  }
+
+  // Trading Signals & Liquidity Sweeps
+  if (toolName === "trading_generate_signal" || toolName === "trading_check_sweeps") {
+    const { getAlpacaKeys } = await import("@/lib/oauth/alpaca");
+    const keys = await getAlpacaKeys(userId);
+    return executeTradingSignals(toolName, input, keys || undefined);
   }
 
   // Trading — need Alpaca API keys

@@ -42,6 +42,7 @@ export type RouteType =
   | "trading"
   | "market_scan"
   | "market_analyze"
+  | "trading_calendar"
   | "chat";
 
 export interface RouteResult {
@@ -201,6 +202,11 @@ export function detectIntent(text: string): RouteResult {
       const symbolMap: Record<string, string> = { oro: "XAUUSD", gold: "XAUUSD", sp500: "SPY", us500: "SPY", nasdaq: "QQQ", apple: "AAPL", tesla: "TSLA", nvidia: "NVDA", amazon: "AMZN", google: "GOOGL", microsoft: "MSFT", meta: "META", netflix: "NFLX" };
       return { type: "market_analyze", data: { symbol: symbolMap[sym.toLowerCase()] || sym.toUpperCase() } };
     }
+  }
+
+  // TRADING CALENDAR: "mi calendario", "historial de trading", "resultados del mes"
+  if (/(?:mi\s+calendario|calendario\s+(?:de\s+)?trading|historial\s+(?:de\s+)?trading|resultados?\s+(?:del?\s+)?mes|dias\s+(?:de\s+)?(?:ganancia|perdida)|como\s+(?:me\s+)?(?:ha\s+)?ido\s+(?:este\s+)?mes)/i.test(lower)) {
+    return { type: "trading_calendar" };
   }
 
   // TRADING: "mi portfolio", "mis posiciones", "mis acciones", "rendimiento trading", "reglas de riesgo", "compra acciones", "vende acciones"

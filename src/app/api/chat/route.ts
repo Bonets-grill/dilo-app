@@ -13,7 +13,7 @@ const supabase = createClient(
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
-import { EXTENDED_TOOLS, TRADING_TOOLS, MARKET_ANALYSIS_TOOLS, executeExtendedTool } from "@/lib/skills";
+import { EXTENDED_TOOLS, ALL_TRADING_TOOLS, executeExtendedTool } from "@/lib/skills";
 
 // Tool definitions for OpenAI function calling (base — trading added dynamically)
 const baseTools: OpenAI.ChatCompletionTool[] = [
@@ -635,6 +635,20 @@ export async function POST(req: NextRequest) {
     // Connected — fall through to LLM which has trading_* tools
   }
 
+  // ── TRADING CALENDAR (direct execution) ──
+  if (intent.type === "trading_calendar") {
+    let cid = await saveMsg("user", lastMsgContent, conversationId);
+    if (!userId) {
+      const response = "Necesitas iniciar sesión para ver tu calendario de trading.";
+      cid = await saveMsg("assistant", response, cid);
+      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+    }
+    const { executeTradingCalendar } = await import("@/lib/skills/trading-calendar");
+    const response = await executeTradingCalendar("trading_calendar", {}, userId);
+    cid = await saveMsg("assistant", response, cid);
+    return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+  }
+
   // ── MARKET SCAN (direct execution — bypasses LLM tool selection) ──
   if (intent.type === "market_scan") {
     let cid = await saveMsg("user", lastMsgContent, conversationId);
@@ -1041,7 +1055,11 @@ REGLAS OPERATIVAS:
    - "analiza AAPL" / "qué tal Tesla?" → USA market_analyze_stock OBLIGATORIAMENTE
    - "compara AAPL y MSFT" → USA market_compare_stocks OBLIGATORIAMENTE
    - "earnings esta semana" → USA market_earnings_calendar OBLIGATORIAMENTE
-   - FLUJO DE TRADING: 1) Analiza con market_analyze_stock o market_scan_opportunities (datos de Finnhub/Wall Street) 2) Presenta análisis con datos reales + tu opinión profesional 3) Si el usuario dice "compra" → trading_place_order con preview 4) Si confirma → ejecuta.
+   - "mi calendario" / "resultados del mes" → USA trading_calendar OBLIGATORIAMENTE
+   - "señal para AAPL" / "dame un setup" → USA trading_generate_signal OBLIGATORIAMENTE
+   - "hay manipulación?" / "check sweeps" → USA trading_check_sweeps OBLIGATORIAMENTE
+   - FLUJO DE TRADING: 1) Verifica sweeps con trading_check_sweeps 2) Genera señal con trading_generate_signal (incluye entry, SL, TP, ratio, riesgo) 3) Si el usuario dice "compra" → trading_place_order con preview 4) Si confirma → ejecuta.
+   - SIEMPRE verifica liquidity sweeps ANTES de generar una señal.
 
 REGLAS DE TRADING:
 - Eres un analista de trading PROFESIONAL. Cuando el usuario pregunte por oportunidades, USA web_search para investigar el mercado REAL antes de responder.
@@ -1062,7 +1080,7 @@ ${userFacts}`;
     const { hasAlpacaConnection } = await import("@/lib/oauth/alpaca");
     const hasAlpaca = await hasAlpacaConnection(userId);
     if (hasAlpaca) {
-      userTools = [...baseTools, ...TRADING_TOOLS, ...MARKET_ANALYSIS_TOOLS];
+      userTools = [...baseTools, ...ALL_TRADING_TOOLS];
 
       // Load personalized trading profile if exists
       const { getTradingProfile, generateTradingPrompt, resetDailyCounters } = await import("@/lib/trading/profile");
