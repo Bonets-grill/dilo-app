@@ -482,26 +482,37 @@ export async function POST(req: NextRequest) {
   // ── WEB SEARCH (Serper → Google real results, then LLM summarizes) ──
   if (intent.type === "web_search") {
     let cid = await saveMsg("user", lastMsgContent, conversationId);
-    const { executeWebSearch } = await import("@/lib/skills/web-search");
+    const { executeWebSearch, executeWebSearchRaw } = await import("@/lib/skills/web-search");
     const searchResult = await executeWebSearch("web_search", { query: intent.data?.query || lastMsgContent });
     const parsed = JSON.parse(searchResult);
 
-    // Use LLM to give a natural response based on real search results
+    // Get raw links to append after LLM response
+    const rawLinks = await executeWebSearchRaw(intent.data?.query as string || lastMsgContent);
+
+    // Use LLM to summarize, but we'll add real links ourselves
     const searchCompletion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      max_tokens: 500,
+      max_tokens: 400,
       messages: [
-        { role: "system", content: `Eres DILO. El usuario preguntó algo y tú buscaste en Google. Responde basándote SOLO en los resultados de búsqueda. Reglas:
-- Sé específico: incluye precios reales, links, fechas.
-- PRECIOS: Muestra SIEMPRE en euros (€). Si ves precios en $ muy altos (>1000 para vuelos), probablemente son pesos (COP/MXN) — ignóralos.
-- LINKS: SIEMPRE incluye los enlaces completos de cada resultado. Usa formato markdown: [texto](url). NUNCA digas "consulta aquí" sin poner el link real.
-- Si no hay resultados útiles, dilo honestamente.
+        { role: "system", content: `Eres DILO. Responde basándote SOLO en los resultados de búsqueda. Reglas:
+- Sé específico: incluye precios reales y fechas.
+- PRECIOS en euros (€). Ignora precios en $ >1000 (son pesos COP/MXN).
+- NO pongas links, los añadiré yo después.
+- Sé breve y directo.
 - Responde en ${langNames[locale.split("-")[0]] || "español"}.` },
         { role: "user", content: lastMsgContent },
-        { role: "assistant", content: `Resultados de búsqueda:\n${parsed.results || parsed.answer || "Sin resultados"}` },
+        { role: "assistant", content: `Resultados:\n${parsed.results || parsed.answer || "Sin resultados"}` },
       ],
     });
-    const response = searchCompletion.choices[0]?.message?.content || parsed.results || parsed.answer || "No encontré resultados.";
+    let response = searchCompletion.choices[0]?.message?.content || "No encontré resultados.";
+
+    // Append real clickable links from search results
+    if (rawLinks.length > 0) {
+      response += "\n\n**Enlaces directos:**\n";
+      for (const link of rawLinks.slice(0, 5)) {
+        response += `- [${link.title}](${link.url})\n`;
+      }
+    }
 
     cid = await saveMsg("assistant", response, cid);
     return new Response(response, {

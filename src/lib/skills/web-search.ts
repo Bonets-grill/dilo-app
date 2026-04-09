@@ -140,3 +140,22 @@ export async function executeWebSearch(
 
   return JSON.stringify({ answer: `No encontré resultados para "${query}". Intenta reformular tu búsqueda.`, query, source: "none" });
 }
+
+/** Returns raw links from Serper for appending to responses */
+export async function executeWebSearchRaw(query: string): Promise<Array<{ title: string; url: string }>> {
+  const serperKey = process.env.SERPER_API_KEY;
+  if (!serperKey) return [];
+  try {
+    const res = await fetch("https://google.serper.dev/search", {
+      method: "POST",
+      headers: { "X-API-KEY": serperKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ q: query, num: 5, gl: "es", hl: "es" }),
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.organic || []).slice(0, 5).map((r: { title: string; link: string }) => ({
+      title: r.title,
+      url: r.link,
+    }));
+  } catch { return []; }
+}
