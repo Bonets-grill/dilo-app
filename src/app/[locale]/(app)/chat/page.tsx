@@ -400,8 +400,8 @@ export default function ChatPage() {
               </button>
             </div>
             <textarea ref={voiceRef} value={voicePreview} onChange={e => setVoicePreview(e.target.value)}
-              rows={3}
-              className="w-full bg-[var(--bg1)] rounded-xl border border-[var(--border)] px-3 py-2 text-[14px] text-white resize-none leading-6 max-h-[200px] focus:outline-none focus:border-white/30" />
+              rows={5}
+              className="w-full bg-[var(--bg1)] rounded-xl border border-[var(--border)] px-3 py-2 text-[15px] text-white resize-none leading-7 max-h-[280px] focus:outline-none focus:border-white/30" />
             <div className="flex gap-2 mt-1.5 mb-0.5 justify-end">
               <button onClick={() => { setInput(voicePreview || ""); setVoicePreview(null); taRef.current?.focus(); }}
                 className="px-3 py-1.5 rounded-full text-[12px] font-medium bg-[var(--bg3)] text-white flex items-center gap-1.5">
