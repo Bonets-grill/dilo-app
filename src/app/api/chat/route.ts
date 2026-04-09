@@ -567,6 +567,29 @@ export async function POST(req: NextRequest) {
     return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
   }
 
+  // ── CUPONES (buscar códigos descuento) ──
+  if (intent.type === "cupones") {
+    let cid = await saveMsg("user", lastMsgContent, conversationId);
+    const { findCoupons } = await import("@/lib/skills/cupones");
+    const response = await findCoupons(lastMsgContent);
+    cid = await saveMsg("assistant", response, cid);
+    return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+  }
+
+  // ── ALERTA PRECIO (rastrear precio de un producto) ──
+  if (intent.type === "alerta_precio") {
+    let cid = await saveMsg("user", lastMsgContent, conversationId);
+    if (!userId) {
+      const response = "Necesitas iniciar sesión para crear alertas de precio.";
+      cid = await saveMsg("assistant", response, cid);
+      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+    }
+    const { createPriceAlert } = await import("@/lib/skills/price-alerts");
+    const response = await createPriceAlert(userId, lastMsgContent);
+    cid = await saveMsg("assistant", response, cid);
+    return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+  }
+
   // ── COMPARAR PRODUCTO (Google Shopping) ──
   if (intent.type === "comparar_producto") {
     let cid = await saveMsg("user", lastMsgContent, conversationId);

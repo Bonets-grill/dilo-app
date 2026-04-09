@@ -34,6 +34,8 @@ export type RouteType =
   | "ayudas_publicas"
   | "cupones_delivery"
   | "comparar_producto"
+  | "cupones"
+  | "alerta_precio"
   | "chat";
 
 export interface RouteResult {
@@ -144,6 +146,16 @@ export function detectIntent(text: string): RouteResult {
   // CUPONES / DELIVERY: "cupón just eat", "descuento restaurante"
   if (/(?:cupon|descuento|oferta|deal).*(?:restaurante|delivery|just\s*eat|glovo|uber\s*eats|thefork)/i.test(lower)) {
     return { type: "cupones_delivery" };
+  }
+
+  // CUPONES: "cupón para Zara", "código descuento Amazon", "ofertas"
+  if (/(?:cupon|código\s+descuento|codigo\s+descuento|descuento\s+para|oferta\s+en|promo\s+code|discount\s+code)/i.test(lower)) {
+    return { type: "cupones", data: { query: text } };
+  }
+
+  // ALERTA PRECIO: "avísame cuando baje", "rastrear precio", "monitorizar precio"
+  if (/(?:avis[ae]me\s+cuando\s+baj|rastrear?\s+precio|monitoriz|alert[ae]\s+(?:de\s+)?precio|seguir?\s+(?:el\s+)?precio|watch\s+price)/i.test(lower)) {
+    return { type: "alerta_precio", data: { query: text } };
   }
 
   // COMPARAR PRODUCTO: "compara precio MacBook", "donde comprar más barato"
