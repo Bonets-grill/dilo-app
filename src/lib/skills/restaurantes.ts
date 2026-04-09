@@ -1,7 +1,8 @@
 /**
  * Restaurant Finder — finds best rated restaurants nearby
- * Uses Serper (Google results) to get real restaurant data with ratings
- * Applies Bayesian weighted rating: restaurants with more reviews ranked higher
+ * Primary: Google Places API (needs GOOGLE_MAPS_API_KEY without referer restrictions)
+ * Fallback: Serper Places API (already works)
+ * Applies Bayesian weighted rating for honest ranking
  */
 
 interface Restaurant {
@@ -9,168 +10,136 @@ interface Restaurant {
   rating: number;
   reviews: number;
   bayesianScore: number;
-  snippet: string;
+  address: string;
   link: string;
-  address?: string;
+  priceLevel?: string;
 }
 
 /**
  * Bayesian Weighted Rating
- * Formula: (v/(v+m)) × R + (m/(v+m)) × C
- * Where:
- *   R = restaurant's average rating
- *   v = number of reviews for this restaurant
- *   m = minimum reviews threshold (we use 50)
- *   C = average rating across all results
- *
  * A restaurant with 4.8★ and 300 reviews beats one with 5.0★ and 10 reviews
  */
-function bayesianRating(rating: number, reviews: number, avgRating: number, minReviews: number = 50): number {
+function bayesianRating(rating: number, reviews: number, avgRating: number, minReviews: number = 30): number {
   return (reviews / (reviews + minReviews)) * rating + (minReviews / (reviews + minReviews)) * avgRating;
 }
 
-/** Search for restaurants in a city using Serper */
-export async function findRestaurants(
-  city: string,
-  cuisine?: string,
-  maxResults: number = 8,
-): Promise<string> {
-  const key = process.env.SERPER_API_KEY;
-  if (!key) return "Búsqueda no disponible. Falta configuración.";
+/** Search restaurants using Google Places API */
+async function searchGooglePlaces(city: string, cuisine?: string): Promise<Restaurant[]> {
+  const key = process.env.GOOGLE_MAPS_API_KEY;
+  if (!key) return [];
 
   const query = cuisine
-    ? `mejores restaurantes ${cuisine} en ${city} valoraciones`
-    : `mejores restaurantes en ${city} valoraciones reseñas`;
+    ? `restaurante ${cuisine} en ${city}`
+    : `mejores restaurantes en ${city}`;
 
   try {
-    // Use Serper Places endpoint for Google Maps data
+    const res = await fetch(
+      `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${key}&language=es&region=es`
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (data.status !== "OK") return [];
+
+    return (data.results || [])
+      .filter((r: Record<string, unknown>) => r.rating && r.user_ratings_total)
+      .map((r: Record<string, unknown>) => {
+        const lat = (r.geometry as Record<string, Record<string, number>>)?.location?.lat;
+        const lng = (r.geometry as Record<string, Record<string, number>>)?.location?.lng;
+        const mapsLink = lat && lng
+          ? `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`
+          : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(String(r.name))}+${encodeURIComponent(city)}`;
+        const priceLevels = ["", "€", "€€", "€€€", "€€€€"];
+        return {
+          name: String(r.name || ""),
+          rating: Number(r.rating) || 0,
+          reviews: Number(r.user_ratings_total) || 0,
+          bayesianScore: 0,
+          address: String(r.formatted_address || ""),
+          link: mapsLink,
+          priceLevel: priceLevels[Number(r.price_level) || 0] || "",
+        };
+      });
+  } catch { return []; }
+}
+
+/** Fallback: Serper Places */
+async function searchSerperPlaces(city: string, cuisine?: string): Promise<Restaurant[]> {
+  const key = process.env.SERPER_API_KEY;
+  if (!key) return [];
+
+  const query = cuisine
+    ? `restaurante ${cuisine} ${city}`
+    : `mejores restaurantes ${city}`;
+
+  try {
     const res = await fetch("https://google.serper.dev/places", {
       method: "POST",
       headers: { "X-API-KEY": key, "Content-Type": "application/json" },
       body: JSON.stringify({ q: query, gl: "es", hl: "es" }),
     });
-
-    if (!res.ok) {
-      // Fallback to regular search
-      return findRestaurantsViaSearch(city, cuisine, key, maxResults);
-    }
-
+    if (!res.ok) return [];
     const data = await res.json();
-    const places = data.places || [];
 
-    if (places.length === 0) {
-      return findRestaurantsViaSearch(city, cuisine, key, maxResults);
-    }
-
-    // Parse places data
-    const restaurants: Restaurant[] = places
-      .filter((p: Record<string, unknown>) => p.rating && p.reviews)
-      .map((p: Record<string, unknown>) => ({
-        name: String(p.title || ""),
-        rating: Number(p.rating) || 0,
-        reviews: Number(p.reviews) || 0,
-        bayesianScore: 0,
-        snippet: String(p.description || p.type || ""),
-        link: String(p.link || p.website || ""),
-        address: String(p.address || ""),
-      }));
-
-    if (restaurants.length === 0) {
-      return findRestaurantsViaSearch(city, cuisine, key, maxResults);
-    }
-
-    return formatRestaurantResults(restaurants, city, cuisine, maxResults);
-  } catch {
-    return "Error buscando restaurantes. Inténtalo de nuevo.";
-  }
-}
-
-/** Fallback: search regular Google results for restaurants */
-async function findRestaurantsViaSearch(
-  city: string,
-  cuisine: string | undefined,
-  key: string,
-  maxResults: number,
-): Promise<string> {
-  const query = cuisine
-    ? `mejores restaurantes ${cuisine} ${city} google maps reseñas`
-    : `mejores restaurantes ${city} google maps reseñas`;
-
-  try {
-    const res = await fetch("https://google.serper.dev/search", {
-      method: "POST",
-      headers: { "X-API-KEY": key, "Content-Type": "application/json" },
-      body: JSON.stringify({ q: query, gl: "es", hl: "es", num: 10 }),
-    });
-    if (!res.ok) return "No se pudieron buscar restaurantes.";
-
-    const data = await res.json();
-    const organic = data.organic || [];
-
-    // Extract restaurant info from snippets (often contain "4.5 (234 reseñas)")
-    const restaurants: Restaurant[] = [];
-    for (const r of organic) {
-      const ratingMatch = String(r.snippet || "").match(/(\d[.,]\d)\s*(?:★|estrellas?|stars?)?\s*[\(·]\s*(\d[\d.,]*)\s*(?:reseñas?|reviews?|opiniones?)/i);
-      if (ratingMatch) {
-        restaurants.push({
-          name: String(r.title || "").replace(/ - .*$/, "").replace(/ \|.*$/, ""),
-          rating: parseFloat(ratingMatch[1].replace(",", ".")),
-          reviews: parseInt(ratingMatch[2].replace(/[.,]/g, "")),
+    return (data.places || [])
+      .filter((p: Record<string, unknown>) => p.rating)
+      .map((p: Record<string, unknown>) => {
+        const cid = p.cid ? `&cid=${p.cid}` : "";
+        const mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(String(p.title))}+${encodeURIComponent(city)}${cid}`;
+        return {
+          name: String(p.title || ""),
+          rating: Number(p.rating) || 0,
+          reviews: Number(p.reviews) || 0,
           bayesianScore: 0,
-          snippet: String(r.snippet || "").slice(0, 150),
-          link: String(r.link || ""),
-        });
-      }
-    }
-
-    if (restaurants.length === 0) {
-      // Just return top search results
-      let response = `**🍽️ Restaurantes en ${city}**\n\n`;
-      for (const r of organic.slice(0, maxResults)) {
-        response += `- [${r.title}](${r.link})\n  ${(r.snippet || "").slice(0, 100)}\n\n`;
-      }
-      return response;
-    }
-
-    return formatRestaurantResults(restaurants, city, cuisine, maxResults);
-  } catch {
-    return "Error buscando restaurantes.";
-  }
+          address: String(p.address || ""),
+          link: mapsLink,
+          priceLevel: "",
+        };
+      });
+  } catch { return []; }
 }
 
-/** Format and rank restaurant results with Bayesian scoring */
-function formatRestaurantResults(
-  restaurants: Restaurant[],
-  city: string,
-  cuisine: string | undefined,
-  maxResults: number,
-): string {
-  // Calculate average rating for Bayesian formula
+/** Find restaurants — tries Google Places first, falls back to Serper */
+export async function findRestaurants(city: string, cuisine?: string): Promise<string> {
+  // Try Google Places first (has review counts for Bayesian)
+  let restaurants = await searchGooglePlaces(city, cuisine);
+
+  // Fallback to Serper Places
+  if (restaurants.length === 0) {
+    restaurants = await searchSerperPlaces(city, cuisine);
+  }
+
+  if (restaurants.length === 0) {
+    return `No encontré restaurantes en ${city}. Intenta con otra ciudad o zona.`;
+  }
+
+  // Calculate Bayesian weighted rating
   const avgRating = restaurants.reduce((s, r) => s + r.rating, 0) / restaurants.length;
 
-  // Apply Bayesian weighted rating
   for (const r of restaurants) {
-    r.bayesianScore = bayesianRating(r.rating, r.reviews, avgRating);
+    // If no review count (Serper fallback), use rating directly but penalize
+    r.bayesianScore = r.reviews > 0
+      ? bayesianRating(r.rating, r.reviews, avgRating)
+      : r.rating * 0.8; // penalize unknown review count
   }
 
-  // Sort by Bayesian score (best first)
+  // Sort by Bayesian score
   restaurants.sort((a, b) => b.bayesianScore - a.bayesianScore);
 
   const cuisineLabel = cuisine ? ` de ${cuisine}` : "";
-  let response = `**🍽️ Mejores restaurantes${cuisineLabel} en ${city}**\n*(ordenados por calidad real: rating × volumen de reseñas)*\n\n`;
+  let response = `**🍽️ Mejores restaurantes${cuisineLabel} en ${city}**\n*(ranking por calidad real: puntuación × volumen de reseñas)*\n\n`;
 
-  for (const [i, r] of restaurants.slice(0, maxResults).entries()) {
+  for (const [i, r] of restaurants.slice(0, 8).entries()) {
     const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`;
-    const stars = "⭐".repeat(Math.round(r.rating));
     response += `${medal} **${r.name}**\n`;
-    response += `   ${stars} ${r.rating} — ${r.reviews.toLocaleString("es")} reseñas`;
-    response += ` (score: ${r.bayesianScore.toFixed(2)})\n`;
-    if (r.address) response += `   📍 ${r.address}\n`;
-    if (r.link) response += `   🔗 [Ver en Google Maps](${r.link})\n`;
+    response += `   ⭐ ${r.rating}`;
+    if (r.reviews > 0) response += ` (${r.reviews.toLocaleString("es")} reseñas)`;
+    if (r.priceLevel) response += ` — ${r.priceLevel}`;
     response += `\n`;
+    if (r.address) response += `   📍 ${r.address}\n`;
+    response += `   🗺️ [Ver en Google Maps](${r.link})\n\n`;
   }
 
-  response += `\n*El ranking usa puntuación Bayesiana: un restaurante con 4.8★ y 300 reseñas puntúa más que uno con 5.0★ y 10 reseñas.*`;
+  response += `*Ranking Bayesiano: un restaurante con 4.8★ y 300 reseñas puntúa más que uno con 5.0★ y 10 reseñas.*`;
 
   return response;
 }
