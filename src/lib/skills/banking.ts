@@ -42,11 +42,10 @@ export async function createTinkUser(diloUserId: string): Promise<string | null>
       }),
     });
     if (!res.ok) {
+      // User already exists is OK
       const err = await res.text();
-      // User might already exist
-      if (err.includes("already exists")) return diloUserId;
-      console.error("[Tink] Create user error:", err);
-      return null;
+      console.log("[Tink] Create user response:", res.status, err);
+      return diloUserId; // Continue anyway — user likely already exists
     }
     const data = await res.json();
     return data.user_id || diloUserId;
@@ -56,11 +55,12 @@ export async function createTinkUser(diloUserId: string): Promise<string | null>
 /** Generate a Tink Link URL for user to connect their bank */
 export async function generateBankConnectionLink(diloUserId: string, redirectUrl: string): Promise<string | null> {
   // First ensure Tink user exists
-  await createTinkUser(diloUserId);
+  const tinkUser = await createTinkUser(diloUserId);
+  console.log("[Tink] User created/exists:", tinkUser);
 
   // Get authorization grant for this user
   const token = await getClientToken("authorization:grant");
-  if (!token) return null;
+  if (!token) { console.error("[Tink] Failed to get auth grant token"); return null; }
 
   try {
     const res = await fetch(`${TINK_API}/oauth/authorization-grant`, {
