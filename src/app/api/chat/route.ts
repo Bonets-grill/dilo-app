@@ -635,6 +635,27 @@ export async function POST(req: NextRequest) {
     // Connected — fall through to LLM which has trading_* tools
   }
 
+  // ── TRADING PORTFOLIO (direct execution — bypasses LLM) ──
+  if (intent.type === "trading_portfolio") {
+    let cid = await saveMsg("user", lastMsgContent, conversationId);
+    if (!userId) {
+      const response = "Necesitas iniciar sesión para ver tu portfolio.";
+      cid = await saveMsg("assistant", response, cid);
+      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+    }
+    const { getAlpacaKeys } = await import("@/lib/oauth/alpaca");
+    const keys = await getAlpacaKeys(userId);
+    if (!keys) {
+      const response = "Configura tus API keys de Alpaca en tu **Perfil** para ver tu portfolio.";
+      cid = await saveMsg("assistant", response, cid);
+      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+    }
+    const { executeTrading } = await import("@/lib/skills/trading");
+    const response = await executeTrading("trading_portfolio", {}, keys, userId);
+    cid = await saveMsg("assistant", response, cid);
+    return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+  }
+
   // ── TRADING CALENDAR (direct execution) ──
   if (intent.type === "trading_calendar") {
     let cid = await saveMsg("user", lastMsgContent, conversationId);

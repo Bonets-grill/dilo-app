@@ -43,6 +43,7 @@ export type RouteType =
   | "market_scan"
   | "market_analyze"
   | "trading_calendar"
+  | "trading_portfolio"
   | "chat";
 
 export interface RouteResult {
@@ -209,9 +210,16 @@ export function detectIntent(text: string): RouteResult {
     return { type: "trading_calendar" };
   }
 
-  // TRADING: "mi portfolio", "mis posiciones", "mis acciones", "rendimiento trading", "reglas de riesgo", "compra acciones", "vende acciones"
-  if (/(?:mi\s+portfolio|mis\s+posiciones|mis\s+acciones|como\s+van\s+mis\s+(?:acciones|posiciones|trades|inversiones)|my\s+portfolio|my\s+positions|my\s+stocks)/i.test(lower)
-    || /(?:rendimiento|performance|win\s+rate|profit\s+factor|estadisticas?\s+(?:de\s+)?trading)/i.test(lower)
+  // TRADING PORTFOLIO (direct execution — bypasses LLM): portfolio, P&L, ganancias, pérdidas, posiciones
+  if (/(?:mi\s+portfolio|mis\s+posiciones|mis\s+acciones|como\s+van\s+mis|my\s+portfolio|my\s+positions|my\s+stocks)/i.test(lower)
+    || /(?:cuanto\s+(?:he\s+)?(?:ganado|perdido|llevo)|cuanto\s+(?:voy\s+)?(?:ganando|perdiendo)|ganancias?\s+(?:de\s+)?hoy|perdidas?\s+(?:de\s+)?hoy|p.?l\s+(?:de\s+)?hoy|como\s+(?:va|voy)\s+hoy)/i.test(lower)
+    || /(?:estado\s+(?:de\s+)?(?:mi[s]?\s+)?(?:inversiones|posiciones|cuenta)|resumen\s+(?:de\s+)?(?:mi[s]?\s+)?(?:cuenta|trading|portfolio))/i.test(lower)
+    || /(?:que\s+(?:tengo|llevo)\s+(?:en\s+)?(?:mi[s]?\s+)?(?:cuenta|portfolio|posiciones))/i.test(lower)) {
+    return { type: "trading_portfolio" };
+  }
+
+  // TRADING (falls through to LLM with trading tools): rendimiento, reglas, compra/vende
+  if (/(?:rendimiento|performance|win\s+rate|profit\s+factor|estadisticas?\s+(?:de\s+)?trading)/i.test(lower)
     || /(?:sincronizar?\s+(?:mi\s+)?(?:journal|diario|trades)|importar?\s+trades)/i.test(lower)
     || /(?:analisis\s+de\s+riesgo|riesgo\s+(?:de\s+)?(?:mi\s+)?portfolio|diversificacion)/i.test(lower)
     || /(?:reglas?\s+de\s+(?:riesgo|trading)|limite\s+(?:de\s+)?(?:perdida|trades)|max(?:imo)?\s+(?:trades|perdida))/i.test(lower)
