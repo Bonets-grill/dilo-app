@@ -38,6 +38,8 @@ export type RouteType =
   | "suscripciones"
   | "cupones"
   | "alerta_precio"
+  | "trading_connect"
+  | "trading"
   | "chat";
 
 export interface RouteResult {
@@ -172,6 +174,22 @@ export function detectIntent(text: string): RouteResult {
   // ALERTA PRECIO: "avísame cuando baje", "rastrear precio", "monitorizar precio"
   if (/(?:avis[ae]me\s+cuando\s+baj|rastrear?\s+precio|monitoriz|alert[ae]\s+(?:de\s+)?precio|seguir?\s+(?:el\s+)?precio|watch\s+price)/i.test(lower)) {
     return { type: "alerta_precio", data: { query: text } };
+  }
+
+  // TRADING CONNECT: "conectar broker", "conectar alpaca", "vincular broker"
+  if (/(?:conectar?\s+(?:mi\s+)?(?:broker|alpaca|trading|cuenta\s+de\s+trading)|vincular?\s+(?:mi\s+)?(?:broker|alpaca))/i.test(lower)) {
+    return { type: "trading_connect" };
+  }
+
+  // TRADING: "mi portfolio", "mis posiciones", "mis acciones", "rendimiento trading", "reglas de riesgo", "compra acciones", "vende acciones"
+  if (/(?:mi\s+portfolio|mis\s+posiciones|mis\s+acciones|como\s+van\s+mis\s+(?:acciones|posiciones|trades|inversiones)|my\s+portfolio|my\s+positions|my\s+stocks)/i.test(lower)
+    || /(?:rendimiento|performance|win\s+rate|profit\s+factor|estadisticas?\s+(?:de\s+)?trading)/i.test(lower)
+    || /(?:sincronizar?\s+(?:mi\s+)?(?:journal|diario|trades)|importar?\s+trades)/i.test(lower)
+    || /(?:analisis\s+de\s+riesgo|riesgo\s+(?:de\s+)?(?:mi\s+)?portfolio|diversificacion)/i.test(lower)
+    || /(?:reglas?\s+de\s+(?:riesgo|trading)|limite\s+(?:de\s+)?(?:perdida|trades)|max(?:imo)?\s+(?:trades|perdida))/i.test(lower)
+    || /(?:compra|vende|comprar|vender)\s+\d*\s*(?:acciones?\s+(?:de\s+)?)?[A-Z]{1,5}\b/i.test(lower)
+    || /(?:compra|vende|comprar|vender)\s+(?:acciones?\s+(?:de\s+)?)?(?:apple|tesla|amazon|google|microsoft|nvidia|meta|netflix)/i.test(lower)) {
+    return { type: "trading" };
   }
 
   // COMPARAR PRODUCTO: "compara precio MacBook", "donde comprar más barato"

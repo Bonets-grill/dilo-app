@@ -2,12 +2,14 @@ import OpenAI from "openai";
 import { WEB_SEARCH_TOOLS, executeWebSearch } from "./web-search";
 import { GMAIL_TOOLS, executeGmail } from "./gmail";
 import { CALENDAR_TOOLS, executeCalendar } from "./google-calendar";
+import { TRADING_TOOLS, executeTrading } from "./trading";
 
 // All extended skill tools (added to the base tools in chat route)
 export const EXTENDED_TOOLS: OpenAI.ChatCompletionTool[] = [
   ...WEB_SEARCH_TOOLS,
   ...GMAIL_TOOLS,
   ...CALENDAR_TOOLS,
+  ...TRADING_TOOLS,
 ];
 
 // Route tool execution to the right skill handler
@@ -35,6 +37,19 @@ export async function executeExtendedTool(
       return executeGmail(toolName, input, token);
     }
     return executeCalendar(toolName, input, token);
+  }
+
+  // Trading — need Alpaca OAuth token
+  if (toolName.startsWith("trading_")) {
+    const { getAlpacaAccessToken } = await import("@/lib/oauth/alpaca");
+    const token = await getAlpacaAccessToken(userId);
+
+    if (!token) {
+      const oauthUrl = `https://dilo-app-five.vercel.app/api/oauth/alpaca?userId=${userId}`;
+      return JSON.stringify({ error: "alpaca_not_connected", message: `El usuario no ha conectado su broker. Dile que haga click aquí para conectar Alpaca: ${oauthUrl}` });
+    }
+
+    return executeTrading(toolName, input, token, userId);
   }
 
   // Not an extended tool — return null so the main executor handles it

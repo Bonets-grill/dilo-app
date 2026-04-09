@@ -594,6 +594,55 @@ export async function POST(req: NextRequest) {
     // User is connected — fall through to LLM which has gmail_* and calendar_* tools
   }
 
+  // ── TRADING CONNECT ──
+  if (intent.type === "trading_connect") {
+    if (!userId) {
+      let cid = await saveMsg("user", lastMsgContent, conversationId);
+      const response = "Necesitas iniciar sesión para conectar tu broker.";
+      cid = await saveMsg("assistant", response, cid);
+      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+    }
+    if (!process.env.ALPACA_CLIENT_ID) {
+      let cid = await saveMsg("user", lastMsgContent, conversationId);
+      const response = "La conexión con el broker no está configurada todavía.";
+      cid = await saveMsg("assistant", response, cid);
+      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+    }
+    const { hasAlpacaConnection } = await import("@/lib/oauth/alpaca");
+    const connected = await hasAlpacaConnection(userId);
+    if (!connected) {
+      let cid = await saveMsg("user", lastMsgContent, conversationId);
+      const oauthUrl = `https://dilo-app-five.vercel.app/api/oauth/alpaca?userId=${userId}`;
+      const response = `Para conectar tu cuenta de trading, vincula tu broker Alpaca.\n\n👉 [Conectar Broker](${oauthUrl})\n\nConexión segura via OAuth. Puedes desconectar cuando quieras.\n\n_Si no tienes cuenta en Alpaca, puedes crear una gratis en alpaca.markets (incluye trading con dinero virtual para practicar)._`;
+      cid = await saveMsg("assistant", response, cid);
+      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+    }
+    let cid = await saveMsg("user", lastMsgContent, conversationId);
+    const response = "Tu broker ya está conectado. Puedes preguntarme por tu portfolio, rendimiento, o pedirme que analice tu riesgo.";
+    cid = await saveMsg("assistant", response, cid);
+    return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+  }
+
+  // ── TRADING (portfolio, performance, etc.) ──
+  if (intent.type === "trading") {
+    if (!userId) {
+      let cid = await saveMsg("user", lastMsgContent, conversationId);
+      const response = "Necesitas iniciar sesión para acceder a tu trading.";
+      cid = await saveMsg("assistant", response, cid);
+      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+    }
+    const { hasAlpacaConnection } = await import("@/lib/oauth/alpaca");
+    const connected = await hasAlpacaConnection(userId);
+    if (!connected) {
+      let cid = await saveMsg("user", lastMsgContent, conversationId);
+      const oauthUrl = `https://dilo-app-five.vercel.app/api/oauth/alpaca?userId=${userId}`;
+      const response = `Para acceder a tu trading, primero conecta tu broker.\n\n👉 [Conectar Broker](${oauthUrl})\n\n_Si no tienes cuenta, crea una gratis en alpaca.markets._`;
+      cid = await saveMsg("assistant", response, cid);
+      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+    }
+    // Connected — fall through to LLM which has trading_* tools
+  }
+
   // ── SUSCRIPCIONES (manual — el usuario dice qué paga) ──
   if (intent.type === "suscripciones") {
     let cid = await saveMsg("user", lastMsgContent, conversationId);
@@ -947,6 +996,17 @@ REGLAS OPERATIVAS:
 6. BÚSQUEDAS → USA web_search SIEMPRE que el usuario pregunte por precios, vuelos, noticias, clima, eventos, productos, o CUALQUIER información actual/en tiempo real. NUNCA respondas de memoria sobre datos que pueden cambiar — BUSCA SIEMPRE.
 7. CALENDARIO → USA calendar_list_events/calendar_create_event si el usuario pregunta por su agenda o quiere crear eventos.
 8. EMAIL → USA gmail_read_inbox/gmail_send_email si el usuario quiere leer o enviar emails. IMPORTANTE: Cuando redactes un email, SIEMPRE firma con el nombre real del usuario (de los datos que conoces). NUNCA pongas "[Tu Nombre]" ni placeholders — usa el nombre que sabes.
+9. TRADING → USA trading_portfolio, trading_performance, trading_journal_sync, trading_risk_analysis, trading_rules_set, trading_rules_check, trading_place_order según corresponda.
+
+REGLAS DE TRADING (MÁXIMA PRIORIDAD):
+- NUNCA des consejos de inversión, recomendaciones de compra/venta, ni predicciones de precios.
+- NUNCA digas "deberías comprar/vender X". En su lugar, muestra datos objetivos y di "los datos muestran..." o "podrías considerar revisar...".
+- SIEMPRE incluye el disclaimer: "Esto no es asesoramiento financiero. Rendimientos pasados no garantizan resultados futuros."
+- SIEMPRE muestra preview antes de ejecutar una orden (confirmed=false primero).
+- SIEMPRE verifica las reglas de riesgo del usuario antes de cualquier operación.
+- Si el usuario pregunta "¿debería comprar X?", NO recomiendes. Ofrece mostrar datos: precio actual, rendimiento del sector, riesgo del portfolio.
+- Sé CONSERVADOR. Ante la duda, advierte del riesgo.
+- Si detectas sobreoperación, FOMO, o revenge trading, advierte al usuario con empatía.
 ${userFacts}`;
 
   // encoder already declared above
