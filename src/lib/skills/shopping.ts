@@ -83,8 +83,7 @@ export async function compareShoppingList(products: string[], city?: string): Pr
   if (cheapest.length === 0) return "No encontré precios para esos productos.";
 
   // Build response
-  const locationNote = city ? ` en ${city}` : "";
-  let response = `**🛒 Comparación de precios${locationNote}** *(precios orientativos de tienda online)*\n\n**Lo más barato por producto:**\n\n`;
+  let response = `**🛒 Comparación de precios** *(tiendas online con envío a domicilio — no son precios de tienda física)*\n\n**Lo más barato por producto:**\n\n`;
   let cheapTotal = 0;
 
   for (const { product, item } of cheapest) {
