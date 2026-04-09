@@ -19,7 +19,7 @@ interface Restaurant {
  * Bayesian Weighted Rating
  * A restaurant with 4.8★ and 300 reviews beats one with 5.0★ and 10 reviews
  */
-function bayesianRating(rating: number, reviews: number, avgRating: number, minReviews: number = 30): number {
+function bayesianRating(rating: number, reviews: number, avgRating: number, minReviews: number = 100): number {
   return (reviews / (reviews + minReviews)) * rating + (minReviews / (reviews + minReviews)) * avgRating;
 }
 
