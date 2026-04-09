@@ -551,6 +551,10 @@ export async function POST(req: NextRequest) {
     response = response.replace(/\[([^\]]+)\]\(https?:\/\/[^)]+\)/g, "$1");
     response = response.replace(/https?:\/\/\S+/g, "");
 
+    // FORCE remove any COP/MXN/USD amounts — strip entire sentences containing them
+    response = response.replace(/[^.]*\d[\d.,]+\s*(?:COP|MXN|USD|pesos?|dólares?)[^.]*/gi, "");
+    response = response.replace(/\n\s*\n/g, "\n");
+
     // Append REAL links from Serper
     response += "\n\n**Ver resultados:**\n";
     for (const r of search.results.slice(0, 5)) {

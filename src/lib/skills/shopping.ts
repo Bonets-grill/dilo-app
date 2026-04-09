@@ -83,7 +83,7 @@ export async function compareShoppingList(products: string[]): Promise<string> {
   if (cheapest.length === 0) return "No encontré precios para esos productos.";
 
   // Build response
-  let response = "**Lo más barato por producto:**\n\n";
+  let response = "**🛒 Comparación de precios** *(precios de tienda online, pueden variar en tienda física)*\n\n**Lo más barato por producto:**\n\n";
   let cheapTotal = 0;
 
   for (const { product, item } of cheapest) {
