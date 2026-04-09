@@ -27,6 +27,13 @@ export type RouteType =
   | "shopping_compare"
   | "gasolineras"
   | "restaurantes"
+  | "electricidad"
+  | "farmacia"
+  | "seguros"
+  | "telefonia"
+  | "ayudas_publicas"
+  | "cupones_delivery"
+  | "comparar_producto"
   | "chat";
 
 export interface RouteResult {
@@ -104,6 +111,45 @@ export function detectIntent(text: string): RouteResult {
   // WHATSAPP READ: "lee mis mensajes", "qué me escribió"
   if (/(?:lee\s+mis\s+mensajes|mensajes\s+nuevos|que\s+me\s+escribi|read\s+my\s+messages|unread)/i.test(lower)) {
     return { type: "whatsapp_read" };
+  }
+
+  // ELECTRICIDAD: "precio de la luz", "cuándo poner lavadora", "tarifa eléctrica"
+  if (/(?:luz|electric|tarifa.*luz|pvpc|precio.*kwh|lavadora.*hora|hora.*barata.*luz|consumo.*electr)/i.test(lower)) {
+    return { type: "electricidad" };
+  }
+
+  // FARMACIA: "precio ibuprofeno", "medicamento barato", "farmacia"
+  if (/(?:medicament|farmacia|pastilla|ibuprofeno|paracetamol|genérico|precio.*medic)/i.test(lower)
+    && /(?:precio|barat|compar|donde|cuanto|alternativa|generic)/i.test(lower)) {
+    return { type: "farmacia", data: { query: text } };
+  }
+
+  // SEGUROS: "comparar seguro", "seguro barato", "renovar seguro"
+  if (/(?:seguro|poliza|cobertura)/i.test(lower) && /(?:barat|compar|mejor|renov|alternativ)/i.test(lower)) {
+    const type = /coche|auto|vehiculo/i.test(lower) ? "coche" : /hogar|casa|vivienda/i.test(lower) ? "hogar" : /medic|salud|dental/i.test(lower) ? "médico" : "general";
+    return { type: "seguros", data: { insuranceType: type } };
+  }
+
+  // TELEFONIA: "comparar tarifa móvil", "internet barato"
+  if (/(?:tarifa|movil|fibra|internet|telefon|operador|digi|movistar|vodafone|orange)/i.test(lower)
+    && /(?:barat|compar|mejor|cambiar|alternativ)/i.test(lower)) {
+    return { type: "telefonia" };
+  }
+
+  // AYUDAS PUBLICAS: "ayudas", "subvenciones", "bono social"
+  if (/(?:ayuda.*public|subvencion|bono\s+social|deduccion|beca|prestacion)/i.test(lower)) {
+    return { type: "ayudas_publicas", data: { query: text } };
+  }
+
+  // CUPONES / DELIVERY: "cupón just eat", "descuento restaurante"
+  if (/(?:cupon|descuento|oferta|deal).*(?:restaurante|delivery|just\s*eat|glovo|uber\s*eats|thefork)/i.test(lower)) {
+    return { type: "cupones_delivery" };
+  }
+
+  // COMPARAR PRODUCTO: "compara precio MacBook", "donde comprar más barato"
+  if (/(?:compar.*precio|donde.*comprar.*barat|mas\s+barato|mejor\s+precio)/i.test(lower)
+    && !/(?:vuelo|hotel|restaurante|gasolina|super)/i.test(lower)) {
+    return { type: "comparar_producto", data: { query: text } };
   }
 
   // RESTAURANTES: "restaurante cerca", "dónde comer", "mejores restaurantes"

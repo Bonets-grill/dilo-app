@@ -501,6 +501,70 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  // ── ELECTRICIDAD (REE API, gratis, tiempo real) ──
+  if (intent.type === "electricidad") {
+    let cid = await saveMsg("user", lastMsgContent, conversationId);
+    const { getElectricityPrices } = await import("@/lib/skills/electricidad");
+    const response = await getElectricityPrices();
+    cid = await saveMsg("assistant", response, cid);
+    return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+  }
+
+  // ── FARMACIA (Serper Shopping) ──
+  if (intent.type === "farmacia") {
+    let cid = await saveMsg("user", lastMsgContent, conversationId);
+    const { compareMedication } = await import("@/lib/skills/ahorro");
+    const response = await compareMedication(lastMsgContent, userCity || undefined);
+    cid = await saveMsg("assistant", response, cid);
+    return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+  }
+
+  // ── SEGUROS (búsqueda web comparadores) ──
+  if (intent.type === "seguros") {
+    let cid = await saveMsg("user", lastMsgContent, conversationId);
+    const { compareInsurance } = await import("@/lib/skills/ahorro");
+    const response = await compareInsurance((intent.data?.insuranceType as string) || "general", userCity || undefined);
+    cid = await saveMsg("assistant", response, cid);
+    return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+  }
+
+  // ── TELEFONIA (búsqueda web comparadores) ──
+  if (intent.type === "telefonia") {
+    let cid = await saveMsg("user", lastMsgContent, conversationId);
+    const { comparePhonePlans } = await import("@/lib/skills/ahorro");
+    const response = await comparePhonePlans();
+    cid = await saveMsg("assistant", response, cid);
+    return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+  }
+
+  // ── AYUDAS PUBLICAS (búsqueda web) ──
+  if (intent.type === "ayudas_publicas") {
+    let cid = await saveMsg("user", lastMsgContent, conversationId);
+    const { findPublicAid } = await import("@/lib/skills/ahorro");
+    const response = await findPublicAid(lastMsgContent);
+    cid = await saveMsg("assistant", response, cid);
+    return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+  }
+
+  // ── CUPONES DELIVERY (búsqueda web) ──
+  if (intent.type === "cupones_delivery") {
+    let cid = await saveMsg("user", lastMsgContent, conversationId);
+    const { findFoodDeals } = await import("@/lib/skills/ahorro");
+    const city = userCity || "España";
+    const response = await findFoodDeals(city);
+    cid = await saveMsg("assistant", response, cid);
+    return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+  }
+
+  // ── COMPARAR PRODUCTO (Google Shopping) ──
+  if (intent.type === "comparar_producto") {
+    let cid = await saveMsg("user", lastMsgContent, conversationId);
+    const { compareProductPrice } = await import("@/lib/skills/ahorro");
+    const response = await compareProductPrice(lastMsgContent);
+    cid = await saveMsg("assistant", response, cid);
+    return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+  }
+
   // ── RESTAURANTES (Serper Places + Bayesian weighted rating) ──
   if (intent.type === "restaurantes") {
     let cid = await saveMsg("user", lastMsgContent, conversationId);

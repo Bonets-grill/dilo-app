@@ -75,7 +75,7 @@ async function searchSerperPlaces(city: string, cuisine?: string): Promise<Resta
     const res = await fetch("https://google.serper.dev/places", {
       method: "POST",
       headers: { "X-API-KEY": key, "Content-Type": "application/json" },
-      body: JSON.stringify({ q: query, gl: "es", hl: "es" }),
+      body: JSON.stringify({ q: `restaurantes en ${city}`, gl: "es", hl: "es", location: `${city}, Spain` }),
     });
     if (!res.ok) return [];
     const data = await res.json();
