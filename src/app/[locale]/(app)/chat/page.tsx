@@ -2,7 +2,7 @@
 
 import { useTranslations, useLocale } from "next-intl";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ArrowUp, Mic, Square, Plus, MessageCircle, ImagePlus, MapPin } from "lucide-react";
+import { ArrowUp, Mic, Square, Plus, MessageCircle, ImagePlus, MapPin, X, Pencil } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { createBrowserSupabase } from "@/lib/supabase/client";
 
@@ -28,6 +28,8 @@ export default function ChatPage() {
   const mrRef = useRef<MediaRecorder | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [enhancing, setEnhancing] = useState(false);
+  const [voicePreview, setVoicePreview] = useState<string | null>(null);
+  const voiceRef = useRef<HTMLTextAreaElement>(null);
   const [showLocationBanner, setShowLocationBanner] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
   const supabase = createBrowserSupabase();
@@ -68,6 +70,7 @@ export default function ChatPage() {
     setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
   }, []);
   useEffect(scrollDown, [msgs, scrollDown]);
+  useEffect(() => { if (voicePreview !== null) voiceRef.current?.focus(); }, [voicePreview]);
 
   function onInput(v: string) {
     setInput(v);
@@ -254,7 +257,7 @@ export default function ChatPage() {
           const blob = new Blob(chunks, { type: mr.mimeType }); const fd = new FormData();
           fd.append("audio", blob, mr.mimeType.includes("mp4") ? "a.m4a" : "a.webm"); fd.append("locale", locale);
           const res = await fetch("/api/transcribe", { method: "POST", body: fd });
-          if (res.ok) { const { text } = await res.json(); if (text?.trim()) { setInput(p => (p ? p + " " : "") + text.trim()); taRef.current?.focus(); } }
+          if (res.ok) { const { text } = await res.json(); if (text?.trim()) { setVoicePreview(text.trim()); } }
         } catch { /* */ }
         setTranscribing(false);
       };
@@ -385,7 +388,35 @@ export default function ChatPage() {
       </div>
 
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-      <div className="flex-shrink-0 px-3 py-1.5 border-t border-[var(--border)]">
+
+      {/* Voice transcription preview */}
+      {voicePreview !== null && (
+        <div className="flex-shrink-0 px-3 pt-2 pb-1 border-t border-[var(--border)] bg-[var(--bg2)]">
+          <div className="max-w-2xl mx-auto">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[12px] text-[var(--dim)] font-medium">Transcripci&oacute;n de audio</span>
+              <button onClick={() => setVoicePreview(null)} className="p-1 rounded-full hover:bg-[var(--bg3)]">
+                <X size={14} className="text-[var(--dim)]" />
+              </button>
+            </div>
+            <textarea ref={voiceRef} value={voicePreview} onChange={e => setVoicePreview(e.target.value)}
+              rows={3}
+              className="w-full bg-[var(--bg1)] rounded-xl border border-[var(--border)] px-3 py-2 text-[14px] text-white resize-none leading-6 max-h-[200px] focus:outline-none focus:border-white/30" />
+            <div className="flex gap-2 mt-1.5 mb-0.5 justify-end">
+              <button onClick={() => { setInput(voicePreview || ""); setVoicePreview(null); taRef.current?.focus(); }}
+                className="px-3 py-1.5 rounded-full text-[12px] font-medium bg-[var(--bg3)] text-white flex items-center gap-1.5">
+                <Pencil size={12} /> Editar m&aacute;s
+              </button>
+              <button onClick={() => { const text = voicePreview || ""; setVoicePreview(null); setInput(text); setTimeout(() => send(text), 50); }}
+                className="px-4 py-1.5 rounded-full text-[12px] font-medium bg-white text-black flex items-center gap-1.5">
+                <ArrowUp size={12} /> Enviar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className={`flex-shrink-0 px-3 py-1.5 border-t border-[var(--border)] ${voicePreview !== null ? "hidden" : ""}`}>
         <div className="flex items-end gap-2 max-w-2xl mx-auto">
           <button onClick={() => fileRef.current?.click()} disabled={enhancing} className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 mb-0.5 bg-[var(--bg3)] ${enhancing ? "opacity-40" : ""}`}>
             <ImagePlus size={16} className="text-white" />
