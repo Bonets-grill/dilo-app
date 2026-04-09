@@ -46,9 +46,8 @@ export default function ChatPage() {
           if (list.length > 0) loadConversation(list[0].id);
         });
     });
-    // Detect user's city for local search results
+    // Load cached city if available (geolocation requested on first message)
     setUserCity(getCachedCity());
-    detectAndCacheCity().then(city => { if (city) setUserCity(city); });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -85,6 +84,11 @@ export default function ChatPage() {
     setMsgs([...newMsgs, { id: aId, role: "assistant" as const, content: "" }]);
     setBusy(true);
     setPendingSend(null);
+
+    // Request geolocation on first interaction (needs user gesture on iOS)
+    if (!userCity) {
+      detectAndCacheCity().then(city => { if (city) setUserCity(city); });
+    }
 
     try {
       const res = await fetch("/api/chat", {
