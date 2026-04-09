@@ -32,9 +32,17 @@ export default function ChatPage() {
   const voiceRef = useRef<HTMLTextAreaElement>(null);
   const [showLocationBanner, setShowLocationBanner] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
+  const pendingQueryRef = useRef<string | null>(null);
   const supabase = createBrowserSupabase();
 
   useEffect(() => {
+    // Read query param before auth (e.g. /chat?q=oportunidades)
+    const q = new URLSearchParams(window.location.search).get("q");
+    if (q) {
+      pendingQueryRef.current = q;
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) return;
       const uid = data.user.id;
@@ -46,14 +54,15 @@ export default function ChatPage() {
           const list = (convs as any[] || []) as Conv[];
           setConvList(list);
           if (list.length > 0) loadConversation(list[0].id);
+
+          // Auto-send pending query after auth + conversations loaded
+          if (pendingQueryRef.current) {
+            const pending = pendingQueryRef.current;
+            pendingQueryRef.current = null;
+            setTimeout(() => send(pending), 300);
+          }
         });
     });
-    // Auto-send from query param (e.g. /chat?q=oportunidades)
-    const q = new URLSearchParams(window.location.search).get("q");
-    if (q) {
-      window.history.replaceState({}, "", window.location.pathname);
-      setTimeout(() => send(q), 500);
-    }
     // City loaded from user_facts on server side — no browser geolocation needed
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
