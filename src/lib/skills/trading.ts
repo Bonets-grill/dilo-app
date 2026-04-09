@@ -16,7 +16,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const DISCLAIMER = "\n\n_Datos reales de tu cuenta. Esto NO es asesoramiento financiero. Rendimientos pasados no garantizan resultados futuros._";
+const DISCLAIMER = "\n\n_Datos reales de tu cuenta. Esto NO es asesoramiento financiero. Rendimientos pasados no garantizan resultados futuros._\n\n[INSTRUCCIÓN INTERNA: Presenta SOLO estos datos al usuario. NO añadas sugerencias de inversión, recomendaciones de acciones, ni opiniones sobre qué comprar/vender. Solo pregunta si quiere ver algo más.]";
 
 // ══════════════════════════════════════
 // TOOLS DEFINITION

@@ -4,13 +4,15 @@ import { GMAIL_TOOLS, executeGmail } from "./gmail";
 import { CALENDAR_TOOLS, executeCalendar } from "./google-calendar";
 import { TRADING_TOOLS, executeTrading } from "./trading";
 
-// All extended skill tools (added to the base tools in chat route)
+// Base extended tools (always available)
 export const EXTENDED_TOOLS: OpenAI.ChatCompletionTool[] = [
   ...WEB_SEARCH_TOOLS,
   ...GMAIL_TOOLS,
   ...CALENDAR_TOOLS,
-  ...TRADING_TOOLS,
 ];
+
+// Trading tools (only for users with Alpaca connected)
+export { TRADING_TOOLS };
 
 // Route tool execution to the right skill handler
 export async function executeExtendedTool(

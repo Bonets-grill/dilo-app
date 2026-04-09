@@ -13,10 +13,10 @@ const supabase = createClient(
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
-import { EXTENDED_TOOLS, executeExtendedTool } from "@/lib/skills";
+import { EXTENDED_TOOLS, TRADING_TOOLS, executeExtendedTool } from "@/lib/skills";
 
-// Tool definitions for OpenAI function calling
-const tools: OpenAI.ChatCompletionTool[] = [
+// Tool definitions for OpenAI function calling (base — trading added dynamically)
+const baseTools: OpenAI.ChatCompletionTool[] = [
   ...EXTENDED_TOOLS,
   {
     type: "function",
@@ -997,15 +997,26 @@ REGLAS OPERATIVAS:
    - "compra" / "vende" → USA trading_place_order OBLIGATORIAMENTE (con confirmed=false primero)
    - NUNCA inventes datos de trading. SIEMPRE llama a la tool para obtener datos reales.
 
-REGLAS DE TRADING (MÁXIMA PRIORIDAD):
-- NUNCA des consejos de inversión, recomendaciones de compra/venta, ni predicciones de precios.
-- NUNCA digas "deberías comprar/vender X". En su lugar, muestra datos objetivos.
+REGLAS DE TRADING (MÁXIMA PRIORIDAD — INCUMPLIR = ILEGAL):
+- PROHIBIDO ABSOLUTAMENTE dar consejos de inversión, sugerencias de compra/venta, o recomendaciones de acciones específicas.
+- PROHIBIDO decir "podrías considerar", "buena opción", "interesante para invertir", ni NADA que sugiera una acción concreta.
+- PROHIBIDO mencionar acciones específicas como sugerencia (NVDA, TSLA, AAPL, etc.). Solo menciona acciones que EL USUARIO ya tiene o que EL USUARIO pregunta explícitamente.
+- Cuando el usuario pregunta "¿qué compro?" o "¿en qué invierto?" → responde: "No puedo darte recomendaciones de inversión. Puedo mostrarte los datos de tu portfolio, analizar tu riesgo, o buscar información sobre una acción específica que tú me digas."
 - SIEMPRE muestra preview antes de ejecutar una orden (confirmed=false primero).
 - SIEMPRE verifica las reglas de riesgo del usuario antes de cualquier operación.
-- Si el usuario pregunta "¿debería comprar X?", NO recomiendes. Ofrece mostrar datos reales con las tools.
 - Sé CONSERVADOR. Ante la duda, advierte del riesgo.
-- Si detectas sobreoperación, FOMO, o revenge trading, advierte al usuario con empatía.
+- Después de mostrar datos del portfolio, NO añadas sugerencias. Solo muestra los datos y pregunta si quiere saber algo más.
 ${userFacts}`;
+
+  // Build tools list — only include trading tools if user has Alpaca connected
+  let userTools = baseTools;
+  if (userId) {
+    const { hasAlpacaConnection } = await import("@/lib/oauth/alpaca");
+    const hasAlpaca = await hasAlpacaConnection(userId);
+    if (hasAlpaca) {
+      userTools = [...baseTools, ...TRADING_TOOLS];
+    }
+  }
 
   // encoder already declared above
   let fullResponse = "";
@@ -1028,7 +1039,7 @@ ${userFacts}`;
             model: "gpt-4o-mini",
             max_tokens: 1024,
             messages: chatMessages,
-            tools,
+            tools: userTools,
             stream: false,
           });
 
