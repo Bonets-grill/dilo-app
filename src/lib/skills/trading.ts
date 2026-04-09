@@ -178,25 +178,51 @@ async function doPortfolio(auth: AlpacaAuth): Promise<string> {
 
   const equity = parseFloat(account.equity);
   const lastEquity = parseFloat(account.last_equity);
+  const cash = parseFloat(account.cash);
+  const buyingPower = parseFloat(account.buying_power);
   const dayPnl = equity - lastEquity;
   const dayPnlPct = lastEquity > 0 ? (dayPnl / lastEquity * 100) : 0;
+  const invested = equity - cash;
+  const investedPct = equity > 0 ? (invested / equity * 100) : 0;
+  const mode = auth.paperMode ? "PAPER TRADING" : "LIVE";
 
-  let result = `**Portfolio**\n`;
-  result += `- Valor total: $${equity.toLocaleString("en-US", { minimumFractionDigits: 2 })}\n`;
-  result += `- Cash disponible: $${parseFloat(account.cash).toLocaleString("en-US", { minimumFractionDigits: 2 })}\n`;
-  result += `- Poder de compra: $${parseFloat(account.buying_power).toLocaleString("en-US", { minimumFractionDigits: 2 })}\n`;
-  result += `- P&L hoy: ${dayPnl >= 0 ? "+" : ""}$${dayPnl.toFixed(2)} (${dayPnlPct >= 0 ? "+" : ""}${dayPnlPct.toFixed(2)}%)\n`;
+  let result = `**📊 Dashboard de Trading** _(${mode})_\n\n`;
+
+  // Account metrics
+  result += `| Métrica | Valor |\n|---|---|\n`;
+  result += `| Valor total | $${equity.toLocaleString("en-US", { minimumFractionDigits: 2 })} |\n`;
+  result += `| Invertido | $${invested.toFixed(2)} (${investedPct.toFixed(1)}%) |\n`;
+  result += `| Cash disponible | $${cash.toLocaleString("en-US", { minimumFractionDigits: 2 })} |\n`;
+  result += `| Poder de compra | $${buyingPower.toLocaleString("en-US", { minimumFractionDigits: 2 })} |\n`;
+  result += `| P&L hoy | ${dayPnl >= 0 ? "🟢 +" : "🔴 "}$${Math.abs(dayPnl).toFixed(2)} (${dayPnlPct >= 0 ? "+" : ""}${dayPnlPct.toFixed(2)}%) |\n`;
+  result += `| Day trades (90 días) | ${account.daytrade_count} |\n`;
 
   if (positions.length > 0) {
-    result += `\n**Posiciones abiertas (${positions.length}):**\n`;
-    for (const p of positions) {
+    // Sort by market value descending
+    const sorted = [...positions].sort((a, b) => Math.abs(parseFloat(b.market_value)) - Math.abs(parseFloat(a.market_value)));
+
+    result += `\n**Posiciones abiertas (${positions.length}):**\n\n`;
+    result += `| Símbolo | Cant. | Entrada | Actual | P&L | % |\n|---|---|---|---|---|---|\n`;
+
+    let totalUpl = 0;
+    for (const p of sorted) {
       const upl = parseFloat(p.unrealized_pl);
       const uplPct = parseFloat(p.unrealized_plpc) * 100;
-      const mv = parseFloat(p.market_value);
-      result += `- **${p.symbol}**: ${p.qty} @ $${parseFloat(p.avg_entry_price).toFixed(2)} → $${parseFloat(p.current_price).toFixed(2)} | ${upl >= 0 ? "+" : ""}$${upl.toFixed(2)} (${uplPct >= 0 ? "+" : ""}${uplPct.toFixed(1)}%) | Valor: $${mv.toFixed(2)}\n`;
+      totalUpl += upl;
+      const icon = upl >= 0 ? "🟢" : "🔴";
+      result += `| ${icon} **${p.symbol}** | ${p.qty} | $${parseFloat(p.avg_entry_price).toFixed(2)} | $${parseFloat(p.current_price).toFixed(2)} | ${upl >= 0 ? "+" : ""}$${upl.toFixed(2)} | ${uplPct >= 0 ? "+" : ""}${uplPct.toFixed(1)}% |\n`;
+    }
+
+    result += `\n**P&L total no realizado:** ${totalUpl >= 0 ? "🟢 +" : "🔴 "}$${Math.abs(totalUpl).toFixed(2)}\n`;
+
+    // Quick risk check
+    const largestPct = Math.abs(parseFloat(sorted[0].market_value)) / equity * 100;
+    if (largestPct > 25) {
+      result += `\n⚠️ **${sorted[0].symbol}** ocupa el ${largestPct.toFixed(1)}% de tu portfolio — concentración alta.\n`;
     }
   } else {
-    result += `\nNo tienes posiciones abiertas.`;
+    result += `\nNo tienes posiciones abiertas. Tu portfolio es 100% cash.\n`;
+    result += `\nPuedes pedirme:\n- "Analiza el riesgo de mi portfolio"\n- "Configura reglas de trading"\n- "Muestra mi rendimiento"\n`;
   }
 
   return result + DISCLAIMER;
