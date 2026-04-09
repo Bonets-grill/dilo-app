@@ -49,7 +49,7 @@ async function searchProduct(product: string): Promise<ShoppingItem[]> {
 }
 
 /** Compare prices for a shopping list across stores */
-export async function compareShoppingList(products: string[]): Promise<string> {
+export async function compareShoppingList(products: string[], city?: string): Promise<string> {
   if (!products.length) return "No hay productos para buscar.";
 
   // Search all products in parallel (max 10 to not burn credits)
@@ -57,7 +57,7 @@ export async function compareShoppingList(products: string[]): Promise<string> {
   const results = await Promise.all(
     limited.map(async (product) => ({
       product,
-      items: await searchProduct(product),
+      items: await searchProduct(city ? `${product} ${city}` : product),
     }))
   );
 
@@ -83,7 +83,8 @@ export async function compareShoppingList(products: string[]): Promise<string> {
   if (cheapest.length === 0) return "No encontré precios para esos productos.";
 
   // Build response
-  let response = "**🛒 Comparación de precios** *(precios de tienda online, pueden variar en tienda física)*\n\n**Lo más barato por producto:**\n\n";
+  const locationNote = city ? ` en ${city}` : "";
+  let response = `**🛒 Comparación de precios${locationNote}** *(precios orientativos de tienda online)*\n\n**Lo más barato por producto:**\n\n`;
   let cheapTotal = 0;
 
   for (const { product, item } of cheapest) {

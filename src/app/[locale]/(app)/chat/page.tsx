@@ -5,6 +5,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { ArrowUp, Mic, Square, Plus, MessageCircle, ImagePlus } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { createBrowserSupabase } from "@/lib/supabase/client";
+import { detectAndCacheCity, getCachedCity } from "@/lib/geo";
 
 interface Msg { id: string; role: "user" | "assistant"; content: string; }
 interface Conv { id: string; title: string; updated_at: string; }
@@ -28,6 +29,7 @@ export default function ChatPage() {
   const mrRef = useRef<MediaRecorder | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [enhancing, setEnhancing] = useState(false);
+  const [userCity, setUserCity] = useState<string | null>(null);
   const supabase = createBrowserSupabase();
 
   useEffect(() => {
@@ -44,6 +46,9 @@ export default function ChatPage() {
           if (list.length > 0) loadConversation(list[0].id);
         });
     });
+    // Detect user's city for local search results
+    setUserCity(getCachedCity());
+    detectAndCacheCity().then(city => { if (city) setUserCity(city); });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -85,7 +90,7 @@ export default function ChatPage() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: newMsgs.map(m => ({ role: m.role, content: m.content.startsWith("__IMAGE__") ? "[Foto]" : m.content })), locale, userId, conversationId: convId }),
+        body: JSON.stringify({ messages: newMsgs.map(m => ({ role: m.role, content: m.content.startsWith("__IMAGE__") ? "[Foto]" : m.content })), locale, userId, conversationId: convId, userCity }),
       });
       if (!res.body) throw new Error();
       const newConvId = res.headers.get("X-Conversation-Id");

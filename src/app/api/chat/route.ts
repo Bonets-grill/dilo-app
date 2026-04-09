@@ -354,7 +354,7 @@ async function executeTool(name: string, input: Record<string, unknown>, userId:
 }
 
 export async function POST(req: NextRequest) {
-  const { messages: allMessages, locale = "es", conversationId, userId } = await req.json();
+  const { messages: allMessages, locale = "es", conversationId, userId, userCity } = await req.json();
 
   if (!allMessages?.length) return new Response("Missing messages", { status: 400 });
 
@@ -506,7 +506,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { compareShoppingList } = await import("@/lib/skills/shopping");
-    const response = await compareShoppingList(products);
+    const response = await compareShoppingList(products, userCity || undefined);
 
     cid = await saveMsg("assistant", response, cid);
     return new Response(response, {
@@ -520,7 +520,10 @@ export async function POST(req: NextRequest) {
     const { searchSerper } = await import("@/lib/skills/web-search");
 
     // ONE search call — get both text and links
-    const search = await searchSerper(intent.data?.query as string || lastMsgContent);
+    const searchQuery = userCity
+      ? `${intent.data?.query || lastMsgContent} ${userCity}`
+      : (intent.data?.query as string || lastMsgContent);
+    const search = await searchSerper(searchQuery);
 
     if (!search.results.length) {
       const response = "No encontré resultados para esa búsqueda. Intenta reformularla.";
