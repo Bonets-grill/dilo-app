@@ -109,7 +109,7 @@ async function getUserToken(diloUserId: string): Promise<string | null> {
     const tokenRes = await fetch(`${TINK_API}/oauth/token`, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: `client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}&grant_type=authorization_code&code=${code}`,
+      body: `client_id=${process.env.TINK_CLIENT_ID}&client_secret=${process.env.TINK_CLIENT_SECRET}&grant_type=authorization_code&code=${code}`,
     });
     if (!tokenRes.ok) return null;
     const tokenData = await tokenRes.json();
