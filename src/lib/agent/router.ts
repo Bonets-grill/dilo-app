@@ -109,8 +109,9 @@ export function detectIntent(text: string): RouteResult {
   if (calcMatch) {
     return { type: "calculator", data: { expression: calcMatch[1] } };
   }
-  // Also detect pure math: "45 + 30 + 12"
-  if (/^\s*[\d+\-*/()., ]+\s*$/.test(text.trim()) && /\d/.test(text) && /[+\-*/]/.test(text)) {
+  // Also detect pure math: "45 + 30 + 12" (but NOT phone numbers like +34665625567)
+  if (/^\s*[\d+\-*/()., ]+\s*$/.test(text.trim()) && /\d/.test(text) && /[+\-*/]/.test(text)
+    && !/^\+?\d{7,}$/.test(text.trim())) {
     return { type: "calculator", data: { expression: text.trim() } };
   }
 

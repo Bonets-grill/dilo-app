@@ -9,7 +9,8 @@
     "reminders": "Erinnerungen",
     "expenses": "Ausgaben",
     "profile": "Profil",
-    "store": "Shop"
+    "store": "Shop",
+    "trading": "Trading"
   },
   "chat": {
     "placeholder": "Schreib oder sprich...",
@@ -133,6 +134,36 @@
       "skills": "Skills ab",
       "skillsDesc": "Aktiviere nur, was du brauchst"
     }
+  },
+  "trading": {
+    "title": "Trading",
+    "connectTitle": "Verbinde deinen Broker",
+    "connectDesc": "Richte deine Alpaca API-Schlüssel in den Einstellungen ein, um das Trading-Dashboard zu aktivieren.",
+    "goToSettings": "Zu den Einstellungen",
+    "errorLoading": "Fehler beim Laden",
+    "retry": "Erneut versuchen",
+    "dailySession": "Heutige Sitzung",
+    "sessionOpen": "OFFEN",
+    "sessionClosed": "GESCHLOSSEN",
+    "dailyGoal": "Tagesziel",
+    "trades": "Trades",
+    "totalEquity": "Gesamtwert",
+    "today": "Heute",
+    "week": "Woche",
+    "month": "Monat",
+    "positions": "Offene Positionen",
+    "noPositions": "Keine offenen Positionen",
+    "recentSignals": "Letzte Signale",
+    "pending": "Ausstehend",
+    "learningTitle": "DILO lernt",
+    "signals": "Signale",
+    "winRate": "Win Rate",
+    "markets": "Märkte",
+    "scanMarket": "Markt scannen",
+    "viewCalendar": "Kalender ansehen",
+    "cash": "Cash",
+    "buyingPower": "Kaufkraft",
+    "disclaimer": "Echte Kontodaten. Die endgültige Entscheidung liegt bei dir. Jeder Handel birgt Risiken."
   },
   "common": {
     "today": "Heute",

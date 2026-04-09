@@ -33,6 +33,21 @@ Si necesitas cambiar algo que afecte a un archivo locked, PREGUNTA PRIMERO.
 | `src/lib/agent/facts.ts` | Living Profile — extrae facts de conversaciones + inyecta en system prompt. | 2026-04-08 |
 | `src/app/api/cron/briefing/route.ts` | Briefing matutino (8AM) — resumen del día con gastos, recordatorios, insights. | 2026-04-08 |
 | `src/app/api/cron/insights/route.ts` | Insights nocturnos (21h) — análisis de patrones, alertas proactivas. | 2026-04-08 |
+| `src/lib/skills/trading.ts` | 12 tools de trading: portfolio, performance, journal, rules, orders, profile. Alpaca API. | 2026-04-09 |
+| `src/lib/skills/trading-calendar.ts` | Calendario visual de trading con P&L diario, rachas, resumen mensual. | 2026-04-09 |
+| `src/lib/skills/trading-signals.ts` | Generación de señales estructuradas + detección de sweeps de liquidez. | 2026-04-09 |
+| `src/lib/skills/market-analysis.ts` | Análisis de acciones, scanner de oportunidades, comparativas, earnings. Finnhub. | 2026-04-09 |
+| `src/lib/skills/index.ts` | Router de skills: despacha tools a trading, market, calendar, signals, Gmail, Calendar. | 2026-04-09 |
+| `src/lib/trading/engine-client.ts` | Cliente del Python Trading Engine: SMC analysis, sweeps, position sizing, validation. | 2026-04-09 |
+| `src/lib/trading/profile.ts` | Perfil de trading personalizado: onboarding, reset diario, session close, system prompt. | 2026-04-09 |
+| `src/lib/alpaca/client.ts` | Cliente Alpaca API: account, positions, orders, portfolio history, activities, place order. | 2026-04-09 |
+| `src/lib/finnhub/client.ts` | Cliente Finnhub API: quotes, recommendations, price targets, financials, sentiment, news. | 2026-04-09 |
+| `src/app/api/cron/trading-snapshot/route.ts` | Cron diario L-V 22:00: snapshot de portfolio para todos los usuarios con Alpaca. | 2026-04-09 |
+| `src/app/api/cron/trading-learn/route.ts` | Cron diario L-V 7:00 AM: scan 9 mercados, SMC, noticias, resolver señales, learning score. | 2026-04-09 |
+| `src/app/api/trading/keys/route.ts` | Gestión de API keys de Alpaca (GET/POST). | 2026-04-09 |
+| `src/app/api/oauth/alpaca/route.ts` | Inicio de flujo OAuth Alpaca. | 2026-04-09 |
+| `src/app/api/oauth/alpaca/callback/route.ts` | Callback OAuth Alpaca — guarda tokens. | 2026-04-09 |
+| `src/lib/oauth/alpaca.ts` | Almacenamiento y recuperación de keys Alpaca (base64 en preferences). | 2026-04-09 |
 
 ### Reglas de los locks:
 

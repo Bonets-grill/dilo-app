@@ -9,7 +9,8 @@
     "reminders": "Rappels",
     "expenses": "Dépenses",
     "profile": "Profil",
-    "store": "Boutique"
+    "store": "Boutique",
+    "trading": "Trading"
   },
   "chat": {
     "placeholder": "Écris ou parle...",
@@ -133,6 +134,36 @@
       "skills": "Skills à partir de",
       "skillsDesc": "Active seulement ce dont tu as besoin"
     }
+  },
+  "trading": {
+    "title": "Trading",
+    "connectTitle": "Connecte ton courtier",
+    "connectDesc": "Configure tes clés API Alpaca dans les paramètres pour activer le tableau de bord trading.",
+    "goToSettings": "Aller aux paramètres",
+    "errorLoading": "Erreur de chargement",
+    "retry": "Réessayer",
+    "dailySession": "Session du jour",
+    "sessionOpen": "OUVERTE",
+    "sessionClosed": "FERMÉE",
+    "dailyGoal": "Objectif quotidien",
+    "trades": "trades",
+    "totalEquity": "Valeur totale",
+    "today": "Aujourd'hui",
+    "week": "Semaine",
+    "month": "Mois",
+    "positions": "Positions ouvertes",
+    "noPositions": "Aucune position ouverte",
+    "recentSignals": "Signaux récents",
+    "pending": "En attente",
+    "learningTitle": "DILO apprend",
+    "signals": "Signaux",
+    "winRate": "Win Rate",
+    "markets": "Marchés",
+    "scanMarket": "Scanner le marché",
+    "viewCalendar": "Voir le calendrier",
+    "cash": "Cash",
+    "buyingPower": "Pouvoir d'achat",
+    "disclaimer": "Données réelles de ton compte. La décision finale est la tienne. Tout trading comporte des risques."
   },
   "common": {
     "today": "Aujourd'hui",

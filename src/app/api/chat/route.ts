@@ -281,18 +281,57 @@ async function executeTool(name: string, input: Record<string, unknown>, userId:
     case "search_contacts": {
       try {
         const res = await fetch(`${evoUrl}/chat/findContacts/${instName}`, {
-          method: "POST", headers: { "Content-Type": "application/json", apikey: evoKey }, body: JSON.stringify({}),
+          method: "POST", headers: { "Content-Type": "application/json", apikey: evoKey },
+          body: JSON.stringify({ where: { pushName: { contains: String(input.query) } } }),
         });
-        const contacts = await res.json();
+        let contactsRaw = await res.json();
+        // Handle multiple response formats: array, { contacts: [] }, or other wrapper
+        const contactsList = Array.isArray(contactsRaw) ? contactsRaw
+          : Array.isArray(contactsRaw?.contacts) ? contactsRaw.contacts
+          : Array.isArray(contactsRaw?.data) ? contactsRaw.data : [];
+
         const q = String(input.query).toLowerCase();
-        const matches = Array.isArray(contacts) ? contacts
-          .filter((c: Record<string, unknown>) => String(c.pushName || c.name || "").toLowerCase().includes(q))
+        // Search in multiple name fields for robustness
+        const matches = contactsList
+          .filter((c: Record<string, unknown>) => {
+            const searchable = [
+              c.pushName, c.name, c.profileName, c.verifiedName, c.shortName, c.formattedName,
+            ].filter(Boolean).map(v => String(v).toLowerCase()).join(" ");
+            return searchable.includes(q);
+          })
           .slice(0, 10).map((c: Record<string, unknown>) => ({
-            name: c.pushName || c.name || "Sin nombre",
-            phone: String(c.id || "").replace("@s.whatsapp.net", ""),
-          })) : [];
+            name: c.pushName || c.profileName || c.name || c.verifiedName || c.shortName || "Sin nombre",
+            phone: String(c.id || c.remoteJid || c.jid || "").replace("@s.whatsapp.net", ""),
+          }));
+
+        // If no matches with pre-filter, try fetching ALL contacts and searching locally
+        if (matches.length === 0) {
+          const res2 = await fetch(`${evoUrl}/chat/findContacts/${instName}`, {
+            method: "POST", headers: { "Content-Type": "application/json", apikey: evoKey },
+            body: JSON.stringify({}),
+          });
+          let allRaw = await res2.json();
+          const allList = Array.isArray(allRaw) ? allRaw
+            : Array.isArray(allRaw?.contacts) ? allRaw.contacts
+            : Array.isArray(allRaw?.data) ? allRaw.data : [];
+
+          const fallbackMatches = allList
+            .filter((c: Record<string, unknown>) => {
+              const searchable = [
+                c.pushName, c.name, c.profileName, c.verifiedName, c.shortName, c.formattedName,
+              ].filter(Boolean).map(v => String(v).toLowerCase()).join(" ");
+              return searchable.includes(q);
+            })
+            .slice(0, 10).map((c: Record<string, unknown>) => ({
+              name: c.pushName || c.profileName || c.name || c.verifiedName || c.shortName || "Sin nombre",
+              phone: String(c.id || c.remoteJid || c.jid || "").replace("@s.whatsapp.net", ""),
+            }));
+
+          return JSON.stringify({ found: fallbackMatches.length, contacts: fallbackMatches, total_contacts: allList.length });
+        }
+
         return JSON.stringify({ found: matches.length, contacts: matches });
-      } catch { return JSON.stringify({ error: "WhatsApp not connected" }); }
+      } catch (err) { return JSON.stringify({ error: "WhatsApp not connected", details: String(err) }); }
     }
 
     case "read_whatsapp": {
@@ -393,7 +432,7 @@ export async function POST(req: NextRequest) {
 
   // Only send last 6 messages to avoid rate limits
   // Strip __IMAGE__ base64 content to avoid token explosion (429 errors)
-  const messages = allMessages.slice(-6).map((m: { role: string; content: string }) => ({
+  const messages = allMessages.slice(-10).map((m: { role: string; content: string }) => ({
     ...m,
     content: m.content.startsWith("__IMAGE__") ? "[Foto adjunta]"
       : m.content.startsWith("![") ? "[Imagen generada]"
