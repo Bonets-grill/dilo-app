@@ -153,7 +153,9 @@ export function detectIntent(text: string): RouteResult {
   }
 
   // CONECTAR GOOGLE: "conectar mi gmail", "conectar google", "vincular email"
-  if (/(?:conectar?\s+(?:mi\s+)?(?:gmail|google|email|calendario|calendar)|vincular?\s+(?:mi\s+)?(?:gmail|google|email))/i.test(lower)) {
+  // Also catches email/calendar requests: "lee mis emails", "mis correos", "envía un email", "mi agenda"
+  if (/(?:conectar?\s+(?:mi\s+)?(?:gmail|google|email|calendario|calendar)|vincular?\s+(?:mi\s+)?(?:gmail|google|email))/i.test(lower)
+    || /(?:lee[r ]?\s*(?:mis\s+)?(?:emails?|correos?|e-?mails?)|mis\s+(?:emails?|correos?|e-?mails?)|envia\s+(?:un\s+)?(?:email|correo|e-?mail)|mi\s+agenda|mis\s+eventos|que\s+tengo\s+(?:en\s+)?(?:el\s+)?(?:calendario|agenda))/i.test(lower)) {
     return { type: "conectar_google" };
   }
 

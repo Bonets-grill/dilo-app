@@ -569,21 +569,29 @@ export async function POST(req: NextRequest) {
 
   // ── CONECTAR GOOGLE (Gmail + Calendar) ──
   if (intent.type === "conectar_google") {
-    let cid = await saveMsg("user", lastMsgContent, conversationId);
     if (!userId) {
+      let cid = await saveMsg("user", lastMsgContent, conversationId);
       const response = "Necesitas iniciar sesión para conectar Google.";
       cid = await saveMsg("assistant", response, cid);
       return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
     }
     if (!process.env.GOOGLE_CLIENT_ID) {
+      let cid = await saveMsg("user", lastMsgContent, conversationId);
       const response = "Google OAuth no está configurado todavía.";
       cid = await saveMsg("assistant", response, cid);
       return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
     }
-    const oauthUrl = `https://dilo-app-five.vercel.app/api/oauth/google?userId=${userId}`;
-    const response = `**📧 Conectar Gmail + Calendario**\n\nHaz click para vincular tu cuenta de Google:\n\n👉 [Conectar Google](${oauthUrl})\n\nEsto permite que DILO lea tus emails, envíe emails por ti, y gestione tu calendario.\n\n*Conexión segura via Google OAuth. Puedes desconectar cuando quieras.*`;
-    cid = await saveMsg("assistant", response, cid);
-    return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+    // Check if user already has a valid Google token — if so, fall through to LLM with tools
+    const { hasGoogleConnection } = await import("@/lib/oauth/google");
+    const connected = await hasGoogleConnection(userId);
+    if (!connected) {
+      let cid = await saveMsg("user", lastMsgContent, conversationId);
+      const oauthUrl = `https://dilo-app-five.vercel.app/api/oauth/google?userId=${userId}`;
+      const response = `Para poder leer tus emails y gestionar tu calendario, necesito que conectes tu cuenta de Google primero.\n\n👉 [Conectar Google](${oauthUrl})\n\nEs una conexión segura via Google OAuth. Puedes desconectar cuando quieras.`;
+      cid = await saveMsg("assistant", response, cid);
+      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+    }
+    // User is connected — fall through to LLM which has gmail_* and calendar_* tools
   }
 
   // ── SUSCRIPCIONES (manual — el usuario dice qué paga) ──

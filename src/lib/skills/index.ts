@@ -26,10 +26,15 @@ export async function executeExtendedTool(
     const { getGoogleAccessToken } = await import("@/lib/oauth/google");
     const token = await getGoogleAccessToken(userId);
 
-    if (toolName.startsWith("gmail_")) {
-      return executeGmail(toolName, input, token || undefined);
+    if (!token) {
+      const oauthUrl = `https://dilo-app-five.vercel.app/api/oauth/google?userId=${userId}`;
+      return JSON.stringify({ error: "google_not_connected", message: `El usuario no ha conectado su cuenta de Google. Dile que haga click aquí para conectar: ${oauthUrl}` });
     }
-    return executeCalendar(toolName, input, token || undefined);
+
+    if (toolName.startsWith("gmail_")) {
+      return executeGmail(toolName, input, token);
+    }
+    return executeCalendar(toolName, input, token);
   }
 
   // Not an extended tool — return null so the main executor handles it
