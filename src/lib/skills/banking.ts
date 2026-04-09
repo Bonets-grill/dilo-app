@@ -9,16 +9,20 @@
  */
 
 const TINK_API = "https://api.tink.com/api/v1";
-const CLIENT_ID = process.env.TINK_CLIENT_ID!;
-const CLIENT_SECRET = process.env.TINK_CLIENT_SECRET!;
 
 /** Get client access token */
 async function getClientToken(scope: string): Promise<string | null> {
+  const clientId = process.env.TINK_CLIENT_ID;
+  const clientSecret = process.env.TINK_CLIENT_SECRET;
+  if (!clientId || !clientSecret) {
+    console.error("[Tink] Missing TINK_CLIENT_ID or TINK_CLIENT_SECRET");
+    return null;
+  }
   try {
     const res = await fetch(`${TINK_API}/oauth/token`, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: `client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}&grant_type=client_credentials&scope=${scope}`,
+      body: `client_id=${clientId}&client_secret=${clientSecret}&grant_type=client_credentials&scope=${scope}`,
     });
     if (!res.ok) return null;
     const data = await res.json();
@@ -75,7 +79,7 @@ export async function generateBankConnectionLink(diloUserId: string, redirectUrl
 
     // Build Tink Link URL
     const tinkLink = `https://link.tink.com/1.0/transactions/connect-accounts` +
-      `?client_id=${CLIENT_ID}` +
+      `?client_id=${process.env.TINK_CLIENT_ID}` +
       `&redirect_uri=${encodeURIComponent(redirectUrl)}` +
       `&authorization_code=${code}` +
       `&market=ES` +
