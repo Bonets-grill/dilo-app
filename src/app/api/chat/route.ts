@@ -479,6 +479,19 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  // ── GASOLINERAS (API Ministerio, gratis, tiempo real) ──
+  if (intent.type === "gasolineras") {
+    let cid = await saveMsg("user", lastMsgContent, conversationId);
+    const { findCheapestGasByCity } = await import("@/lib/skills/gasolineras");
+    const fuelType = (intent.data?.fuelType as "gasolina95" | "gasoleoA") || "gasolina95";
+    const city = userCity || "Madrid";
+    const response = await findCheapestGasByCity(city, fuelType);
+    cid = await saveMsg("assistant", response, cid);
+    return new Response(response, {
+      headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" },
+    });
+  }
+
   // ── SHOPPING COMPARE (Google Shopping real prices) ──
   if (intent.type === "shopping_compare") {
     let cid = await saveMsg("user", lastMsgContent, conversationId);

@@ -25,6 +25,7 @@ export type RouteType =
   | "whatsapp_read"
   | "web_search"
   | "shopping_compare"
+  | "gasolineras"
   | "chat";
 
 export interface RouteResult {
@@ -102,6 +103,13 @@ export function detectIntent(text: string): RouteResult {
   // WHATSAPP READ: "lee mis mensajes", "qué me escribió"
   if (/(?:lee\s+mis\s+mensajes|mensajes\s+nuevos|que\s+me\s+escribi|read\s+my\s+messages|unread)/i.test(lower)) {
     return { type: "whatsapp_read" };
+  }
+
+  // GASOLINERAS: "gasolina barata", "dónde repostar", "precio gasolina"
+  if (/(?:gasolin|gasoleo|diesel|repostar|combustible|gasolinera)/i.test(lower)
+    && /(?:barat|precio|mejor|cerca|donde|barata|económic|cheap)/i.test(lower)) {
+    const isDiesel = /(?:diesel|gasoleo|gasóleo)/i.test(lower);
+    return { type: "gasolineras", data: { fuelType: isDiesel ? "gasoleoA" : "gasolina95" } };
   }
 
   // SHOPPING LIST: "necesito comprar leche, pan, arroz", "lista de compras", "compara precios"
