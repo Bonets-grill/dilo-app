@@ -208,9 +208,11 @@ export async function executeTrading(
 // ── Portfolio ──
 
 async function doPortfolio(auth: AlpacaAuth): Promise<string> {
-  const [account, positions] = await Promise.all([
+  const [account, positions, histWeek, histMonth] = await Promise.all([
     getAccount(auth),
     getPositions(auth),
+    getPortfolioHistory(auth, { period: "1W", timeframe: "1D" }).catch(() => null),
+    getPortfolioHistory(auth, { period: "1M", timeframe: "1D" }).catch(() => null),
   ]);
 
   const equity = parseFloat(account.equity);
@@ -223,6 +225,17 @@ async function doPortfolio(auth: AlpacaAuth): Promise<string> {
   const investedPct = equity > 0 ? (invested / equity * 100) : 0;
   const mode = auth.paperMode ? "PAPER TRADING" : "LIVE";
 
+  // Calculate weekly and monthly P&L from portfolio history
+  let weekPnl = 0, weekPnlPct = 0, monthPnl = 0, monthPnlPct = 0;
+  if (histWeek?.profit_loss?.length) {
+    weekPnl = histWeek.profit_loss.reduce((s: number, v: number) => s + (v || 0), 0);
+    weekPnlPct = histWeek.base_value > 0 ? (weekPnl / histWeek.base_value * 100) : 0;
+  }
+  if (histMonth?.profit_loss?.length) {
+    monthPnl = histMonth.profit_loss.reduce((s: number, v: number) => s + (v || 0), 0);
+    monthPnlPct = histMonth.base_value > 0 ? (monthPnl / histMonth.base_value * 100) : 0;
+  }
+
   let result = `**📊 Dashboard de Trading** _(${mode})_\n\n`;
 
   // Account metrics
@@ -231,8 +244,13 @@ async function doPortfolio(auth: AlpacaAuth): Promise<string> {
   result += `| Invertido | $${invested.toFixed(2)} (${investedPct.toFixed(1)}%) |\n`;
   result += `| Cash disponible | $${cash.toLocaleString("en-US", { minimumFractionDigits: 2 })} |\n`;
   result += `| Poder de compra | $${buyingPower.toLocaleString("en-US", { minimumFractionDigits: 2 })} |\n`;
-  result += `| P&L hoy | ${dayPnl >= 0 ? "🟢 +" : "🔴 "}$${Math.abs(dayPnl).toFixed(2)} (${dayPnlPct >= 0 ? "+" : ""}${dayPnlPct.toFixed(2)}%) |\n`;
-  result += `| Day trades (90 días) | ${account.daytrade_count} |\n`;
+
+  // P&L by period
+  result += `\n**Rendimiento:**\n\n`;
+  result += `| Período | P&L | % |\n|---|---|---|\n`;
+  result += `| Hoy | ${dayPnl >= 0 ? "🟢 +" : "🔴 "}$${Math.abs(dayPnl).toFixed(2)} | ${dayPnlPct >= 0 ? "+" : ""}${dayPnlPct.toFixed(2)}% |\n`;
+  result += `| Esta semana | ${weekPnl >= 0 ? "🟢 +" : "🔴 "}$${Math.abs(weekPnl).toFixed(2)} | ${weekPnlPct >= 0 ? "+" : ""}${weekPnlPct.toFixed(2)}% |\n`;
+  result += `| Este mes | ${monthPnl >= 0 ? "🟢 +" : "🔴 "}$${Math.abs(monthPnl).toFixed(2)} | ${monthPnlPct >= 0 ? "+" : ""}${monthPnlPct.toFixed(2)}% |\n`;
 
   if (positions.length > 0) {
     // Sort by market value descending
