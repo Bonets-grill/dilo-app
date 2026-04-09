@@ -34,6 +34,8 @@ export type RouteType =
   | "ayudas_publicas"
   | "cupones_delivery"
   | "comparar_producto"
+  | "conectar_banco"
+  | "suscripciones"
   | "cupones"
   | "alerta_precio"
   | "chat";
@@ -148,6 +150,14 @@ export function detectIntent(text: string): RouteResult {
   // CUPONES / DELIVERY: "cupón just eat", "descuento restaurante"
   if (/(?:cupon|descuento|oferta|deal).*(?:restaurante|delivery|just\s*eat|glovo|uber\s*eats|thefork)/i.test(lower)) {
     return { type: "cupones_delivery" };
+  }
+
+  // BANCO: "conectar banco", "mis suscripciones", "cargos recurrentes"
+  if (/(?:conectar?\s+(?:mi\s+)?banco|vincular?\s+(?:mi\s+)?banco|open\s*banking|link\s+bank)/i.test(lower)) {
+    return { type: "conectar_banco" };
+  }
+  if (/(?:suscripcion|cargo\s+recurrente|pago\s+mensual|que\s+pago|cuanto\s+pago|detectar?\s+suscripcion)/i.test(lower)) {
+    return { type: "suscripciones" };
   }
 
   // CUPONES: "cupón para Zara", "código descuento Amazon", "ofertas"

@@ -567,6 +567,38 @@ export async function POST(req: NextRequest) {
     return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
   }
 
+  // ── CONECTAR BANCO (Tink Open Banking) ──
+  if (intent.type === "conectar_banco") {
+    let cid = await saveMsg("user", lastMsgContent, conversationId);
+    if (!userId) {
+      const response = "Necesitas iniciar sesión para conectar tu banco.";
+      cid = await saveMsg("assistant", response, cid);
+      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+    }
+    const { generateBankConnectionLink } = await import("@/lib/skills/banking");
+    const redirectUrl = "https://dilo-app-five.vercel.app/api/tink/callback";
+    const link = await generateBankConnectionLink(userId, redirectUrl);
+    const response = link
+      ? `**🏦 Conectar tu banco**\n\nHaz click para vincular tu cuenta bancaria de forma segura:\n\n👉 [Conectar banco](${link})\n\n*Usamos Tink (por Visa) — conexión segura y regulada por la UE. Solo leemos tus transacciones, nunca podemos mover dinero.*`
+      : "No se pudo generar el enlace de conexión. Inténtalo de nuevo.";
+    cid = await saveMsg("assistant", response, cid);
+    return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+  }
+
+  // ── SUSCRIPCIONES (detectar cargos recurrentes) ──
+  if (intent.type === "suscripciones") {
+    let cid = await saveMsg("user", lastMsgContent, conversationId);
+    if (!userId) {
+      const response = "Necesitas iniciar sesión para ver tus suscripciones.";
+      cid = await saveMsg("assistant", response, cid);
+      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+    }
+    const { detectSubscriptions } = await import("@/lib/skills/banking");
+    const response = await detectSubscriptions(userId);
+    cid = await saveMsg("assistant", response, cid);
+    return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+  }
+
   // ── CUPONES (buscar códigos descuento) ──
   if (intent.type === "cupones") {
     let cid = await saveMsg("user", lastMsgContent, conversationId);
