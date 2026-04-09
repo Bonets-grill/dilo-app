@@ -48,6 +48,12 @@ export default function ChatPage() {
           if (list.length > 0) loadConversation(list[0].id);
         });
     });
+    // Auto-send from query param (e.g. /chat?q=oportunidades)
+    const q = new URLSearchParams(window.location.search).get("q");
+    if (q) {
+      window.history.replaceState({}, "", window.location.pathname);
+      setTimeout(() => send(q), 500);
+    }
     // City loaded from user_facts on server side — no browser geolocation needed
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

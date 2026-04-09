@@ -336,11 +336,11 @@ export default function TradingPage() {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-2">
-          <Link href="/chat" className="flex items-center gap-2 rounded-xl bg-[var(--card)] border border-[var(--border)] p-3 active:opacity-70 transition-opacity">
+          <Link href="/chat?q=oportunidades" className="flex items-center gap-2 rounded-xl bg-[var(--card)] border border-[var(--border)] p-3 active:opacity-70 transition-opacity">
             <TrendingUp size={16} className="text-green-400" />
             <span className="text-xs font-medium">{t("scanMarket")}</span>
           </Link>
-          <Link href="/chat" className="flex items-center gap-2 rounded-xl bg-[var(--card)] border border-[var(--border)] p-3 active:opacity-70 transition-opacity">
+          <Link href="/chat?q=mi%20calendario%20de%20trading" className="flex items-center gap-2 rounded-xl bg-[var(--card)] border border-[var(--border)] p-3 active:opacity-70 transition-opacity">
             <BarChart3 size={16} className="text-blue-400" />
             <span className="text-xs font-medium">{t("viewCalendar")}</span>
           </Link>
