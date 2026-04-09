@@ -14,6 +14,7 @@ const TINK_API = "https://api.tink.com/api/v1";
 async function getClientToken(scope: string): Promise<string | null> {
   const clientId = process.env.TINK_CLIENT_ID;
   const clientSecret = process.env.TINK_CLIENT_SECRET;
+  console.log("[Tink] ENV check — ID exists:", !!clientId, "Secret exists:", !!clientSecret);
   if (!clientId || !clientSecret) {
     console.error("[Tink] Missing TINK_CLIENT_ID or TINK_CLIENT_SECRET");
     return null;
