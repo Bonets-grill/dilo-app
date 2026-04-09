@@ -5,7 +5,6 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { ArrowUp, Mic, Square, Plus, MessageCircle, ImagePlus } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { createBrowserSupabase } from "@/lib/supabase/client";
-import { detectAndCacheCity, getCachedCity } from "@/lib/geo";
 
 interface Msg { id: string; role: "user" | "assistant"; content: string; }
 interface Conv { id: string; title: string; updated_at: string; }
@@ -29,7 +28,6 @@ export default function ChatPage() {
   const mrRef = useRef<MediaRecorder | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [enhancing, setEnhancing] = useState(false);
-  const [userCity, setUserCity] = useState<string | null>(null);
   const supabase = createBrowserSupabase();
 
   useEffect(() => {
@@ -46,8 +44,7 @@ export default function ChatPage() {
           if (list.length > 0) loadConversation(list[0].id);
         });
     });
-    // Load cached city if available (geolocation requested on first message)
-    setUserCity(getCachedCity());
+    // City loaded from user_facts on server side — no browser geolocation needed
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -85,16 +82,11 @@ export default function ChatPage() {
     setBusy(true);
     setPendingSend(null);
 
-    // Request geolocation on first interaction (needs user gesture on iOS)
-    if (!userCity) {
-      detectAndCacheCity().then(city => { if (city) setUserCity(city); });
-    }
-
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: newMsgs.map(m => ({ role: m.role, content: m.content.startsWith("__IMAGE__") ? "[Foto]" : m.content })), locale, userId, conversationId: convId, userCity }),
+        body: JSON.stringify({ messages: newMsgs.map(m => ({ role: m.role, content: m.content.startsWith("__IMAGE__") ? "[Foto]" : m.content })), locale, userId, conversationId: convId }),
       });
       if (!res.body) throw new Error();
       const newConvId = res.headers.get("X-Conversation-Id");
@@ -125,6 +117,11 @@ export default function ChatPage() {
         // If response contains __IMAGE__, strip the "Generando imagen..." prefix
         if (displayText.includes("__IMAGE__")) {
           displayText = displayText.replace(/^.*?__IMAGE__/, "__IMAGE__");
+        }
+
+        // While waiting for image generation, show loading indicator instead of raw text
+        if (displayText.includes("Generando imagen") && !displayText.includes("__IMAGE__")) {
+          displayText = "Generando imagen... 🎨";
         }
 
         setMsgs(p => p.map(m => m.id === aId ? { ...m, content: displayText } : m));

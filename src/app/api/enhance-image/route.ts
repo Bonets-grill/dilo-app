@@ -15,16 +15,27 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    // Ensure image is a proper blob with reasonable size
+    const imageBuffer = Buffer.from(await image.arrayBuffer());
+    if (imageBuffer.length > 10 * 1024 * 1024) {
+      return NextResponse.json({ error: "Imagen demasiado grande (máx 10MB)" }, { status: 400 });
+    }
+    if (imageBuffer.length < 100) {
+      return NextResponse.json({ error: "Imagen inválida" }, { status: 400 });
+    }
+
+    // Create proper File from buffer for Stability API
+    const imageFile = new File([imageBuffer], "image.png", { type: "image/png" });
+
     // Use Stability AI image-to-image
     const stForm = new FormData();
-    stForm.append("init_image", image);
+    stForm.append("init_image", imageFile);
     stForm.append("init_image_mode", "IMAGE_STRENGTH");
-    stForm.append("image_strength", mode === "stylize" ? "0.5" : "0.35"); // Lower = closer to original
+    stForm.append("image_strength", mode === "stylize" ? "0.5" : "0.35");
     stForm.append("cfg_scale", "7");
     stForm.append("samples", "1");
     stForm.append("steps", "30");
 
-    // Prompt based on mode
     const prompts: Record<string, string> = {
       enhance: "Enhance this photo. Improve clarity, lighting, colors, and sharpness. Make it look professional. Keep the same composition and subject.",
       upscale: "High resolution, ultra detailed, sharp, professional photography, enhanced lighting and colors",
@@ -51,7 +62,12 @@ export async function POST(req: NextRequest) {
     if (!res.ok) {
       const err = await res.text();
       console.error("[Enhance] Stability error:", res.status, err);
-      return NextResponse.json({ error: "Enhancement failed", details: err }, { status: 500 });
+      // Give user a friendly error message
+      const friendlyError = res.status === 400 ? "La imagen no es compatible. Prueba con otra foto."
+        : res.status === 402 ? "Sin créditos de Stability AI."
+        : res.status === 413 ? "Imagen demasiado grande."
+        : "No se pudo mejorar la imagen. Intenta con otra.";
+      return NextResponse.json({ error: friendlyError }, { status: 500 });
     }
 
     const data = await res.json();

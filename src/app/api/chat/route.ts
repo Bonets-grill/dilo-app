@@ -354,7 +354,29 @@ async function executeTool(name: string, input: Record<string, unknown>, userId:
 }
 
 export async function POST(req: NextRequest) {
-  const { messages: allMessages, locale = "es", conversationId, userId, userCity } = await req.json();
+  const { messages: allMessages, locale = "es", conversationId, userId } = await req.json();
+
+  // Load user's city from their profile facts (learned from conversations)
+  let userCity: string | null = null;
+  if (userId) {
+    const { data: cityFact } = await supabase.from("user_facts")
+      .select("fact").eq("user_id", userId).eq("category", "identity")
+      .ilike("fact", "%vive en%").limit(1).maybeSingle();
+    if (cityFact?.fact) {
+      userCity = cityFact.fact.replace(/.*vive en\s*/i, "").trim();
+    }
+    if (!userCity) {
+      const { data: cityFact2 } = await supabase.from("user_facts")
+        .select("fact").eq("user_id", userId).eq("category", "identity")
+        .or("fact.ilike.%Tenerife%,fact.ilike.%Madrid%,fact.ilike.%Barcelona%,fact.ilike.%Canarias%,fact.ilike.%Sevilla%,fact.ilike.%Valencia%")
+        .limit(1).maybeSingle();
+      if (cityFact2?.fact) {
+        // Extract city name from the fact
+        const match = cityFact2.fact.match(/(?:en|de|desde)\s+([A-ZÁÉÍÓÚa-záéíóú\s]+)/);
+        userCity = match ? match[1].trim() : null;
+      }
+    }
+  }
 
   if (!allMessages?.length) return new Response("Missing messages", { status: 400 });
 
