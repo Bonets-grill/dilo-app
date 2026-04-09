@@ -59,6 +59,7 @@ export async function createTinkUser(diloUserId: string): Promise<string | null>
 
 /** Generate a Tink Link URL for user to connect their bank */
 export async function generateBankConnectionLink(diloUserId: string, redirectUrl: string): Promise<string | null> {
+  try {
   // First ensure Tink user exists
   const tinkUser = await createTinkUser(diloUserId);
   console.log("[Tink] User created/exists:", tinkUser);
@@ -87,7 +88,8 @@ export async function generateBankConnectionLink(diloUserId: string, redirectUrl
       `&locale=es_ES`;
 
     return tinkLink;
-  } catch { return null; }
+  } catch (err) { console.error("[Tink] generateBankConnectionLink error:", err); return null; }
+  } catch (err) { console.error("[Tink] Outer error:", err); return null; }
 }
 
 /** Get user access token (after bank is connected) */
