@@ -56,8 +56,9 @@ async function getCurrentPrice(product: string): Promise<ShoppingResult | null> 
 
 /** Create a price alert for a product */
 export async function createPriceAlert(userId: string, productQuery: string): Promise<string> {
-  // Extract product name — strip all command words
-  const product = productQuery
+  // Extract product name — normalize accents then strip command words
+  const normalized = productQuery.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const product = normalized
     .replace(/(?:avis[ae]me|alert[ae]|rastrear?|monitoriz\w*|seguir?|watch|cuando|baj[ea]|precio\s+de[l]?|que\s+baje|si\s+baja)\s*/gi, "")
     .replace(/^\s*(?:el|la|los|las|un|una|de)\s+/i, "")
     .trim();
