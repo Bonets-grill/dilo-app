@@ -479,39 +479,47 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // ── WEB SEARCH (Serper → Google real results, then LLM summarizes) ──
+  // ── WEB SEARCH (Serper → real Google results → LLM summarizes → real links appended) ──
   if (intent.type === "web_search") {
     let cid = await saveMsg("user", lastMsgContent, conversationId);
-    const { executeWebSearch, executeWebSearchRaw } = await import("@/lib/skills/web-search");
-    const searchResult = await executeWebSearch("web_search", { query: intent.data?.query || lastMsgContent });
-    const parsed = JSON.parse(searchResult);
+    const { searchSerper } = await import("@/lib/skills/web-search");
 
-    // Get raw links to append after LLM response
-    const rawLinks = await executeWebSearchRaw(intent.data?.query as string || lastMsgContent);
+    // ONE search call — get both text and links
+    const search = await searchSerper(intent.data?.query as string || lastMsgContent);
 
-    // Use LLM to summarize, but we'll add real links ourselves
+    if (!search.results.length) {
+      const response = "No encontré resultados para esa búsqueda. Intenta reformularla.";
+      cid = await saveMsg("assistant", response, cid);
+      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+    }
+
+    // Build context for LLM — only text, no links (we add real ones after)
+    const context = search.results.map((r, i) => `${i + 1}. ${r.title}: ${r.snippet}`).join("\n");
+
     const searchCompletion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       max_tokens: 400,
       messages: [
-        { role: "system", content: `Eres DILO. Responde basándote SOLO en los resultados de búsqueda. Reglas:
-- Sé específico: incluye precios reales y fechas.
-- PRECIOS en euros (€). Ignora precios en $ >1000 (son pesos COP/MXN).
-- NO pongas links, los añadiré yo después.
-- Sé breve y directo.
+        { role: "system", content: `Eres DILO. Resume los resultados de búsqueda de forma útil. Reglas ESTRICTAS:
+- SOLO usa información de los resultados proporcionados.
+- SOLO euros (€). ELIMINA cualquier precio en COP, MXN, USD, o cualquier moneda que no sea euros. Si solo hay precios en otras monedas, di "consulta el enlace para ver precios".
+- NO inventes links ni URLs. NO pongas ningún enlace. Los enlaces reales se añaden automáticamente al final.
+- Sé breve: máximo 4-5 líneas de resumen.
 - Responde en ${langNames[locale.split("-")[0]] || "español"}.` },
         { role: "user", content: lastMsgContent },
-        { role: "assistant", content: `Resultados:\n${parsed.results || parsed.answer || "Sin resultados"}` },
+        { role: "assistant", content: `Resultados de Google:\n${context}` },
       ],
     });
     let response = searchCompletion.choices[0]?.message?.content || "No encontré resultados.";
 
-    // Append real clickable links from search results
-    if (rawLinks.length > 0) {
-      response += "\n\n**Enlaces directos:**\n";
-      for (const link of rawLinks.slice(0, 5)) {
-        response += `- [${link.title}](${link.url})\n`;
-      }
+    // Remove any links the LLM might have sneaked in
+    response = response.replace(/\[([^\]]+)\]\(https?:\/\/[^)]+\)/g, "$1");
+    response = response.replace(/https?:\/\/\S+/g, "");
+
+    // Append REAL links from Serper
+    response += "\n\n**Ver resultados:**\n";
+    for (const r of search.results.slice(0, 5)) {
+      response += `- [${r.title}](${r.link})\n`;
     }
 
     cid = await saveMsg("assistant", response, cid);
