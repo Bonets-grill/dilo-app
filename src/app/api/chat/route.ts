@@ -363,16 +363,21 @@ export async function POST(req: NextRequest) {
   if (userId) {
     const { data: cityFact } = await supabase.from("user_facts")
       .select("fact").eq("user_id", userId).eq("category", "identity")
-      .ilike("fact", "%vive en%").limit(1).maybeSingle();
+      .or("fact.ilike.%vivo en%,fact.ilike.%vive en%,fact.ilike.%ubicación%,fact.ilike.%ciudad%")
+      .limit(1).maybeSingle();
     if (cityFact?.fact) {
-      userCity = cityFact.fact.replace(/.*vive en\s*/i, "").trim();
+      // Extract city from fact like "Vivo en Icod de los Vinos, Tenerife"
+      const match = cityFact.fact.match(/(?:viv[oe] en|ciudad[:\s]+|ubicaci[oó]n[:\s]+)\s*(.+)/i);
+      userCity = match ? match[1].trim() : cityFact.fact;
     }
-    // Also check for city mentions in other facts
     if (!userCity) {
       const { data: cityFact2 } = await supabase.from("user_facts")
         .select("fact").eq("user_id", userId).eq("category", "identity")
-        .ilike("fact", "%Tenerife%").limit(1).maybeSingle();
-      if (cityFact2) userCity = "Tenerife";
+        .or("fact.ilike.%Tenerife%,fact.ilike.%Canarias%,fact.ilike.%Madrid%,fact.ilike.%Barcelona%")
+        .limit(1).maybeSingle();
+      if (cityFact2?.fact) {
+        userCity = cityFact2.fact;
+      }
     }
   }
 
