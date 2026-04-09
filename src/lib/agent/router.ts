@@ -210,11 +210,19 @@ export function detectIntent(text: string): RouteResult {
     return { type: "trading_calendar" };
   }
 
-  // TRADING PORTFOLIO (direct execution — bypasses LLM): portfolio, P&L, ganancias, pérdidas, posiciones
+  // TRADING PORTFOLIO (direct execution — bypasses LLM): portfolio, P&L, ganancias, pérdidas, posiciones, resumen del día
   if (/(?:mi\s+portfolio|mis\s+posiciones|mis\s+acciones|como\s+van\s+mis|my\s+portfolio|my\s+positions|my\s+stocks)/i.test(lower)
     || /(?:cuanto\s+(?:he\s+)?(?:ganado|perdido|llevo)|cuanto\s+(?:voy\s+)?(?:ganando|perdiendo)|ganancias?\s+(?:de\s+)?hoy|perdidas?\s+(?:de\s+)?hoy|p.?l\s+(?:de\s+)?hoy|como\s+(?:va|voy)\s+hoy)/i.test(lower)
-    || /(?:estado\s+(?:de\s+)?(?:mi[s]?\s+)?(?:inversiones|posiciones|cuenta)|resumen\s+(?:de\s+)?(?:mi[s]?\s+)?(?:cuenta|trading|portfolio))/i.test(lower)
-    || /(?:que\s+(?:tengo|llevo)\s+(?:en\s+)?(?:mi[s]?\s+)?(?:cuenta|portfolio|posiciones))/i.test(lower)) {
+    || /(?:estado\s+(?:de\s+)?(?:mi[s]?\s+)?(?:inversiones|posiciones|cuenta)|resumen\s+(?:de\s+)?(?:mi[s]?\s+)?(?:cuenta|trading|portfolio|dia|day))/i.test(lower)
+    || /(?:que\s+(?:tengo|llevo)\s+(?:en\s+)?(?:mi[s]?\s+)?(?:cuenta|portfolio|posiciones))/i.test(lower)
+    || /(?:summary|resumen).*(?:trading|day|portfolio|dia)/i.test(lower)
+    || /(?:how\s+(?:was|is|did)).*(?:trading|day|portfolio)/i.test(lower)
+    || /(?:como\s+(?:fue|ha\s+ido|estuvo)).*(?:dia|jornada|sesion|trading)/i.test(lower)
+    || /(?:give\s+me).*(?:summary|resumen).*(?:trading|day)/i.test(lower)
+    || /(?:trading|trade|portfolio|p.?l|profit|loss|posicion|position|gewinn|verlust|perte|gain|perdita|guadagno).*(?:today|hoy|heute|aujourd|oggi|day|dia|tag|jour|giorno|resume|summary|resumen|zusammenfassung)/i.test(lower)
+    || /(?:today|hoy|heute|aujourd|oggi).*(?:trading|trade|portfolio|p.?l)/i.test(lower)
+    || /(?:journee|giornata|jornada|sesion|session).*(?:trading|trade|bourse|borsa|handel)/i.test(lower)
+    || /(?:trading|trade|handel|bourse|borsa).*(?:tag|journee|giornata|jornada|dia|day)/i.test(lower)) {
     return { type: "trading_portfolio" };
   }
 
