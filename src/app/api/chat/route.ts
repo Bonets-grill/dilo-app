@@ -356,25 +356,22 @@ async function executeTool(name: string, input: Record<string, unknown>, userId:
 export async function POST(req: NextRequest) {
   const { messages: allMessages, locale = "es", conversationId, userId } = await req.json();
 
-  // Load user's city from their profile facts (learned from conversations)
+  // Detect user's city: Vercel IP geolocation → user_facts → null
   let userCity: string | null = null;
-  if (userId) {
+
+  // Method 1: Vercel's free IP geolocation (works automatically, no permission needed)
+  const vercelCity = req.headers.get("x-vercel-ip-city");
+  if (vercelCity && vercelCity !== "unknown") {
+    userCity = decodeURIComponent(vercelCity);
+  }
+
+  // Method 2: Fallback to user_facts (learned from conversations)
+  if (!userCity && userId) {
     const { data: cityFact } = await supabase.from("user_facts")
       .select("fact").eq("user_id", userId).eq("category", "identity")
       .ilike("fact", "%vive en%").limit(1).maybeSingle();
     if (cityFact?.fact) {
       userCity = cityFact.fact.replace(/.*vive en\s*/i, "").trim();
-    }
-    if (!userCity) {
-      const { data: cityFact2 } = await supabase.from("user_facts")
-        .select("fact").eq("user_id", userId).eq("category", "identity")
-        .or("fact.ilike.%Tenerife%,fact.ilike.%Madrid%,fact.ilike.%Barcelona%,fact.ilike.%Canarias%,fact.ilike.%Sevilla%,fact.ilike.%Valencia%")
-        .limit(1).maybeSingle();
-      if (cityFact2?.fact) {
-        // Extract city name from the fact
-        const match = cityFact2.fact.match(/(?:en|de|desde)\s+([A-ZÁÉÍÓÚa-záéíóú\s]+)/);
-        userCity = match ? match[1].trim() : null;
-      }
     }
   }
 
