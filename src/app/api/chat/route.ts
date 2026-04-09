@@ -356,22 +356,31 @@ async function executeTool(name: string, input: Record<string, unknown>, userId:
 export async function POST(req: NextRequest) {
   const { messages: allMessages, locale = "es", conversationId, userId } = await req.json();
 
-  // Detect user's city: Vercel IP geolocation → user_facts → null
+  // Detect user's city: user_facts (most accurate) → Vercel IP (fallback)
   let userCity: string | null = null;
 
-  // Method 1: Vercel's free IP geolocation (works automatically, no permission needed)
-  const vercelCity = req.headers.get("x-vercel-ip-city");
-  if (vercelCity && vercelCity !== "unknown") {
-    userCity = decodeURIComponent(vercelCity);
-  }
-
-  // Method 2: Fallback to user_facts (learned from conversations)
-  if (!userCity && userId) {
+  // Method 1: user_facts — DILO learned where user lives from conversations
+  if (userId) {
     const { data: cityFact } = await supabase.from("user_facts")
       .select("fact").eq("user_id", userId).eq("category", "identity")
       .ilike("fact", "%vive en%").limit(1).maybeSingle();
     if (cityFact?.fact) {
       userCity = cityFact.fact.replace(/.*vive en\s*/i, "").trim();
+    }
+    // Also check for city mentions in other facts
+    if (!userCity) {
+      const { data: cityFact2 } = await supabase.from("user_facts")
+        .select("fact").eq("user_id", userId).eq("category", "identity")
+        .ilike("fact", "%Tenerife%").limit(1).maybeSingle();
+      if (cityFact2) userCity = "Tenerife";
+    }
+  }
+
+  // Method 2: Vercel IP geolocation (less accurate — ISP node, not real location)
+  if (!userCity) {
+    const vercelCity = req.headers.get("x-vercel-ip-city");
+    if (vercelCity && vercelCity !== "unknown") {
+      userCity = decodeURIComponent(vercelCity);
     }
   }
 
@@ -628,7 +637,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { compareShoppingList } = await import("@/lib/skills/shopping");
-    const response = await compareShoppingList(products, userCity || undefined);
+    const response = await compareShoppingList(products);
 
     cid = await saveMsg("assistant", response, cid);
     return new Response(response, {
