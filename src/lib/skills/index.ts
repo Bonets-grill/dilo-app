@@ -14,22 +14,22 @@ export const EXTENDED_TOOLS: OpenAI.ChatCompletionTool[] = [
 export async function executeExtendedTool(
   toolName: string,
   input: Record<string, unknown>,
-  _userId: string,
-  oauthTokens?: { google?: string },
+  userId: string,
 ): Promise<string | null> {
   // Web Search
   if (toolName === "web_search") {
     return executeWebSearch(toolName, input);
   }
 
-  // Gmail
-  if (toolName.startsWith("gmail_")) {
-    return executeGmail(toolName, input, oauthTokens?.google);
-  }
+  // Gmail or Calendar — need Google OAuth token
+  if (toolName.startsWith("gmail_") || toolName.startsWith("calendar_")) {
+    const { getGoogleAccessToken } = await import("@/lib/oauth/google");
+    const token = await getGoogleAccessToken(userId);
 
-  // Google Calendar
-  if (toolName.startsWith("calendar_")) {
-    return executeCalendar(toolName, input, oauthTokens?.google);
+    if (toolName.startsWith("gmail_")) {
+      return executeGmail(toolName, input, token || undefined);
+    }
+    return executeCalendar(toolName, input, token || undefined);
   }
 
   // Not an extended tool — return null so the main executor handles it

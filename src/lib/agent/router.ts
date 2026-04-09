@@ -34,6 +34,7 @@ export type RouteType =
   | "ayudas_publicas"
   | "cupones_delivery"
   | "comparar_producto"
+  | "conectar_google"
   | "suscripciones"
   | "cupones"
   | "alerta_precio"
@@ -149,6 +150,11 @@ export function detectIntent(text: string): RouteResult {
   // CUPONES / DELIVERY: "cupón just eat", "descuento restaurante"
   if (/(?:cupon|descuento|oferta|deal).*(?:restaurante|delivery|just\s*eat|glovo|uber\s*eats|thefork)/i.test(lower)) {
     return { type: "cupones_delivery" };
+  }
+
+  // CONECTAR GOOGLE: "conectar mi gmail", "conectar google", "vincular email"
+  if (/(?:conectar?\s+(?:mi\s+)?(?:gmail|google|email|calendario|calendar)|vincular?\s+(?:mi\s+)?(?:gmail|google|email))/i.test(lower)) {
+    return { type: "conectar_google" };
   }
 
   // SUSCRIPCIONES: "mis suscripciones", "pago mensual", "cuánto pago al mes"

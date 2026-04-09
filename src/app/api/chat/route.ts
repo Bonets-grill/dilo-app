@@ -567,6 +567,25 @@ export async function POST(req: NextRequest) {
     return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
   }
 
+  // ── CONECTAR GOOGLE (Gmail + Calendar) ──
+  if (intent.type === "conectar_google") {
+    let cid = await saveMsg("user", lastMsgContent, conversationId);
+    if (!userId) {
+      const response = "Necesitas iniciar sesión para conectar Google.";
+      cid = await saveMsg("assistant", response, cid);
+      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+    }
+    if (!process.env.GOOGLE_CLIENT_ID) {
+      const response = "Google OAuth no está configurado todavía.";
+      cid = await saveMsg("assistant", response, cid);
+      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+    }
+    const oauthUrl = `https://dilo-app-five.vercel.app/api/oauth/google?userId=${userId}`;
+    const response = `**📧 Conectar Gmail + Calendario**\n\nHaz click para vincular tu cuenta de Google:\n\n👉 [Conectar Google](${oauthUrl})\n\nEsto permite que DILO lea tus emails, envíe emails por ti, y gestione tu calendario.\n\n*Conexión segura via Google OAuth. Puedes desconectar cuando quieras.*`;
+    cid = await saveMsg("assistant", response, cid);
+    return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+  }
+
   // ── SUSCRIPCIONES (manual — el usuario dice qué paga) ──
   if (intent.type === "suscripciones") {
     let cid = await saveMsg("user", lastMsgContent, conversationId);
