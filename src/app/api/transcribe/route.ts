@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   if (ASSEMBLYAI_KEY && ASSEMBLYAI_KEY !== "placeholder") {
     try {
       const text = await transcribeAssemblyAI(audio, locale);
-      if (text) return NextResponse.json({ text });
+      if (text) return NextResponse.json({ text: normalizeTranscription(text) });
     } catch (err) {
       console.error("[AssemblyAI] Error, falling back to OpenAI:", err);
     }
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   if (OPENAI_KEY && OPENAI_KEY !== "placeholder") {
     try {
       const text = await transcribeOpenAI(audio, locale);
-      return NextResponse.json({ text: text || "" });
+      return NextResponse.json({ text: normalizeTranscription(text || "") });
     } catch (err) {
       console.error("[Whisper] Error:", err);
     }
@@ -115,4 +115,42 @@ async function transcribeOpenAI(audio: Blob, locale: string): Promise<string | n
 
   const data = await res.json();
   return data.text || null;
+}
+
+// ── Normalize spoken patterns to their written form ──
+function normalizeTranscription(text: string): string {
+  let t = text;
+
+  // Email patterns: "info arroba bonnet grill punto com" → "info@bonnetgrill.com"
+  // Handle "arroba" → "@" and collapse spaces around it into an email
+  t = t.replace(/(\S+)\s+arroba\s+([\w\s]+?)\s+punto\s+(com|es|org|net|io|app|dev|co|eu|info)\b/gi,
+    (_, local, domain, tld) => `${local}@${domain.replace(/\s+/g, "")}\.${tld}`);
+  // Fallback: just replace "arroba" → "@"
+  t = t.replace(/\s+arroba\s+/gi, "@");
+  // Handle "punto" in domain context after @
+  t = t.replace(/(@\S+)\s+punto\s+/gi, "$1.");
+  t = t.replace(/(\S+@\S+?)(?:\s+punto\s+)(\S+)/gi, "$1.$2");
+  // "algo punto com/es/org" → "algo.com"
+  t = t.replace(/(\w+)\s+punto\s+(com|es|org|net|io|app|dev|co|eu|info)\b/gi, "$1.$2");
+
+  // Phone patterns: "más 34" or "mas 34" → "+34"
+  t = t.replace(/\bm[aá]s\s+(\d)/gi, "+$1");
+
+  // Remove spaces in phone numbers after +: "+34 692 325 738" → "+34692325738"
+  t = t.replace(/(\+\d{1,3})\s+(\d[\d\s]*\d)/g, (_, prefix, rest) => prefix + rest.replace(/\s/g, ""));
+
+  // "guion" or "guión" → "-"
+  t = t.replace(/\s+gui[oó]n\s+/gi, "-");
+
+  // "barra" → "/"
+  t = t.replace(/\s+barra\s+/gi, "/");
+
+  // "doble uve doble" / "doble u doble u doble u" → "www"
+  t = t.replace(/\btriple\s+w\b/gi, "www");
+  t = t.replace(/\bw{3}\b/gi, "www");
+
+  // Clean up multiple spaces
+  t = t.replace(/\s{2,}/g, " ").trim();
+
+  return t;
 }
