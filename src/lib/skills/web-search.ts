@@ -72,7 +72,32 @@ export async function executeWebSearch(
     } catch { /* fallback */ }
   }
 
-  // Strategy 2: Groq AI knowledge (fast, free)
+  // Strategy 2: Tavily — AI-optimized search (1,000/month free)
+  const tavilyKey = process.env.TAVILY_API_KEY;
+  if (tavilyKey) {
+    try {
+      const res = await fetch("https://api.tavily.com/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ api_key: tavilyKey, query, max_results: 5, include_answer: true }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const results: string[] = [];
+        if (data.answer) results.push(data.answer);
+        if (data.results) {
+          for (const r of data.results.slice(0, 5)) {
+            results.push(`${r.title}: ${r.content?.slice(0, 200)} (${r.url})`);
+          }
+        }
+        if (results.length > 0) {
+          return JSON.stringify({ results: results.join("\n\n"), query, source: "tavily" });
+        }
+      }
+    } catch { /* fallback */ }
+  }
+
+  // Strategy 3: Groq AI knowledge (fast, free)
   const groqKey = process.env.GROQ_API_KEY;
   if (groqKey) {
     try {
