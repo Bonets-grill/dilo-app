@@ -39,17 +39,16 @@ export async function executeExtendedTool(
     return executeCalendar(toolName, input, token);
   }
 
-  // Trading — need Alpaca OAuth token
+  // Trading — need Alpaca API keys
   if (toolName.startsWith("trading_")) {
-    const { getAlpacaAccessToken } = await import("@/lib/oauth/alpaca");
-    const token = await getAlpacaAccessToken(userId);
+    const { getAlpacaKeys } = await import("@/lib/oauth/alpaca");
+    const keys = await getAlpacaKeys(userId);
 
-    if (!token) {
-      const oauthUrl = `https://dilo-app-five.vercel.app/api/oauth/alpaca?userId=${userId}`;
-      return JSON.stringify({ error: "alpaca_not_connected", message: `El usuario no ha conectado su broker. Dile que haga click aquí para conectar Alpaca: ${oauthUrl}` });
+    if (!keys) {
+      return JSON.stringify({ error: "alpaca_not_connected", message: "El usuario no ha configurado sus API keys de Alpaca. Dile que vaya a su Perfil en DILO y pegue sus API keys de Alpaca (las obtiene gratis en alpaca.markets → API)." });
     }
 
-    return executeTrading(toolName, input, token, userId);
+    return executeTrading(toolName, input, keys, userId);
   }
 
   // Not an extended tool — return null so the main executor handles it

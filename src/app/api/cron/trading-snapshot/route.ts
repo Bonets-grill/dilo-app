@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { getAlpacaAccessToken } from "@/lib/oauth/alpaca";
+import { getAlpacaKeys } from "@/lib/oauth/alpaca";
 import { getAccount, getPositions } from "@/lib/alpaca/client";
 
 const supabase = createClient(
@@ -14,11 +14,11 @@ const supabase = createClient(
  */
 export async function GET() {
   try {
-    // Find all users with alpaca_oauth in preferences
+    // Find all users with alpaca_keys in preferences
     const { data: users } = await supabase
       .from("users")
       .select("id, preferences")
-      .not("preferences->alpaca_oauth", "is", null);
+      .not("preferences->alpaca_keys", "is", null);
 
     if (!users || users.length === 0) {
       return NextResponse.json({ ok: true, snapshots: 0 });
@@ -29,12 +29,12 @@ export async function GET() {
 
     for (const user of users) {
       try {
-        const token = await getAlpacaAccessToken(user.id);
-        if (!token) continue;
+        const keys = await getAlpacaKeys(user.id);
+        if (!keys) continue;
 
         const [account, positions] = await Promise.all([
-          getAccount(token),
-          getPositions(token),
+          getAccount(keys),
+          getPositions(keys),
         ]);
 
         const equity = parseFloat(account.equity);

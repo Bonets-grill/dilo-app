@@ -8,6 +8,7 @@ import {
   getActivities,
   placeOrder,
   type OrderRequest,
+  type AlpacaAuth,
 } from "@/lib/alpaca/client";
 
 const supabase = createClient(
@@ -146,19 +147,19 @@ export const TRADING_TOOLS: OpenAI.ChatCompletionTool[] = [
 export async function executeTrading(
   toolName: string,
   input: Record<string, unknown>,
-  token: string,
+  auth: AlpacaAuth,
   userId: string,
 ): Promise<string> {
   try {
     switch (toolName) {
-      case "trading_portfolio": return await doPortfolio(token);
+      case "trading_portfolio": return await doPortfolio(auth);
       case "trading_performance": return await doPerformance(userId, input.period as string);
-      case "trading_journal_sync": return await doJournalSync(token, userId, input.days_back as number);
+      case "trading_journal_sync": return await doJournalSync(auth, userId, input.days_back as number);
       case "trading_journal_annotate": return await doJournalAnnotate(userId, input as Record<string, unknown>);
-      case "trading_risk_analysis": return await doRiskAnalysis(token);
+      case "trading_risk_analysis": return await doRiskAnalysis(auth);
       case "trading_rules_set": return await doRulesSet(userId, input);
-      case "trading_rules_check": return await doRulesCheck(token, userId, input);
-      case "trading_place_order": return await doPlaceOrder(token, userId, input);
+      case "trading_rules_check": return await doRulesCheck(auth, userId, input);
+      case "trading_place_order": return await doPlaceOrder(auth, userId, input);
       default: return JSON.stringify({ error: `Unknown trading tool: ${toolName}` });
     }
   } catch (err) {
@@ -169,10 +170,10 @@ export async function executeTrading(
 
 // ── Portfolio ──
 
-async function doPortfolio(token: string): Promise<string> {
+async function doPortfolio(auth: AlpacaAuth): Promise<string> {
   const [account, positions] = await Promise.all([
-    getAccount(token),
-    getPositions(token),
+    getAccount(auth),
+    getPositions(auth),
   ]);
 
   const equity = parseFloat(account.equity);
@@ -275,12 +276,12 @@ async function doPerformance(userId: string, period?: string): Promise<string> {
 
 // ── Journal Sync ──
 
-async function doJournalSync(token: string, userId: string, daysBack?: number): Promise<string> {
+async function doJournalSync(auth: AlpacaAuth, userId: string, daysBack?: number): Promise<string> {
   const days = Math.min(daysBack || 30, 90);
   const after = new Date();
   after.setDate(after.getDate() - days);
 
-  const activities = await getActivities(token, {
+  const activities = await getActivities(auth, {
     activity_types: "FILL",
     after: after.toISOString(),
     direction: "asc",
@@ -387,10 +388,10 @@ async function doJournalAnnotate(userId: string, input: Record<string, unknown>)
 
 // ── Risk Analysis ──
 
-async function doRiskAnalysis(token: string): Promise<string> {
+async function doRiskAnalysis(auth: AlpacaAuth): Promise<string> {
   const [account, positions] = await Promise.all([
-    getAccount(token),
-    getPositions(token),
+    getAccount(auth),
+    getPositions(auth),
   ]);
 
   const equity = parseFloat(account.equity);
@@ -480,7 +481,7 @@ async function doRulesSet(userId: string, input: Record<string, unknown>): Promi
 
 // ── Rules Check ──
 
-async function doRulesCheck(token: string, userId: string, input: Record<string, unknown>): Promise<string> {
+async function doRulesCheck(auth: AlpacaAuth, userId: string, input: Record<string, unknown>): Promise<string> {
   const symbol = (input.symbol as string).toUpperCase();
   const side = input.side as string;
   const qty = input.qty as number;
@@ -496,7 +497,7 @@ async function doRulesCheck(token: string, userId: string, input: Record<string,
   if (!rules) return JSON.stringify({ allowed: true, message: "No tienes reglas de riesgo configuradas. La operación puede proceder." });
 
   const violations: string[] = [];
-  const account = await getAccount(token);
+  const account = await getAccount(auth);
   const equity = parseFloat(account.equity);
 
   // Check max trades per day
@@ -525,7 +526,7 @@ async function doRulesCheck(token: string, userId: string, input: Record<string,
   // Check max position size
   if (rules.max_position_size_pct && side === "buy") {
     // Estimate position value — we'd need current price, approximate with a round number
-    const positions = await getPositions(token);
+    const positions = await getPositions(auth);
     const existingPos = positions.find(p => p.symbol === symbol);
     const existingValue = existingPos ? Math.abs(parseFloat(existingPos.market_value)) : 0;
     const currentPrice = existingPos ? parseFloat(existingPos.current_price) : 0;
@@ -555,7 +556,7 @@ async function doRulesCheck(token: string, userId: string, input: Record<string,
 
 // ── Place Order ──
 
-async function doPlaceOrder(token: string, userId: string, input: Record<string, unknown>): Promise<string> {
+async function doPlaceOrder(auth: AlpacaAuth, userId: string, input: Record<string, unknown>): Promise<string> {
   const symbol = (input.symbol as string).toUpperCase();
   const side = input.side as "buy" | "sell";
   const qty = input.qty as number;
@@ -564,7 +565,7 @@ async function doPlaceOrder(token: string, userId: string, input: Record<string,
   const confirmed = input.confirmed === true;
 
   // ALWAYS check rules first
-  const ruleResult = await doRulesCheck(token, userId, { symbol, side, qty });
+  const ruleResult = await doRulesCheck(auth, userId, { symbol, side, qty });
   const ruleData = JSON.parse(ruleResult);
 
   if (!ruleData.allowed) {
@@ -573,8 +574,8 @@ async function doPlaceOrder(token: string, userId: string, input: Record<string,
 
   if (!confirmed) {
     // Preview mode
-    const account = await getAccount(token);
-    const positions = await getPositions(token);
+    const account = await getAccount(auth);
+    const positions = await getPositions(auth);
     const existingPos = positions.find(p => p.symbol === symbol);
 
     let preview = `**Preview de orden:**\n`;
@@ -601,7 +602,7 @@ async function doPlaceOrder(token: string, userId: string, input: Record<string,
   };
   if (limitPrice) order.limit_price = String(limitPrice);
 
-  const result = await placeOrder(token, order);
+  const result = await placeOrder(auth, order);
 
   return `Orden ejecutada:\n- ${side === "buy" ? "COMPRA" : "VENTA"} ${qty} x ${symbol}\n- Status: ${result.status}\n- ID: ${result.id}` + DISCLAIMER;
 }

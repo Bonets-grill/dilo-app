@@ -1,17 +1,29 @@
 /**
  * Alpaca API Client — thin wrapper for trading endpoints
- * All functions require a valid OAuth access token.
+ * Uses API Key + Secret authentication (simpler than OAuth).
  */
 
-const BASE_URL = process.env.ALPACA_BASE_URL || "https://paper-api.alpaca.markets";
+const PAPER_URL = "https://paper-api.alpaca.markets";
+const LIVE_URL = "https://api.alpaca.markets";
 const DATA_URL = "https://data.alpaca.markets";
 
-async function alpacaFetch(token: string, path: string, init?: RequestInit, useDataUrl = false) {
-  const base = useDataUrl ? DATA_URL : BASE_URL;
+export interface AlpacaAuth {
+  keyId: string;
+  secretKey: string;
+  paperMode: boolean;
+}
+
+function getBaseUrl(auth: AlpacaAuth) {
+  return auth.paperMode ? PAPER_URL : LIVE_URL;
+}
+
+async function alpacaFetch(auth: AlpacaAuth, path: string, init?: RequestInit, useDataUrl = false) {
+  const base = useDataUrl ? DATA_URL : getBaseUrl(auth);
   const res = await fetch(`${base}${path}`, {
     ...init,
     headers: {
-      Authorization: `Bearer ${token}`,
+      "APCA-API-KEY-ID": auth.keyId,
+      "APCA-API-SECRET-KEY": auth.secretKey,
       "Content-Type": "application/json",
       ...init?.headers,
     },
@@ -43,8 +55,8 @@ export interface AlpacaAccount {
   pattern_day_trader: boolean;
 }
 
-export async function getAccount(token: string): Promise<AlpacaAccount> {
-  return alpacaFetch(token, "/v2/account");
+export async function getAccount(auth: AlpacaAuth): Promise<AlpacaAccount> {
+  return alpacaFetch(auth, "/v2/account");
 }
 
 // ── Positions ──
@@ -66,12 +78,12 @@ export interface AlpacaPosition {
   change_today: string;
 }
 
-export async function getPositions(token: string): Promise<AlpacaPosition[]> {
-  return alpacaFetch(token, "/v2/positions");
+export async function getPositions(auth: AlpacaAuth): Promise<AlpacaPosition[]> {
+  return alpacaFetch(auth, "/v2/positions");
 }
 
-export async function getPosition(token: string, symbol: string): Promise<AlpacaPosition> {
-  return alpacaFetch(token, `/v2/positions/${encodeURIComponent(symbol)}`);
+export async function getPosition(auth: AlpacaAuth, symbol: string): Promise<AlpacaPosition> {
+  return alpacaFetch(auth, `/v2/positions/${encodeURIComponent(symbol)}`);
 }
 
 // ── Orders ──
@@ -95,7 +107,7 @@ export interface AlpacaOrder {
 }
 
 export async function getOrders(
-  token: string,
+  auth: AlpacaAuth,
   params: { status?: string; limit?: number; after?: string; direction?: string } = {}
 ): Promise<AlpacaOrder[]> {
   const qs = new URLSearchParams();
@@ -103,7 +115,7 @@ export async function getOrders(
   if (params.limit) qs.set("limit", String(params.limit));
   if (params.after) qs.set("after", params.after);
   if (params.direction) qs.set("direction", params.direction);
-  return alpacaFetch(token, `/v2/orders?${qs.toString()}`);
+  return alpacaFetch(auth, `/v2/orders?${qs.toString()}`);
 }
 
 // ── Portfolio History ──
@@ -118,13 +130,13 @@ export interface PortfolioHistory {
 }
 
 export async function getPortfolioHistory(
-  token: string,
+  auth: AlpacaAuth,
   params: { period?: string; timeframe?: string } = {}
 ): Promise<PortfolioHistory> {
   const qs = new URLSearchParams();
   qs.set("period", params.period || "1M");
   qs.set("timeframe", params.timeframe || "1D");
-  return alpacaFetch(token, `/v2/account/portfolio/history?${qs.toString()}`);
+  return alpacaFetch(auth, `/v2/account/portfolio/history?${qs.toString()}`);
 }
 
 // ── Activities (for trade journal import) ──
@@ -144,7 +156,7 @@ export interface AlpacaActivity {
 }
 
 export async function getActivities(
-  token: string,
+  auth: AlpacaAuth,
   params: { activity_types?: string; after?: string; direction?: string; page_size?: number } = {}
 ): Promise<AlpacaActivity[]> {
   const qs = new URLSearchParams();
@@ -152,7 +164,7 @@ export async function getActivities(
   if (params.after) qs.set("after", params.after);
   if (params.direction) qs.set("direction", params.direction);
   if (params.page_size) qs.set("page_size", String(params.page_size));
-  return alpacaFetch(token, `/v2/account/activities?${qs.toString()}`);
+  return alpacaFetch(auth, `/v2/account/activities?${qs.toString()}`);
 }
 
 // ── Place Order ──
@@ -168,23 +180,23 @@ export interface OrderRequest {
   stop_price?: string;
 }
 
-export async function placeOrder(token: string, order: OrderRequest): Promise<AlpacaOrder> {
-  return alpacaFetch(token, "/v2/orders", {
+export async function placeOrder(auth: AlpacaAuth, order: OrderRequest): Promise<AlpacaOrder> {
+  return alpacaFetch(auth, "/v2/orders", {
     method: "POST",
     body: JSON.stringify(order),
   });
 }
 
-export async function cancelOrder(token: string, orderId: string): Promise<void> {
-  await alpacaFetch(token, `/v2/orders/${orderId}`, { method: "DELETE" });
+export async function cancelOrder(auth: AlpacaAuth, orderId: string): Promise<void> {
+  await alpacaFetch(auth, `/v2/orders/${orderId}`, { method: "DELETE" });
 }
 
 // ── Market Data (quotes) ──
 
-export async function getLatestQuote(token: string, symbol: string) {
-  return alpacaFetch(token, `/v2/stocks/${encodeURIComponent(symbol)}/quotes/latest`, undefined, true);
+export async function getLatestQuote(auth: AlpacaAuth, symbol: string) {
+  return alpacaFetch(auth, `/v2/stocks/${encodeURIComponent(symbol)}/quotes/latest`, undefined, true);
 }
 
-export async function getLatestBar(token: string, symbol: string) {
-  return alpacaFetch(token, `/v2/stocks/${encodeURIComponent(symbol)}/bars/latest`, undefined, true);
+export async function getLatestBar(auth: AlpacaAuth, symbol: string) {
+  return alpacaFetch(auth, `/v2/stocks/${encodeURIComponent(symbol)}/bars/latest`, undefined, true);
 }

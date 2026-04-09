@@ -602,18 +602,11 @@ export async function POST(req: NextRequest) {
       cid = await saveMsg("assistant", response, cid);
       return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
     }
-    if (!process.env.ALPACA_CLIENT_ID) {
-      let cid = await saveMsg("user", lastMsgContent, conversationId);
-      const response = "La conexión con el broker no está configurada todavía.";
-      cid = await saveMsg("assistant", response, cid);
-      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
-    }
     const { hasAlpacaConnection } = await import("@/lib/oauth/alpaca");
     const connected = await hasAlpacaConnection(userId);
     if (!connected) {
       let cid = await saveMsg("user", lastMsgContent, conversationId);
-      const oauthUrl = `https://dilo-app-five.vercel.app/api/oauth/alpaca?userId=${userId}`;
-      const response = `Para conectar tu cuenta de trading, vincula tu broker Alpaca.\n\n👉 [Conectar Broker](${oauthUrl})\n\nConexión segura via OAuth. Puedes desconectar cuando quieras.\n\n_Si no tienes cuenta en Alpaca, puedes crear una gratis en alpaca.markets (incluye trading con dinero virtual para practicar)._`;
+      const response = `Para conectar tu cuenta de trading, necesitas tus API keys de Alpaca.\n\n**Pasos:**\n1. Crea una cuenta gratis en [alpaca.markets](https://alpaca.markets) (incluye $100K virtuales para practicar)\n2. Ve a tu Dashboard → API\n3. Copia tu API Key ID y Secret Key\n4. Ve a tu **Perfil** en DILO y pégalas\n\nUna vez conectado, podré ver tu portfolio, analizar tu rendimiento, y ayudarte con la gestión de riesgo.`;
       cid = await saveMsg("assistant", response, cid);
       return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
     }
@@ -635,8 +628,7 @@ export async function POST(req: NextRequest) {
     const connected = await hasAlpacaConnection(userId);
     if (!connected) {
       let cid = await saveMsg("user", lastMsgContent, conversationId);
-      const oauthUrl = `https://dilo-app-five.vercel.app/api/oauth/alpaca?userId=${userId}`;
-      const response = `Para acceder a tu trading, primero conecta tu broker.\n\n👉 [Conectar Broker](${oauthUrl})\n\n_Si no tienes cuenta, crea una gratis en alpaca.markets._`;
+      const response = `Para acceder a tu trading, primero configura tus API keys de Alpaca en tu **Perfil**.\n\nSi no tienes cuenta, crea una gratis en [alpaca.markets](https://alpaca.markets).`;
       cid = await saveMsg("assistant", response, cid);
       return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
     }

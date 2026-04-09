@@ -1,5 +1,7 @@
 /**
- * Alpaca OAuth Token Helper — retrieves and auto-refreshes tokens
+ * Alpaca API Key Helper — retrieves user's stored API keys
+ * Users store their Alpaca API Key + Secret in their DILO profile.
+ * No OAuth needed — simple key-based auth.
  */
 
 import { createClient } from "@supabase/supabase-js";
@@ -9,68 +11,59 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-/** Get a valid Alpaca access token for a user (auto-refreshes if expired) */
-export async function getAlpacaAccessToken(userId: string): Promise<string | null> {
+export interface AlpacaKeys {
+  keyId: string;
+  secretKey: string;
+  paperMode: boolean;
+}
+
+/** Get stored Alpaca API keys for a user */
+export async function getAlpacaKeys(userId: string): Promise<AlpacaKeys | null> {
   try {
     const { data: user } = await supabase.from("users").select("preferences").eq("id", userId).single();
     const prefs = (user?.preferences as Record<string, unknown>) || {};
-    const oauth = prefs.alpaca_oauth as Record<string, unknown> | undefined;
+    const alpaca = prefs.alpaca_keys as Record<string, unknown> | undefined;
 
-    if (!oauth?.access_token) return null;
+    if (!alpaca?.key_id || !alpaca?.secret_key) return null;
 
-    const accessToken = Buffer.from(oauth.access_token as string, "base64").toString();
-    const expiresAt = (oauth.expires_at as number) || 0;
-    const refreshToken = oauth.refresh_token ? Buffer.from(oauth.refresh_token as string, "base64").toString() : null;
-
-    // If token is still valid (with 60s buffer), return it
-    if (Date.now() < expiresAt - 60000) {
-      return accessToken;
-    }
-
-    // Token expired — try to refresh
-    if (!refreshToken) return null;
-
-    const clientId = process.env.ALPACA_CLIENT_ID;
-    const clientSecret = process.env.ALPACA_CLIENT_SECRET;
-    if (!clientId || !clientSecret) return null;
-
-    const res = await fetch("https://api.alpaca.markets/oauth/token", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        grant_type: "refresh_token",
-        client_id: clientId,
-        client_secret: clientSecret,
-        refresh_token: refreshToken,
-      }),
-    });
-
-    if (!res.ok) {
-      console.error("[Alpaca OAuth] Token refresh failed:", await res.text());
-      return null;
-    }
-
-    const tokens = await res.json();
-    const newAccessToken = tokens.access_token;
-
-    // Update stored tokens
-    oauth.access_token = Buffer.from(newAccessToken).toString("base64");
-    oauth.expires_at = Date.now() + (tokens.expires_in || 3600) * 1000;
-    if (tokens.refresh_token) {
-      oauth.refresh_token = Buffer.from(tokens.refresh_token).toString("base64");
-    }
-    prefs.alpaca_oauth = oauth;
-    await supabase.from("users").update({ preferences: prefs }).eq("id", userId);
-
-    return newAccessToken;
+    return {
+      keyId: Buffer.from(alpaca.key_id as string, "base64").toString(),
+      secretKey: Buffer.from(alpaca.secret_key as string, "base64").toString(),
+      paperMode: (alpaca.paper_mode as boolean) !== false, // default true (safe)
+    };
   } catch (err) {
-    console.error("[Alpaca OAuth] getAlpacaAccessToken error:", err);
+    console.error("[Alpaca] getAlpacaKeys error:", err);
     return null;
+  }
+}
+
+/** Save Alpaca API keys for a user */
+export async function saveAlpacaKeys(userId: string, keyId: string, secretKey: string, paperMode = true): Promise<boolean> {
+  try {
+    const { data: user } = await supabase.from("users").select("preferences").eq("id", userId).single();
+    const prefs = (user?.preferences as Record<string, unknown>) || {};
+
+    prefs.alpaca_keys = {
+      key_id: Buffer.from(keyId).toString("base64"),
+      secret_key: Buffer.from(secretKey).toString("base64"),
+      paper_mode: paperMode,
+    };
+
+    await supabase.from("users").update({ preferences: prefs }).eq("id", userId);
+    return true;
+  } catch (err) {
+    console.error("[Alpaca] saveAlpacaKeys error:", err);
+    return false;
   }
 }
 
 /** Check if user has Alpaca connected */
 export async function hasAlpacaConnection(userId: string): Promise<boolean> {
-  const token = await getAlpacaAccessToken(userId);
-  return token !== null;
+  const keys = await getAlpacaKeys(userId);
+  return keys !== null;
+}
+
+// Keep backward compat — return null (no longer OAuth-based)
+export async function getAlpacaAccessToken(userId: string): Promise<string | null> {
+  return null;
 }
