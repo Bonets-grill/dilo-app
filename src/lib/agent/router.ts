@@ -40,6 +40,8 @@ export type RouteType =
   | "alerta_precio"
   | "trading_connect"
   | "trading"
+  | "market_scan"
+  | "market_analyze"
   | "chat";
 
 export interface RouteResult {
@@ -184,6 +186,21 @@ export function detectIntent(text: string): RouteResult {
   // TRADING MODE: "activar modo trading", "configurar trading", "quiero hacer trading"
   if (/(?:activar?\s+(?:modo\s+)?trading|configurar?\s+(?:mi\s+)?trading|quiero\s+(?:hacer\s+)?trading|modo\s+(?:de\s+)?(?:inversion|trading|bolsa)|operar\s+en\s+bolsa)/i.test(lower)) {
     return { type: "trading" };
+  }
+
+  // MARKET SCAN: "oportunidades", "qué compro", "analiza el mercado", "señales", "escanea mercado"
+  if (/(?:oportunidad|que\s+compro|que\s+opero|senales?\s+(?:de\s+)?(?:trading|mercado|entrada)|escanea|analiza\s+(?:el\s+)?mercado|mercado\s+hoy|como\s+esta\s+(?:el\s+)?mercado|lleva(?:me)?\s+(?:el\s+|todo\s+el\s+)?trading|busca.*(?:oportunidad|trade|operacion)|empiezo?\s+.*(?:trading|operar|mercado))/i.test(lower)) {
+    return { type: "market_scan" };
+  }
+
+  // MARKET ANALYZE: "analiza AAPL", "qué tal Tesla", "analiza el oro", "como va nvidia"
+  const analyzeMatch = lower.match(/(?:analiza|analisis|que\s+tal|como\s+(?:va|esta)|review|investiga)\s+(?:el\s+|la\s+|las?\s+)?(?:accion(?:es)?\s+(?:de\s+)?)?([\w/.]+)/i);
+  if (analyzeMatch) {
+    const sym = analyzeMatch[1];
+    if (/^(?:[A-Z]{1,5}|gold|oro|xau|sp500|us500|nasdaq|gbp|eur|jpy|usd|btc|eth|apple|tesla|nvidia|amazon|google|microsoft|meta|netflix)/i.test(sym)) {
+      const symbolMap: Record<string, string> = { oro: "XAUUSD", gold: "XAUUSD", sp500: "SPY", us500: "SPY", nasdaq: "QQQ", apple: "AAPL", tesla: "TSLA", nvidia: "NVDA", amazon: "AMZN", google: "GOOGL", microsoft: "MSFT", meta: "META", netflix: "NFLX" };
+      return { type: "market_analyze", data: { symbol: symbolMap[sym.toLowerCase()] || sym.toUpperCase() } };
+    }
   }
 
   // TRADING: "mi portfolio", "mis posiciones", "mis acciones", "rendimiento trading", "reglas de riesgo", "compra acciones", "vende acciones"

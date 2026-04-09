@@ -635,6 +635,48 @@ export async function POST(req: NextRequest) {
     // Connected — fall through to LLM which has trading_* tools
   }
 
+  // ── MARKET SCAN (direct execution — bypasses LLM tool selection) ──
+  if (intent.type === "market_scan") {
+    let cid = await saveMsg("user", lastMsgContent, conversationId);
+    if (!userId) {
+      const response = "Necesitas iniciar sesión para acceder al análisis de mercado.";
+      cid = await saveMsg("assistant", response, cid);
+      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+    }
+    const { hasAlpacaConnection } = await import("@/lib/oauth/alpaca");
+    const connected = await hasAlpacaConnection(userId);
+    if (!connected) {
+      const response = `Para acceder al análisis de mercado, primero configura tus API keys de Alpaca en tu **Perfil**.`;
+      cid = await saveMsg("assistant", response, cid);
+      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+    }
+    const { executeMarketAnalysis } = await import("@/lib/skills/market-analysis");
+    const response = await executeMarketAnalysis("market_scan_opportunities", {});
+    cid = await saveMsg("assistant", response, cid);
+    return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+  }
+
+  // ── MARKET ANALYZE (direct execution — bypasses LLM tool selection) ──
+  if (intent.type === "market_analyze" && intent.data?.symbol) {
+    let cid = await saveMsg("user", lastMsgContent, conversationId);
+    if (!userId) {
+      const response = "Necesitas iniciar sesión para acceder al análisis de mercado.";
+      cid = await saveMsg("assistant", response, cid);
+      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+    }
+    const { hasAlpacaConnection } = await import("@/lib/oauth/alpaca");
+    const connected = await hasAlpacaConnection(userId);
+    if (!connected) {
+      const response = `Para acceder al análisis de mercado, primero configura tus API keys de Alpaca en tu **Perfil**.`;
+      cid = await saveMsg("assistant", response, cid);
+      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+    }
+    const { executeMarketAnalysis } = await import("@/lib/skills/market-analysis");
+    const response = await executeMarketAnalysis("market_analyze_stock", { symbol: intent.data.symbol });
+    cid = await saveMsg("assistant", response, cid);
+    return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+  }
+
   // ── SUSCRIPCIONES (manual — el usuario dice qué paga) ──
   if (intent.type === "suscripciones") {
     let cid = await saveMsg("user", lastMsgContent, conversationId);
