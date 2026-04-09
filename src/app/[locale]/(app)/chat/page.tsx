@@ -403,7 +403,7 @@ export default function ChatPage() {
               rows={5}
               className="w-full bg-[var(--bg1)] rounded-xl border border-[var(--border)] px-3 py-2 text-[15px] text-white resize-none leading-7 max-h-[280px] focus:outline-none focus:border-white/30" />
             <div className="flex gap-2 mt-1.5 mb-0.5 justify-end">
-              <button onClick={() => { setInput(voicePreview || ""); setVoicePreview(null); taRef.current?.focus(); }}
+              <button onClick={() => { const txt = voicePreview || ""; setVoicePreview(null); setInput(txt); setTimeout(() => { if (taRef.current) { taRef.current.style.height = "auto"; taRef.current.style.height = Math.min(taRef.current.scrollHeight, 100) + "px"; taRef.current.focus(); taRef.current.setSelectionRange(txt.length, txt.length); } }, 50); }}
                 className="px-3 py-1.5 rounded-full text-[12px] font-medium bg-[var(--bg3)] text-white flex items-center gap-1.5">
                 <Pencil size={12} /> Editar m&aacute;s
               </button>
