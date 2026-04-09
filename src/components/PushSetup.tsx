@@ -41,15 +41,19 @@ export default function PushSetup() {
       if (!user) return;
 
       const subJson = sub.toJSON();
+
+      // Delete old subscriptions for this user, then insert fresh one
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase.from("push_subscriptions") as any).upsert({
+      await (supabase.from("push_subscriptions") as any).delete().eq("user_id", user.id);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase.from("push_subscriptions") as any).insert({
         user_id: user.id,
         endpoint: subJson.endpoint!,
         keys: subJson.keys,
         user_agent: navigator.userAgent,
-      }, { onConflict: "endpoint" });
+      });
 
-      console.log("[Push] Subscription saved");
+      console.log("[Push] Subscription saved (old ones cleaned)");
     } catch (e) {
       console.error("[Push] Registration failed:", e);
     }
