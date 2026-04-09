@@ -329,6 +329,11 @@ export default function ChatPage() {
                   <>
                     <div className="chat-md">
                       <ReactMarkdown components={{
+                        a: ({ href, children }) => (
+                          <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline hover:text-blue-300 break-all">
+                            {children}
+                          </a>
+                        ),
                         img: ({ src, alt }) => (
                           <div className="mt-2 mb-2">
                             <img
