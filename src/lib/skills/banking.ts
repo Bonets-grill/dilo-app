@@ -65,13 +65,10 @@ export async function generateBankConnectionLink(diloUserId: string, redirectUrl
   try {
     const res = await fetch(`${TINK_API}/oauth/authorization-grant`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        external_user_id: diloUserId,
-        scope: "accounts:read,balances:read,transactions:read,credentials:read",
-      }),
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/x-www-form-urlencoded" },
+      body: `external_user_id=${diloUserId}&scope=accounts:read,balances:read,transactions:read,credentials:read`,
     });
-    if (!res.ok) return null;
+    if (!res.ok) { console.error("[Tink] Auth grant error:", await res.text()); return null; }
     const data = await res.json();
     const code = data.code;
     if (!code) return null;
@@ -96,11 +93,8 @@ async function getUserToken(diloUserId: string): Promise<string | null> {
   try {
     const res = await fetch(`${TINK_API}/oauth/authorization-grant`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        external_user_id: diloUserId,
-        scope: "accounts:read,balances:read,transactions:read",
-      }),
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/x-www-form-urlencoded" },
+      body: `external_user_id=${diloUserId}&scope=accounts:read,balances:read,transactions:read`,
     });
     if (!res.ok) return null;
     const data = await res.json();
