@@ -899,10 +899,17 @@ export async function POST(req: NextRequest) {
   const { loadUserFacts } = await import("@/lib/agent/facts");
   const userFacts = userId ? await loadUserFacts(userId) : "";
 
+  // Load user's name from profile
+  let userName = "";
+  if (userId) {
+    const { data: userRow } = await supabase.from("users").select("name, email").eq("id", userId).single();
+    userName = userRow?.name || userRow?.email?.split("@")[0] || "";
+  }
+
   const systemPrompt = `Eres DILO, un asistente personal inteligente y un AMIGO de verdad.
 
 IDIOMA: Responde SIEMPRE en ${langName}.
-HORA ACTUAL: ${now}
+HORA ACTUAL: ${now}${userName ? `\nNOMBRE DEL USUARIO: ${userName}` : ""}
 
 PERSONALIDAD:
 - Eres cálido, empático y genuino. Como un amigo cercano que se preocupa de verdad.
@@ -939,7 +946,7 @@ REGLAS OPERATIVAS:
 5. Sé EFICIENTE. Si tienes la info, actúa.
 6. BÚSQUEDAS → USA web_search SIEMPRE que el usuario pregunte por precios, vuelos, noticias, clima, eventos, productos, o CUALQUIER información actual/en tiempo real. NUNCA respondas de memoria sobre datos que pueden cambiar — BUSCA SIEMPRE.
 7. CALENDARIO → USA calendar_list_events/calendar_create_event si el usuario pregunta por su agenda o quiere crear eventos.
-8. EMAIL → USA gmail_read_inbox/gmail_send_email si el usuario quiere leer o enviar emails.
+8. EMAIL → USA gmail_read_inbox/gmail_send_email si el usuario quiere leer o enviar emails. IMPORTANTE: Cuando redactes un email, SIEMPRE firma con el nombre real del usuario (de los datos que conoces). NUNCA pongas "[Tu Nombre]" ni placeholders — usa el nombre que sabes.
 ${userFacts}`;
 
   // encoder already declared above
