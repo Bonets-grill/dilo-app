@@ -24,6 +24,7 @@ export type RouteType =
   | "whatsapp_send"
   | "whatsapp_read"
   | "web_search"
+  | "shopping_compare"
   | "chat";
 
 export interface RouteResult {
@@ -101,6 +102,12 @@ export function detectIntent(text: string): RouteResult {
   // WHATSAPP READ: "lee mis mensajes", "qué me escribió"
   if (/(?:lee\s+mis\s+mensajes|mensajes\s+nuevos|que\s+me\s+escribi|read\s+my\s+messages|unread)/i.test(lower)) {
     return { type: "whatsapp_read" };
+  }
+
+  // SHOPPING LIST: "necesito comprar leche, pan, arroz", "lista de compras", "compara precios"
+  if (/(?:lista\s+de\s+compra|necesito\s+comprar|compara\s+precios?\s+(?:de|en)\s+super|compra\s+(?:en|del)\s+super|precio.*(?:leche|pan|arroz|pasta|pollo|huevo|aceite|fruta|verdura|carne))/i.test(lower)
+    || (/(?:comprar|compra)/i.test(lower) && /(?:leche|pan|arroz|pasta|pollo|huevo|aceite|atun|cafe|azucar|sal|jamon|queso|yogur|cerveza|agua|tomate|cebolla|patata|platano|manzana)/i.test(lower))) {
+    return { type: "shopping_compare", data: { query: text } };
   }
 
   // WEB SEARCH: "busca en internet/google", "qué precio tiene", "vuelos a", "noticias de"

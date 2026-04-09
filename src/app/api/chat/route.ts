@@ -479,6 +479,41 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  // ── SHOPPING COMPARE (Google Shopping real prices) ──
+  if (intent.type === "shopping_compare") {
+    let cid = await saveMsg("user", lastMsgContent, conversationId);
+
+    // Extract product names from the message
+    const extractCompletion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      max_tokens: 150,
+      temperature: 0,
+      messages: [
+        { role: "system", content: 'Extract product names from the shopping request. Return ONLY a JSON array of product search terms in Spanish, optimized for Google Shopping. Example: ["leche entera 1L","pan de molde","arroz 1kg"]. Keep terms short and specific.' },
+        { role: "user", content: lastMsgContent },
+      ],
+    });
+    let products: string[] = [];
+    try {
+      const content = extractCompletion.choices[0]?.message?.content?.trim() || "[]";
+      products = JSON.parse(content.replace(/```json\n?/g, "").replace(/```/g, ""));
+    } catch { /* */ }
+
+    if (products.length === 0) {
+      const response = "Dime qué productos necesitas comprar y te comparo precios entre supermercados. Ejemplo: 'Necesito leche, pan, arroz y pollo'.";
+      cid = await saveMsg("assistant", response, cid);
+      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+    }
+
+    const { compareShoppingList } = await import("@/lib/skills/shopping");
+    const response = await compareShoppingList(products);
+
+    cid = await saveMsg("assistant", response, cid);
+    return new Response(response, {
+      headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" },
+    });
+  }
+
   // ── WEB SEARCH (Serper → real Google results → LLM summarizes → real links appended) ──
   if (intent.type === "web_search") {
     let cid = await saveMsg("user", lastMsgContent, conversationId);
