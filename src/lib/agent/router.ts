@@ -26,6 +26,7 @@ export type RouteType =
   | "web_search"
   | "shopping_compare"
   | "gasolineras"
+  | "restaurantes"
   | "chat";
 
 export interface RouteResult {
@@ -103,6 +104,15 @@ export function detectIntent(text: string): RouteResult {
   // WHATSAPP READ: "lee mis mensajes", "qué me escribió"
   if (/(?:lee\s+mis\s+mensajes|mensajes\s+nuevos|que\s+me\s+escribi|read\s+my\s+messages|unread)/i.test(lower)) {
     return { type: "whatsapp_read" };
+  }
+
+  // RESTAURANTES: "restaurante cerca", "dónde comer", "mejores restaurantes"
+  if (/(?:restaurante|comer|cenar|almorzar|brunch|comida|donde\s+com)/i.test(lower)
+    && /(?:buen|mejor|cerca|recomiend|donde|bueno|barato|top|popular|rating)/i.test(lower)) {
+    // Extract cuisine type if mentioned
+    const cuisineMatch = lower.match(/(?:restaurante|comida)\s+(?:de\s+)?(\w+)/i);
+    const cuisine = cuisineMatch?.[1] && !["cerca","bueno","barato","mejor"].includes(cuisineMatch[1]) ? cuisineMatch[1] : undefined;
+    return { type: "restaurantes", data: { cuisine } };
   }
 
   // GASOLINERAS: "gasolina barata", "dónde repostar", "precio gasolina"

@@ -501,6 +501,25 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  // ── RESTAURANTES (Serper Places + Bayesian weighted rating) ──
+  if (intent.type === "restaurantes") {
+    let cid = await saveMsg("user", lastMsgContent, conversationId);
+    const cityFromMsg = lastMsgContent.match(/(?:en|cerca de|de|desde)\s+([A-ZÁÉÍÓÚa-záéíóú\s]{3,30})/i)?.[1]?.trim();
+    const city = cityFromMsg || userCity || null;
+    if (!city) {
+      const response = "¿En qué ciudad buscas restaurantes?";
+      cid = await saveMsg("assistant", response, cid);
+      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
+    }
+    const { findRestaurants } = await import("@/lib/skills/restaurantes");
+    const cuisine = intent.data?.cuisine as string | undefined;
+    const response = await findRestaurants(city, cuisine);
+    cid = await saveMsg("assistant", response, cid);
+    return new Response(response, {
+      headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" },
+    });
+  }
+
   // ── GASOLINERAS (API Ministerio, gratis, tiempo real) ──
   if (intent.type === "gasolineras") {
     let cid = await saveMsg("user", lastMsgContent, conversationId);
@@ -605,6 +624,7 @@ export async function POST(req: NextRequest) {
     for (const r of search.results.slice(0, 5)) {
       response += `- [${r.title}](${r.link})\n`;
     }
+    response += "\n*Precios orientativos del momento de búsqueda. Verifica el precio final en el enlace antes de comprar.*";
 
     cid = await saveMsg("assistant", response, cid);
     return new Response(response, {

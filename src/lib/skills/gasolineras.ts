@@ -108,9 +108,11 @@ export async function findCheapestGas(
   for (const g of withPrice.slice(0, 5)) {
     const price = fuelType === "gasolina95" ? g.gasolina95! : g.gasoleoA!;
     const isCheapest = g === cheapest;
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${g.lat},${g.lon}`;
     response += `${isCheapest ? "🟢" : "⚪"} **${g.nombre}** — ${price.toFixed(3)} €/L\n`;
     response += `   📍 ${g.direccion}, ${g.localidad} (${g.distanciaKm} km)\n`;
-    response += `   🕐 ${g.horario}\n\n`;
+    response += `   🕐 ${g.horario}\n`;
+    response += `   🗺️ [Ver en Google Maps](${mapsUrl})\n\n`;
   }
 
   response += `---\n`;
