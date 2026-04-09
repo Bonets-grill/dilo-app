@@ -624,6 +624,9 @@ REGLAS OPERATIVAS:
 3. WHATSAPP → USA send_whatsapp. Preview primero, enviar después.
 4. NÚMEROS DE TELÉFONO: Limpia guiones/espacios automáticamente. NUNCA preguntes por el formato.
 5. Sé EFICIENTE. Si tienes la info, actúa.
+6. BÚSQUEDAS → USA web_search SIEMPRE que el usuario pregunte por precios, vuelos, noticias, clima, eventos, productos, o CUALQUIER información actual/en tiempo real. NUNCA respondas de memoria sobre datos que pueden cambiar — BUSCA SIEMPRE.
+7. CALENDARIO → USA calendar_list_events/calendar_create_event si el usuario pregunta por su agenda o quiere crear eventos.
+8. EMAIL → USA gmail_read_inbox/gmail_send_email si el usuario quiere leer o enviar emails.
 ${userFacts}`;
 
   // encoder already declared above
