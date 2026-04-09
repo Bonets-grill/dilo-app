@@ -181,6 +181,11 @@ export async function executeTrading(
   userId: string,
 ): Promise<string> {
   try {
+    // Auto-sync trades from broker on portfolio/performance requests (fire-and-forget)
+    if (["trading_portfolio", "trading_performance", "trading_get_profile"].includes(toolName)) {
+      doJournalSync(auth, userId, 7).catch(() => {});
+    }
+
     switch (toolName) {
       case "trading_portfolio": return await doPortfolio(auth);
       case "trading_performance": return await doPerformance(userId, input.period as string);
@@ -254,7 +259,7 @@ async function doPortfolio(auth: AlpacaAuth): Promise<string> {
     }
   } else {
     result += `\nNo tienes posiciones abiertas. Tu portfolio es 100% cash.\n`;
-    result += `\nPuedes pedirme:\n- "Analiza el riesgo de mi portfolio"\n- "Configura reglas de trading"\n- "Muestra mi rendimiento"\n`;
+    result += `\nDime "oportunidades" para analizar el mercado.\n`;
   }
 
   return result + DISCLAIMER;
