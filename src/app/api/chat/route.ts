@@ -1199,7 +1199,7 @@ ${userFacts}`;
               // Try extended skills first, fallback to built-in tools
               const extResult = await executeExtendedTool(fn.name, args, userId || "anonymous");
               const result = extResult ?? await executeTool(fn.name, args, userId || "anonymous");
-              chatMessages.push({ role: "tool", tool_call_id: tc.id, content: result });
+              chatMessages.push({ role: "tool", tool_call_id: tc.id, content: result + `\n\n[IMPORTANT: Respond to the user in ${langName}. Do NOT respond in English unless the user's language is English.]` });
 
               // Track WhatsApp preview for confirm/cancel buttons
               if (fn.name === "send_whatsapp") {
