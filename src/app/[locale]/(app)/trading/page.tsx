@@ -98,6 +98,11 @@ interface ForexData {
     goldWinRate: number;
   };
   killZone: string | null;
+  learning: {
+    score: number;
+    marketsAnalyzed: number;
+    patternsDetected: number;
+  } | null;
 }
 
 const POLL_INTERVAL = 30_000; // 30 seconds
@@ -490,7 +495,7 @@ function ForexSection({ data, loading, error, onRetry }: { data: ForexData | nul
     );
   }
 
-  const { account, positions, signals, stats, killZone } = data;
+  const { account, positions, signals, stats, killZone, learning } = data;
   const plPositive = account.profit_loss >= 0;
 
   return (
@@ -620,6 +625,39 @@ function ForexSection({ data, loading, error, onRetry }: { data: ForexData | nul
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Forex Learning Score */}
+      {learning && (
+        <div className="rounded-xl bg-[var(--card)] border border-[var(--border)] p-4">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold flex items-center gap-1.5">
+              <Brain size={14} />
+              Aprendizaje Forex
+            </h3>
+            <span className="text-sm font-bold text-blue-400">{learning.score}/100</span>
+          </div>
+          <div className="h-2 rounded-full bg-[var(--border)] overflow-hidden mb-3">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-400 transition-all"
+              style={{ width: `${learning.score}%` }}
+            />
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div>
+              <p className="text-sm font-semibold">{stats.totalSignals}</p>
+              <p className="text-[9px] text-[var(--dim)]">Se&ntilde;ales</p>
+            </div>
+            <div>
+              <p className="text-sm font-semibold">{stats.winRate > 0 ? `${stats.winRate.toFixed(0)}%` : "\u2014"}</p>
+              <p className="text-[9px] text-[var(--dim)]">Win Rate</p>
+            </div>
+            <div>
+              <p className="text-sm font-semibold">{learning.marketsAnalyzed}</p>
+              <p className="text-[9px] text-[var(--dim)]">Mercados</p>
+            </div>
           </div>
         </div>
       )}

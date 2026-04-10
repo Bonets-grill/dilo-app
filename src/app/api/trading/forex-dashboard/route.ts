@@ -17,22 +17,26 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const [account, positionsData, signalsRes, statsRes] = await Promise.all([
+    const [account, positionsData, signalsRes, statsRes, learningRes] = await Promise.all([
       getForexAccount().catch(() => null),
       getForexPositions().catch(() => ({ positions: [] })),
       supabase
         .from("trading_signal_log")
         .select("symbol, side, entry_price, stop_loss, take_profit, confidence, outcome, pnl, pnl_pct, market_type, filters_applied, created_at, resolved_at")
-        .eq("user_id", userId)
         .in("market_type", ["forex", "gold"])
         .order("created_at", { ascending: false })
         .limit(10),
       supabase
         .from("trading_signal_log")
         .select("outcome, market_type")
-        .eq("user_id", userId)
         .in("market_type", ["forex", "gold"])
         .not("outcome", "is", null),
+      supabase
+        .from("trading_learning_stats")
+        .select("learning_score, markets_analyzed, patterns_detected")
+        .eq("market_type", "forex")
+        .order("date", { ascending: false })
+        .limit(1),
     ]);
 
     const signals = signalsRes.data || [];
@@ -68,6 +72,11 @@ export async function GET(req: NextRequest) {
         goldWinRate: goldSignals.length > 0 ? (goldWins / goldSignals.length) * 100 : 0,
       },
       killZone,
+      learning: learningRes.data?.[0] ? {
+        score: learningRes.data[0].learning_score,
+        marketsAnalyzed: learningRes.data[0].markets_analyzed,
+        patternsDetected: learningRes.data[0].patterns_detected,
+      } : null,
     });
   } catch (e) {
     console.error("[forex-dashboard] Error:", e);

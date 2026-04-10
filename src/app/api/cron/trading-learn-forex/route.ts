@@ -172,11 +172,61 @@ export async function GET() {
       }
     } catch { /* skip */ }
 
+    // ── 3. UPDATE FOREX LEARNING STATS ──
+    let forexLearningScore = 0;
+    try {
+      const { count: forexKnowledge } = await supabase
+        .from("trading_knowledge").select("id", { count: "exact", head: true })
+        .eq("category", "forex_scan");
+
+      const { data: forexSignalStats } = await supabase
+        .from("trading_signal_log").select("outcome")
+        .in("market_type", ["forex", "gold"])
+        .not("outcome", "is", null);
+
+      const fxTotal = forexSignalStats?.length || 0;
+      const fxWon = forexSignalStats?.filter(s => s.outcome === "win").length || 0;
+      const fxLost = forexSignalStats?.filter(s => s.outcome === "loss").length || 0;
+      const fxWinRate = fxTotal > 0 ? (fxWon / fxTotal * 100) : 0;
+
+      const fxPatternsDetected = marketsAnalyzed * 4; // OBs+FVGs+BOS+sweeps per pair scanned
+
+      const dataScore = Math.min(40, (forexKnowledge || 0) / 10);
+      const signalScore = fxTotal > 0 ? Math.min(30, fxWinRate * 0.5) : 0;
+      const patternScore = Math.min(20, fxPatternsDetected);
+      const consistencyScore = marketsAnalyzed >= 5 ? 10 : marketsAnalyzed * 2;
+      forexLearningScore = Math.round(Math.min(100, dataScore + signalScore + patternScore + consistencyScore));
+
+      // Insert forex stats row (separate from stocks row which uses date unique)
+      // Use delete+insert to avoid conflict with stocks' onConflict:"date"
+      await supabase.from("trading_learning_stats")
+        .delete()
+        .eq("date", today)
+        .eq("market_type", "forex");
+
+      await supabase.from("trading_learning_stats").insert({
+        date: today,
+        market_type: "forex",
+        total_signals: fxTotal,
+        signals_won: fxWon,
+        signals_lost: fxLost,
+        win_rate: Math.round(fxWinRate * 10) / 10,
+        total_knowledge_entries: forexKnowledge || 0,
+        markets_analyzed: marketsAnalyzed,
+        patterns_detected: fxPatternsDetected,
+        data_points_processed: marketsAnalyzed * 15,
+        learning_score: forexLearningScore,
+      });
+    } catch (err) {
+      console.error("[Forex Learn] Stats update error:", err);
+    }
+
     const result = {
       date: today,
       markets_analyzed: marketsAnalyzed,
       signals_generated: signalsGenerated,
       kill_zone: killZone,
+      forex_learning_score: forexLearningScore,
     };
 
     const { logCronResult } = await import("@/lib/cron/logger");
