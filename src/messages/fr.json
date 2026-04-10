@@ -174,7 +174,9 @@
     "exportData": "Exporter mes données",
     "deleteAccount": "Supprimer mon compte",
     "deleteConfirm": "Es-tu sûr ? TOUTES tes données seront supprimées définitivement. Cette action est irréversible.",
-    "deleteConfirmFinal": "DERNIÈRE CONFIRMATION : Veux-tu vraiment supprimer ton compte et toutes tes données ?"
+    "deleteConfirmFinal": "DERNIÈRE CONFIRMATION : Veux-tu vraiment supprimer ton compte et toutes tes données ?",
+    "configurePin": "Configurer le PIN",
+    "configurePinDesc": "Accès rapide avec un PIN à 4 chiffres"
   },
   "landing": {
     "hero": "Ton secrétaire personnel avec IA",
@@ -375,6 +377,21 @@
     "enterResponse": "Écris ta réponse...",
     "continue": "Continuer",
     "saving": "Enregistrement..."
+  },
+  "changePin": {
+    "titleChange": "Changer le PIN",
+    "titleSetup": "Configurer le PIN",
+    "subtitleChange": "Entre ton PIN actuel pour le changer",
+    "subtitleSetup": "Crée un PIN pour un accès rapide",
+    "currentPin": "PIN actuel",
+    "newPin": "Nouveau PIN",
+    "confirmPin": "Confirme le nouveau PIN",
+    "wrongPin": "PIN incorrect",
+    "mismatch": "Les PIN ne correspondent pas",
+    "saved": "PIN mis à jour avec succès",
+    "saving": "Enregistrement...",
+    "error": "Erreur lors de la sauvegarde du PIN",
+    "back": "Retour"
   },
   "pinSetup": {
     "title": "Crée ton PIN",
