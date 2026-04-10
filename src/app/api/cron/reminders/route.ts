@@ -25,7 +25,7 @@ export async function GET() {
   // Find reminders that are due
   const { data: reminders, error } = await supabase
     .from("reminders")
-    .select("id, user_id, text, due_at, channel, repeat_count, repeats_sent")
+    .select("id, user_id, text, due_at, channel, repeat_count, repeats_sent, target_phone")
     .eq("status", "pending")
     .lte("due_at", now)
     .limit(50);
@@ -34,12 +34,47 @@ export async function GET() {
     return NextResponse.json({ status: "ok", processed: 0, at: now });
   }
 
+  const evoUrl = process.env.EVOLUTION_API_URL || "";
+  const evoKey = process.env.EVOLUTION_API_KEY || "";
   let sent = 0;
 
   for (const reminder of reminders) {
     try {
-      if (reminder.channel === "push") {
-        // Get user's push subscriptions
+      let delivered = false;
+
+      // ── WhatsApp delivery (priority if user has WhatsApp connected) ──
+      if (reminder.channel === "whatsapp" || reminder.channel === "push") {
+        // Check if user has WhatsApp connected
+        const { data: channel } = await supabase
+          .from("channels")
+          .select("instance_name, phone, status")
+          .eq("user_id", reminder.user_id)
+          .eq("type", "whatsapp")
+          .eq("status", "connected")
+          .limit(1)
+          .maybeSingle();
+
+        if (channel && evoUrl && evoKey) {
+          try {
+            const instName = channel.instance_name || `dilo_${reminder.user_id.slice(0, 8)}`;
+            // Send to user's own WhatsApp number
+            const phone = channel.phone || reminder.target_phone;
+            if (phone) {
+              const res = await fetch(`${evoUrl}/message/sendText/${instName}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", apikey: evoKey },
+                body: JSON.stringify({ number: phone, text: `⏰ Recordatorio de DILO:\n\n${reminder.text}` }),
+              });
+              if (res.ok) delivered = true;
+            }
+          } catch (waErr) {
+            console.error("[Reminder] WhatsApp send failed:", waErr);
+          }
+        }
+      }
+
+      // ── Push delivery (fallback or if channel is push) ──
+      if (!delivered && pushEnabled) {
         const { data: subs } = await supabase
           .from("push_subscriptions")
           .select("endpoint, keys")
@@ -52,8 +87,9 @@ export async function GET() {
                 { endpoint: sub.endpoint, keys: sub.keys as { p256dh: string; auth: string } },
                 JSON.stringify({ title: "DILO - Recordatorio", body: reminder.text, url: "/chat" })
               );
+              delivered = true;
             } catch (pushErr) {
-              console.error("Push failed:", pushErr);
+              console.error("[Reminder] Push failed:", pushErr);
             }
           }
         }
@@ -69,7 +105,7 @@ export async function GET() {
 
       sent++;
     } catch (e) {
-      console.error("Reminder processing error:", e);
+      console.error("[Reminder] Processing error:", e);
     }
   }
 
