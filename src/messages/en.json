@@ -49,7 +49,9 @@
     "editMore": "Edit more",
     "send": "Send",
     "recording": "Recording...",
-    "transcribing": "Transcribing..."
+    "transcribing": "Transcribing...",
+    "shareVia": "Send via",
+    "copied": "Copied"
   },
   "channels": {
     "title": "Your Channels",
