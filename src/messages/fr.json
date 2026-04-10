@@ -128,7 +128,10 @@
     "dataAnalyzed": "Données analysées",
     "signalsGenerated": "Signaux générés",
     "daysLearning": "Jours d'apprentissage",
-    "learningDesc": "DILO analyse les marchés chaque jour à 7h00 et suit ses propres signaux pour s'améliorer continuellement."
+    "learningDesc": "DILO analyse les marchés chaque jour à 7h00 et suit ses propres signaux pour s'améliorer continuellement.",
+    "selectCurrency": "Choisir la devise",
+    "currencySaved": "Devise mise à jour",
+    "themeSaved": "Thème mis à jour"
   },
   "landing": {
     "hero": "Ton secrétaire personnel avec IA",

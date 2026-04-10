@@ -128,7 +128,10 @@
     "dataAnalyzed": "Dati analizzati",
     "signalsGenerated": "Segnali generati",
     "daysLearning": "Giorni di apprendimento",
-    "learningDesc": "DILO analizza i mercati ogni giorno alle 7:00 e monitora i propri segnali per migliorare continuamente."
+    "learningDesc": "DILO analizza i mercati ogni giorno alle 7:00 e monitora i propri segnali per migliorare continuamente.",
+    "selectCurrency": "Seleziona valuta",
+    "currencySaved": "Valuta aggiornata",
+    "themeSaved": "Tema aggiornato"
   },
   "landing": {
     "hero": "Il tuo segretario personale con AI",

@@ -4,9 +4,19 @@ import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { localeNames, localeFlags, locales } from "@/i18n/config";
 import type { Locale } from "@/i18n/config";
-import { Globe, Moon, CreditCard, Shield, Info, LogOut, ChevronRight, Sparkles, TrendingUp, Check, Loader2 } from "lucide-react";
+import { Globe, Moon, Sun, CreditCard, Shield, Info, LogOut, ChevronRight, Sparkles, TrendingUp, Check, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { createBrowserSupabase } from "@/lib/supabase/client";
+
+const CURRENCIES = [
+  { code: "EUR", symbol: "€", name: "Euro" },
+  { code: "USD", symbol: "$", name: "US Dollar" },
+  { code: "GBP", symbol: "£", name: "British Pound" },
+  { code: "MXN", symbol: "$", name: "Peso Mexicano" },
+  { code: "COP", symbol: "$", name: "Peso Colombiano" },
+  { code: "CAD", symbol: "$", name: "Canadian Dollar" },
+  { code: "CHF", symbol: "Fr", name: "Swiss Franc" },
+];
 
 export default function SettingsPage() {
   const t = useTranslations("settings");
@@ -28,12 +38,26 @@ export default function SettingsPage() {
   const [learningScore, setLearningScore] = useState(0);
   const [learningData, setLearningData] = useState<{ total_knowledge: number; total_signals: number; win_rate: number; days_learning: number } | null>(null);
 
+  // Theme & Currency
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [currency, setCurrency] = useState("EUR");
+  const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
+
   useEffect(() => {
+    // Load theme from localStorage
+    const saved = localStorage.getItem("dilo-theme") as "dark" | "light" | null;
+    if (saved) setTheme(saved);
+
     const supabase = createBrowserSupabase();
     supabase.auth.getUser().then(({ data }) => {
       const uid = data.user?.id;
       if (uid) {
         setUserId(uid);
+        // Load user currency from DB
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase.from("users") as any).select("currency").eq("id", uid).single().then(({ data: u }: { data: { currency: string } | null }) => {
+          if (u?.currency) setCurrency(u.currency);
+        });
         fetch(`/api/trading/keys?userId=${uid}`).then(r => r.json()).then(d => {
           setAlpacaConnected(d.connected);
           setAlpacaPaper(d.paperMode !== false);
@@ -45,6 +69,23 @@ export default function SettingsPage() {
       }
     });
   }, []);
+
+  function toggleTheme() {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    localStorage.setItem("dilo-theme", next);
+    document.documentElement.setAttribute("data-theme", next);
+  }
+
+  async function changeCurrency(code: string) {
+    setCurrency(code);
+    setShowCurrencyPicker(false);
+    if (userId) {
+      const supabase = createBrowserSupabase();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase.from("users") as any).update({ currency: code }).eq("id", userId);
+    }
+  }
 
   async function saveAlpacaKeys() {
     if (!alpacaKeyId.trim() || !alpacaSecret.trim()) { setAlpacaError(t("enterBothKeys")); return; }
@@ -206,16 +247,30 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Other settings */}
+        {/* Theme & Currency */}
         <div className="rounded-xl bg-[var(--bg2)] border border-[var(--border)] divide-y divide-[var(--border)]">
-          <div className="flex items-center justify-between px-3.5 py-2.5">
-            <div className="flex items-center gap-3"><Moon size={16} className="text-[var(--dim)]" /><span className="text-sm">{t("theme")}</span></div>
-            <span className="text-sm text-[var(--dim)]">{t("dark")}</span>
-          </div>
-          <div className="flex items-center justify-between px-3.5 py-2.5">
+          <button onClick={toggleTheme} className="w-full flex items-center justify-between px-3.5 py-2.5">
+            <div className="flex items-center gap-3">
+              {theme === "dark" ? <Moon size={16} className="text-[var(--dim)]" /> : <Sun size={16} className="text-yellow-400" />}
+              <span className="text-sm">{t("theme")}</span>
+            </div>
+            <span className="text-sm text-[var(--dim)]">{theme === "dark" ? t("dark") : t("light")}</span>
+          </button>
+          <button onClick={() => setShowCurrencyPicker(!showCurrencyPicker)} className="w-full flex items-center justify-between px-3.5 py-2.5">
             <div className="flex items-center gap-3"><CreditCard size={16} className="text-[var(--dim)]" /><span className="text-sm">{t("currency")}</span></div>
-            <span className="text-sm text-[var(--dim)]">EUR</span>
-          </div>
+            <span className="text-sm text-[var(--dim)]">{currency}</span>
+          </button>
+          {showCurrencyPicker && (
+            <div className="px-2 py-2 grid grid-cols-2 gap-1.5">
+              {CURRENCIES.map(c => (
+                <button key={c.code} onClick={() => changeCurrency(c.code)}
+                  className={`px-3 py-2 rounded-lg text-left text-sm flex items-center justify-between ${currency === c.code ? "bg-[var(--accent)]/15 text-[var(--accent)]" : "bg-[var(--bg3)] text-[var(--muted)]"}`}>
+                  <span>{c.symbol} {c.code}</span>
+                  {currency === c.code && <Check size={12} />}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="rounded-xl bg-[var(--bg2)] border border-[var(--border)] divide-y divide-[var(--border)]">

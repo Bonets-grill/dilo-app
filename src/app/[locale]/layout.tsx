@@ -40,6 +40,7 @@ export default async function LocaleLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
+              (function(){var t=localStorage.getItem('dilo-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
                   navigator.serviceWorker.register('/sw.js');
@@ -49,7 +50,7 @@ export default async function LocaleLayout({
           }}
         />
       </head>
-      <body className="min-h-full bg-[#0a0a0f] text-gray-100 font-[family-name:var(--font-inter)] antialiased overscroll-none">
+      <body className="min-h-full bg-[var(--bg)] text-[var(--fg)] font-[family-name:var(--font-inter)] antialiased overscroll-none">
         <NextIntlClientProvider messages={messages}>
           {children}
         </NextIntlClientProvider>
