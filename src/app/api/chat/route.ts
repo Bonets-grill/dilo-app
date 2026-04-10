@@ -1172,7 +1172,7 @@ ${userFacts}`;
     const { hasAlpacaConnection } = await import("@/lib/oauth/alpaca");
     const hasAlpaca = await hasAlpacaConnection(userId);
     if (hasAlpaca) {
-      userTools = [...baseTools, ...ALL_TRADING_TOOLS, ...FOREX_TOOLS, ...TRADING_MEMORY_TOOLS, ...KNOWLEDGE_TOOLS];
+      userTools = [...baseTools, ...ALL_TRADING_TOOLS, ...FOREX_TOOLS, ...TRADING_MEMORY_TOOLS, ...KNOWLEDGE_TOOLS, ...ENTERTAINMENT_TOOLS];
 
       // Load personalized trading profile if exists
       const { getTradingProfile, generateTradingPrompt, resetDailyCounters } = await import("@/lib/trading/profile");
