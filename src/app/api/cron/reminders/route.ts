@@ -61,18 +61,20 @@ export async function GET() {
             // Get user's own phone number from the connected WhatsApp instance
             let phone = channel.phone;
             if (!phone) {
-              const infoRes = await fetch(`${evoUrl}/instance/connectionState/${instName}`, {
-                headers: { apikey: evoKey },
-              });
-              if (infoRes.ok) {
-                const info = await infoRes.json();
-                // Evolution API returns the connected number in instance info
-                phone = info?.instance?.owner || info?.instance?.wuid?.replace("@s.whatsapp.net", "") || null;
-                // Save phone for future use
-                if (phone) {
-                  await supabase.from("channels").update({ phone }).eq("id", channel.id);
+              try {
+                const infoRes = await fetch(`${evoUrl}/instance/fetchInstances`, {
+                  headers: { apikey: evoKey },
+                });
+                if (infoRes.ok) {
+                  const instances = await infoRes.json();
+                  const inst = Array.isArray(instances) ? instances.find((i: Record<string, unknown>) => i.name === instName) : null;
+                  if (inst?.ownerJid) {
+                    phone = String(inst.ownerJid).replace("@s.whatsapp.net", "");
+                    // Save phone for future use
+                    await supabase.from("channels").update({ phone }).eq("id", channel.id);
+                  }
                 }
-              }
+              } catch { /* skip */ }
             }
 
             if (phone) {

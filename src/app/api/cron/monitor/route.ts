@@ -83,21 +83,38 @@ export async function GET() {
   if (issues.length > 0 && EVO_URL && EVO_KEY) {
     const { data: channel } = await supabase
       .from("channels")
-      .select("instance_name, phone")
+      .select("id, instance_name, phone")
       .eq("user_id", ADMIN_USER_ID)
       .eq("type", "whatsapp")
       .eq("status", "connected")
       .limit(1)
       .maybeSingle();
 
-    if (channel?.phone) {
-      const instName = channel.instance_name || `dilo_${ADMIN_USER_ID.slice(0, 8)}`;
+    const instName = channel?.instance_name || `dilo_${ADMIN_USER_ID.slice(0, 8)}`;
+    let phone = channel?.phone;
+
+    // If no phone saved, fetch from Evolution API
+    if (!phone && channel) {
+      try {
+        const infoRes = await fetch(`${EVO_URL}/instance/fetchInstances`, { headers: { apikey: EVO_KEY } });
+        if (infoRes.ok) {
+          const instances = await infoRes.json();
+          const inst = Array.isArray(instances) ? instances.find((i: Record<string, unknown>) => i.name === instName) : null;
+          if (inst?.ownerJid) {
+            phone = String(inst.ownerJid).replace("@s.whatsapp.net", "");
+            await supabase.from("channels").update({ phone }).eq("id", channel.id);
+          }
+        }
+      } catch { /* skip */ }
+    }
+
+    if (phone) {
       const message = `🔧 *DILO Cron Monitor — ${today}*\n\n${issues.join("\n")}\n\n${summary.length > 0 ? summary.join("\n") : ""}`;
 
       await fetch(`${EVO_URL}/message/sendText/${instName}`, {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: EVO_KEY },
-        body: JSON.stringify({ number: channel.phone, text: message }),
+        body: JSON.stringify({ number: phone, text: message }),
       }).catch(() => {});
     }
   }
