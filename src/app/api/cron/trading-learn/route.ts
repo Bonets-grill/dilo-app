@@ -228,8 +228,9 @@ export async function GET() {
     const { count: totalKnowledge } = await supabase
       .from("trading_knowledge").select("id", { count: "exact", head: true });
 
+    // System-level stats: count system signals (user_id IS NULL) for global learning score
     const { data: signalStats } = await supabase
-      .from("trading_signal_log").select("outcome")
+      .from("trading_signal_log").select("outcome, user_id")
       .not("outcome", "is", null);
 
     const totalSignals = signalStats?.length || 0;
