@@ -366,7 +366,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative">
       <div className="flex-shrink-0 flex items-center justify-between px-4 py-2 border-b border-[var(--border)]">
         <button onClick={() => setShowHistory(true)} className="text-xs text-[var(--muted)] flex items-center gap-1.5">
           <MessageCircle size={14} /> {t("history")}
@@ -532,6 +532,16 @@ export default function ChatPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* FAB — New Chat */}
+      {msgs.length > 0 && !busy && voicePreview === null && (
+        <button
+          onClick={newChat}
+          className="absolute right-4 bottom-[72px] w-12 h-12 rounded-full bg-[var(--accent)] shadow-lg shadow-black/40 flex items-center justify-center z-50 active:scale-95 transition-transform"
+        >
+          <Pencil size={20} className="text-white" />
+        </button>
       )}
 
       <div className={`flex-shrink-0 px-3 py-1.5 border-t border-[var(--border)] ${voicePreview !== null ? "hidden" : ""}`}>
