@@ -84,6 +84,7 @@ export default function NutritionSetupPage() {
     if (!user) { setError("Not logged in"); setSaving(false); return; }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // Align with actual DB columns from migration 018
     const { error: dbErr } = await (supabase.from("nutrition_profiles") as any).upsert({
       user_id: user.id,
       age: numAge,
@@ -95,23 +96,17 @@ export default function NutritionSetupPage() {
       weekly_target_kg: parseFloat(weeklyTarget) || 0.5,
       diet_type: dietType,
       allergies,
-      intolerances: [],
+      medical_conditions: medicalConditions.filter(c => c !== "none"),
       disliked_foods: dislikedFoods.split(",").map(s => s.trim()).filter(Boolean),
-      has_diabetes: medicalConditions.includes("diabetes"),
-      has_eating_disorder: medicalConditions.includes("eating_disorder"),
-      is_pregnant: medicalConditions.includes("pregnant") || medicalConditions.includes("breastfeeding"),
-      has_kidney_disease: medicalConditions.includes("kidney_disease"),
-      other_conditions: medicalConditions.filter(c => !["diabetes", "eating_disorder", "pregnant", "breastfeeding", "kidney_disease", "none"].includes(c)).join(", "),
       bmr: Math.round(bmr),
       tdee: Math.round(tdee),
-      target_calories: Math.round(targetCal),
+      target_calories: Math.max(Math.round(targetCal), minCal),
       target_protein_g: macros.protein_g,
       target_carbs_g: macros.carbs_g,
       target_fat_g: macros.fat_g,
       target_fiber_g: macros.fiber_g,
       target_water_ml: Math.round(numWeight * 33),
-      min_calories: minCal,
-      onboarding_complete: true,
+      active: true,
       updated_at: new Date().toISOString(),
     }, { onConflict: "user_id" });
 
