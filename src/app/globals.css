@@ -46,11 +46,34 @@ body {
 input, textarea, select { font-size: 16px !important; }
 * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 
-/* Allow text selection in chat messages, journal, and DM */
-.chat-md, .chat-md *, [data-selectable], [data-selectable] * {
+/* Allow text selection in journal and DM (NOT chat — chat uses custom context menu) */
+[data-selectable], [data-selectable] * {
   -webkit-touch-callout: text !important;
   -webkit-user-select: text !important;
   user-select: text !important;
+}
+
+/* Context menu backdrop blur */
+.ctx-menu-backdrop {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Context menu animation */
+@keyframes ctx-menu-in {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+.ctx-menu {
+  animation: ctx-menu-in 0.15s ease-out;
+}
+
+/* Highlighted message when context menu is open */
+.msg-highlight {
+  transform: scale(1.02);
+  transition: transform 0.15s ease-out;
+  z-index: 51;
+  position: relative;
 }
 
 /* Easy Mode — larger fonts, bigger buttons for elderly users */
