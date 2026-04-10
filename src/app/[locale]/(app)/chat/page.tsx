@@ -2,7 +2,8 @@
 
 import { useTranslations, useLocale } from "next-intl";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ArrowUp, Mic, Square, Plus, MessageCircle, ImagePlus, X, Pencil, Copy, Reply, Search, Share2 } from "lucide-react";
+import { ArrowUp, Mic, Square, Plus, MessageCircle, ImagePlus, X, Pencil, Copy, Reply, Search } from "lucide-react";
+import ShareMenu from "@/components/ui/ShareMenu";
 import ReactMarkdown from "react-markdown";
 import { createBrowserSupabase } from "@/lib/supabase/client";
 
@@ -36,6 +37,7 @@ export default function ChatPage() {
   const [gettingLocation, setGettingLocation] = useState(false);
   const pendingQueryRef = useRef<string | null>(null);
   const [ctxMenu, setCtxMenu] = useState<{ msgId: string; text: string; role: string; y: number } | null>(null);
+  const [shareMenu, setShareMenu] = useState<{ text: string; y: number } | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressTriggered = useRef(false);
   const supabase = createBrowserSupabase();
@@ -335,11 +337,7 @@ export default function ChatPage() {
   }
   function ctxShare() {
     if (!ctxMenu) return;
-    if (navigator.share) {
-      navigator.share({ text: ctxMenu.text }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(ctxMenu.text);
-    }
+    setShareMenu({ text: ctxMenu.text, y: ctxMenu.y });
     setCtxMenu(null);
   }
 
@@ -401,7 +399,8 @@ export default function ChatPage() {
                 )}
               </div>
             ) : (
-              <div key={m.id} className={`text-[14px] leading-[1.7] text-[#ccc] ${ctxMenu?.msgId === m.id ? "msg-highlight" : ""}`}>
+              <div key={m.id} className={`flex justify-start ${ctxMenu?.msgId === m.id ? "msg-highlight" : ""}`}>
+              <div className="bg-[var(--bg2)] rounded-2xl rounded-bl-sm px-3.5 py-2 text-[14px] leading-[1.7] text-[#ccc] max-w-[85%]">
                 {m.content?.startsWith("__IMAGE__") ? (
                   <div>
                     <p className="text-xs text-[var(--dim)] mb-2">✨ {t("enhancedPhoto")}</p>
@@ -469,6 +468,7 @@ export default function ChatPage() {
                   </>
                 ) : !m.content ? <Dots /> : null}
               </div>
+              </div>
             ))}
             <div ref={endRef} />
           </div>
@@ -494,10 +494,15 @@ export default function ChatPage() {
               <Search size={18} className="text-[#8e8e93]" /> {t("consult")}
             </button>
             <button onClick={ctxShare} className="w-full flex items-center gap-3 px-4 py-3.5 text-left text-[15px] text-white active:bg-white/10">
-              <Share2 size={18} className="text-[#8e8e93]" /> {t("share")}
+              <ArrowUp size={18} className="text-[#8e8e93]" /> {t("share")}
             </button>
           </div>
         </div>
+      )}
+
+      {/* Share menu (WhatsApp / Telegram / Copy) */}
+      {shareMenu && (
+        <ShareMenu text={shareMenu.text} y={shareMenu.y} onClose={() => setShareMenu(null)} />
       )}
 
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />

@@ -49,7 +49,9 @@
     "editMore": "Modifica altro",
     "send": "Invia",
     "recording": "Registrazione...",
-    "transcribing": "Trascrizione..."
+    "transcribing": "Trascrizione...",
+    "shareVia": "Invia tramite",
+    "copied": "Copiato"
   },
   "channels": {
     "title": "I tuoi Canali",
