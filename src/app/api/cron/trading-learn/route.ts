@@ -8,6 +8,7 @@ import {
   getNewsSentiment,
 } from "@/lib/finnhub/client";
 import { analyzeSMC, isEngineAvailable } from "@/lib/trading/engine-client";
+import { logCronResult } from "@/lib/cron/logger";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -30,6 +31,7 @@ export async function GET() {
   let dataPoints = 0;
   let patternsDetected = 0;
   let marketsAnalyzed = 0;
+  let signalsGenerated = 0;
 
   try {
     // ── 1. SCAN KEY MARKETS ──
@@ -106,6 +108,23 @@ export async function GET() {
 
             patternsDetected += sweepsCount + obsCount + fvgsCount + bosCount;
             dataPoints += 10;
+
+            // Auto-generate signal if SMC found a high-confidence setup
+            const signal = smc.signal as { side?: string; entry_price?: number; stop_loss?: number; take_profit?: number; confidence?: number; setup_type?: string; reasoning?: string[] } | null;
+            if (signal && signal.entry_price && signal.stop_loss && signal.take_profit && (signal.confidence || 0) >= 60) {
+              await supabase.from("trading_signal_log").insert({
+                user_id: null, // system-generated, not user-specific
+                symbol: sym,
+                side: signal.side || "BUY",
+                entry_price: signal.entry_price,
+                stop_loss: signal.stop_loss,
+                take_profit: signal.take_profit,
+                setup_type: signal.setup_type || "smc_auto",
+                confidence: signal.confidence,
+                reasoning: signal.reasoning || [`Auto-generated: ${smc.bias} bias, ${sweepsCount} sweeps, ${obsCount} OBs`],
+              });
+              signalsGenerated++;
+            }
           }
         } catch { /* skip */ }
       }
@@ -237,18 +256,22 @@ export async function GET() {
       learning_score: learningScore,
     }, { onConflict: "date" });
 
-    return NextResponse.json({
-      ok: true,
+    const result = {
       date: today,
       markets_analyzed: marketsAnalyzed,
       patterns_detected: patternsDetected,
       data_points: dataPoints,
       learning_score: learningScore,
+      signals_generated: signalsGenerated,
       signals_tracked: totalSignals,
       win_rate: winRate,
-    });
+    };
+    await logCronResult("trading-learn", result);
+    return NextResponse.json({ ok: true, ...result });
   } catch (err) {
     console.error("[Trading Learn] Error:", err);
+    const { logCronError } = await import("@/lib/cron/logger");
+    await logCronError("trading-learn", (err as Error).message);
     return NextResponse.json({ error: "Cron failed" }, { status: 500 });
   }
 }

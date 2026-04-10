@@ -36,9 +36,13 @@ export async function GET() {
       }
     }
 
+    const { logCronResult } = await import("@/lib/cron/logger");
+    await logCronResult("insights", { insights_sent: insightsSent, users: users.length });
     return NextResponse.json({ status: "ok", insights_sent: insightsSent, users: users.length });
   } catch (err) {
     console.error("[Insights Cron] Error:", err);
+    const { logCronError } = await import("@/lib/cron/logger");
+    await logCronError("insights", (err as Error).message);
     return NextResponse.json({ status: "error" }, { status: 200 });
   }
 }

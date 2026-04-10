@@ -79,9 +79,13 @@ export async function GET() {
       } catch { continue; }
     }
 
+    const { logCronResult } = await import("@/lib/cron/logger");
+    await logCronResult("price-check", { checked: alerts.length, triggered });
     return NextResponse.json({ status: "ok", checked: alerts.length, triggered });
   } catch (err) {
     console.error("[PriceCheck] Error:", err);
+    const { logCronError } = await import("@/lib/cron/logger");
+    await logCronError("price-check", (err as Error).message);
     return NextResponse.json({ status: "error" }, { status: 200 });
   }
 }

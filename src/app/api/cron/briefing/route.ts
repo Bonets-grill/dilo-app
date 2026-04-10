@@ -35,9 +35,13 @@ export async function GET() {
       }
     }
 
+    const { logCronResult } = await import("@/lib/cron/logger");
+    await logCronResult("briefing", { processed, total: users.length });
     return NextResponse.json({ status: "ok", processed, total: users.length });
   } catch (err) {
     console.error("[Briefing Cron] Error:", err);
+    const { logCronError } = await import("@/lib/cron/logger");
+    await logCronError("briefing", (err as Error).message);
     return NextResponse.json({ status: "error" }, { status: 200 });
   }
 }

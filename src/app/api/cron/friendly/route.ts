@@ -92,9 +92,13 @@ export async function GET() {
       }
     }
 
+    const { logCronResult } = await import("@/lib/cron/logger");
+    await logCronResult("friendly", { sent, type, total_users: users.length });
     return NextResponse.json({ status: "ok", sent, type, total_users: users.length });
   } catch (e) {
     console.error("[Friendly Cron] Error:", e);
+    const { logCronError } = await import("@/lib/cron/logger");
+    await logCronError("friendly", (e as Error).message);
     return NextResponse.json({ status: "error" }, { status: 200 });
   }
 }

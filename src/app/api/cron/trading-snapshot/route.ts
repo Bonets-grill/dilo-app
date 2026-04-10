@@ -66,9 +66,13 @@ export async function GET() {
       }
     }
 
+    const { logCronResult } = await import("@/lib/cron/logger");
+    await logCronResult("trading-snapshot", { snapshots: count });
     return NextResponse.json({ ok: true, snapshots: count });
   } catch (err) {
     console.error("[Trading Snapshot] Cron error:", err);
+    const { logCronError } = await import("@/lib/cron/logger");
+    await logCronError("trading-snapshot", (err as Error).message);
     return NextResponse.json({ error: "Cron failed" }, { status: 500 });
   }
 }

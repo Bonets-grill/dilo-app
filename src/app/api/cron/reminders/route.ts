@@ -125,6 +125,8 @@ export async function GET() {
     }
   }
 
+  const { logCronResult } = await import("@/lib/cron/logger");
+  await logCronResult("reminders", { processed: sent, total: reminders.length });
   return NextResponse.json({ status: "ok", processed: sent, total: reminders.length, at: now });
 }
 
