@@ -14,7 +14,8 @@
     "dm": "Mensajes",
     "journal": "Diario",
     "nutrition": "Nutricion",
-    "wellness": "Bienestar"
+    "wellness": "Bienestar",
+    "more": "Más"
   },
   "chat": {
     "placeholder": "Escribe o habla...",
