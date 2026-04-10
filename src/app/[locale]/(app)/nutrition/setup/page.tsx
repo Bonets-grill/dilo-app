@@ -192,7 +192,7 @@ export default function NutritionSetupPage() {
               { val: "light", label: "Ligero", desc: "Caminar 1-3 veces/semana" },
               { val: "moderate", label: "Moderado", desc: "Ejercicio 3-5 veces/semana" },
               { val: "active", label: "Activo", desc: "Ejercicio intenso 6-7 veces/semana" },
-              { val: "very_active", label: "Muy activo", desc: "Atleta, trabajo f\u00edsico intenso" },
+              { val: "very_active", label: "Muy activo", desc: "Atleta, trabajo físico intenso" },
             ] as const).map(opt => (
               <button key={opt.val} onClick={() => setActivityLevel(opt.val)}
                 className={`w-full text-left px-4 py-3 rounded-xl border transition ${activityLevel === opt.val ? "bg-green-500/15 border-green-500" : "bg-[var(--bg2)] border-[var(--border)]"}`}>
@@ -220,7 +220,7 @@ export default function NutritionSetupPage() {
             ))}
             {goal === "lose" && (
               <div className="mt-3">
-                <label className="text-xs text-[var(--dim)] mb-1 block">Ritmo de p\u00e9rdida (kg/semana)</label>
+                <label className="text-xs text-[var(--dim)] mb-1 block">Ritmo de pérdida (kg/semana)</label>
                 <div className="flex gap-2">
                   {["0.25", "0.5", "0.75", "1.0"].map(v => (
                     <button key={v} onClick={() => setWeeklyTarget(v)}
@@ -240,7 +240,7 @@ export default function NutritionSetupPage() {
             <h3 className="text-sm font-semibold mb-2">Tipo de dieta</h3>
             {([
               { val: "balanced", label: "Equilibrada", desc: "Sin restricciones" },
-              { val: "mediterranean", label: "Mediterr\u00e1nea", desc: "Aceite oliva, pescado, verduras" },
+              { val: "mediterranean", label: "Mediterránea", desc: "Aceite oliva, pescado, verduras" },
               { val: "vegetarian", label: "Vegetariana", desc: "Sin carne ni pescado" },
               { val: "vegan", label: "Vegana", desc: "Sin productos animales" },
               { val: "keto", label: "Keto", desc: "Baja en carbos, alta en grasas" },
@@ -260,7 +260,7 @@ export default function NutritionSetupPage() {
         {currentStep === "allergies" && (
           <div className="space-y-4">
             <h3 className="text-sm font-semibold">Alergias e intolerancias</h3>
-            <p className="text-xs text-[var(--dim)]">Selecciona todas las que apliquen. Si ninguna, contin\u00faa.</p>
+            <p className="text-xs text-[var(--dim)]">Selecciona todas las que apliquen. Si ninguna, continúa.</p>
             <div className="flex flex-wrap gap-2">
               {ALLERGY_OPTIONS.map(a => (
                 <button key={a} onClick={() => toggleArray(allergies, a, setAllergies)}
@@ -271,7 +271,7 @@ export default function NutritionSetupPage() {
             </div>
             <div>
               <label className="text-xs text-[var(--dim)] mb-1 block">Alimentos que no te gustan (separados por coma)</label>
-              <input type="text" value={dislikedFoods} onChange={e => setDislikedFoods(e.target.value)} placeholder="br\u00f3coli, h\u00edgado, at\u00fan..."
+              <input type="text" value={dislikedFoods} onChange={e => setDislikedFoods(e.target.value)} placeholder="brócoli, hígado, atún..."
                 className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg2)] border border-[var(--border)] text-sm focus:outline-none focus:border-green-500" />
             </div>
           </div>
@@ -280,8 +280,8 @@ export default function NutritionSetupPage() {
         {/* Step: Medical conditions */}
         {currentStep === "medical" && (
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold">Condiciones m\u00e9dicas</h3>
-            <p className="text-xs text-[var(--dim)]">Para tu seguridad. Algunas condiciones requieren supervisi\u00f3n profesional.</p>
+            <h3 className="text-sm font-semibold">Condiciones médicas</h3>
+            <p className="text-xs text-[var(--dim)]">Para tu seguridad. Algunas condiciones requieren supervisión profesional.</p>
             <div className="flex flex-wrap gap-2">
               {MEDICAL_OPTIONS.map(c => (
                 <button key={c} onClick={() => {
@@ -309,9 +309,9 @@ export default function NutritionSetupPage() {
 
             <div className="p-4 rounded-xl bg-[var(--bg2)] border border-[var(--border)] space-y-3">
               <div className="text-center">
-                <p className="text-xs text-[var(--dim)]">Calor\u00edas diarias objetivo</p>
+                <p className="text-xs text-[var(--dim)]">Calorías diarias objetivo</p>
                 <p className="text-3xl font-bold text-green-400">{Math.round(targetCal)}</p>
-                <p className="text-[10px] text-[var(--dim)]">kcal/d\u00eda (m\u00ednimo seguro: {minCal})</p>
+                <p className="text-[10px] text-[var(--dim)]">kcal/día (mínimo seguro: {minCal})</p>
               </div>
 
               <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[var(--border)]">
@@ -332,7 +332,7 @@ export default function NutritionSetupPage() {
 
             <div className="p-3 rounded-xl bg-[var(--bg2)] border border-[var(--border)] text-xs text-[var(--dim)] space-y-1">
               <p>BMR: {Math.round(bmr)} kcal &bull; TDEE: {Math.round(tdee)} kcal</p>
-              <p>Agua: {Math.round(numWeight * 33)} ml/d\u00eda &bull; Fibra: {macros.fiber_g}g/d\u00eda</p>
+              <p>Agua: {Math.round(numWeight * 33)} ml/día &bull; Fibra: {macros.fiber_g}g/día</p>
               <p>Dieta: {dietType} &bull; Objetivo: {goal === "lose" ? `Perder ${weeklyTarget} kg/sem` : goal === "gain" ? "Ganar masa" : "Mantener"}</p>
               {allergies.length > 0 && <p>Alergias: {allergies.join(", ")}</p>}
             </div>
