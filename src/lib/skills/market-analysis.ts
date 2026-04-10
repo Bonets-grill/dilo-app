@@ -102,9 +102,11 @@ async function doAnalyzeStock(symbol: string): Promise<string> {
   // Intercept forex/gold symbols — redirect to forex tool
   const FOREX_REDIRECT: Record<string, string> = {
     "XAU": "XAU/USD", "XAUUSD": "XAU/USD", "XAU/USD": "XAU/USD", "GOLD": "XAU/USD", "ORO": "XAU/USD",
-    "ORODOLAR": "XAU/USD", "ORODÓLAR": "XAU/USD",
-    "EURUSD": "EUR/USD", "EUR/USD": "EUR/USD", "GBPUSD": "GBP/USD", "GBP/USD": "GBP/USD",
-    "USDJPY": "USD/JPY", "USD/JPY": "USD/JPY", "GBPJPY": "GBP/JPY", "GBP/JPY": "GBP/JPY",
+    "ORODOLAR": "XAU/USD", "ORODÓLAR": "XAU/USD", "ORODOLLAR": "XAU/USD",
+    "EURO": "EUR/USD", "EURUSD": "EUR/USD", "EUR/USD": "EUR/USD", "EUR": "EUR/USD", "EURODOLAR": "EUR/USD", "EURODÓLAR": "EUR/USD",
+    "LIBRA": "GBP/USD", "GBP": "GBP/USD", "GBPUSD": "GBP/USD", "GBP/USD": "GBP/USD",
+    "YEN": "USD/JPY", "JPY": "USD/JPY", "USDJPY": "USD/JPY", "USD/JPY": "USD/JPY",
+    "GBPJPY": "GBP/JPY", "GBP/JPY": "GBP/JPY",
     "EURGBP": "EUR/GBP", "EUR/GBP": "EUR/GBP", "EURJPY": "EUR/JPY", "EUR/JPY": "EUR/JPY",
   };
   const fxInstrument = FOREX_REDIRECT[sym];
