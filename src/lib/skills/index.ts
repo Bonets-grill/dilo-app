@@ -63,6 +63,21 @@ export async function executeExtendedTool(
   }
 
   // Market Analysis — Finnhub data
+  // Intercept: if LLM sends a forex/gold symbol to stock tools, redirect to forex_analyze
+  if (toolName === "market_analyze_stock") {
+    const sym = ((input.symbol as string) || "").toUpperCase().replace(/\s+/g, "");
+    const FOREX_MAP: Record<string, string> = {
+      "XAU": "XAU/USD", "XAUUSD": "XAU/USD", "XAU/USD": "XAU/USD", "GOLD": "XAU/USD", "ORO": "XAU/USD",
+      "EURUSD": "EUR/USD", "EUR/USD": "EUR/USD", "GBPUSD": "GBP/USD", "GBP/USD": "GBP/USD",
+      "USDJPY": "USD/JPY", "USD/JPY": "USD/JPY", "GBPJPY": "GBP/JPY", "GBP/JPY": "GBP/JPY",
+      "EURGBP": "EUR/GBP", "EUR/GBP": "EUR/GBP", "EURJPY": "EUR/JPY", "EUR/JPY": "EUR/JPY",
+    };
+    const fxInstrument = FOREX_MAP[sym];
+    if (fxInstrument) {
+      console.log(`[Tool Router] Redirecting market_analyze_stock(${sym}) → forex_analyze(${fxInstrument})`);
+      return executeForexTool("forex_analyze", { instrument: fxInstrument });
+    }
+  }
   if (toolName.startsWith("market_")) {
     return executeMarketAnalysis(toolName, input);
   }
