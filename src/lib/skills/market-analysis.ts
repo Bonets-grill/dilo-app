@@ -97,7 +97,21 @@ export async function executeMarketAnalysis(
 // ── Analyze Stock ──
 
 async function doAnalyzeStock(symbol: string): Promise<string> {
-  const sym = symbol.toUpperCase();
+  const sym = symbol.toUpperCase().replace(/\s+/g, "");
+
+  // Intercept forex/gold symbols — redirect to forex tool
+  const FOREX_REDIRECT: Record<string, string> = {
+    "XAU": "XAU/USD", "XAUUSD": "XAU/USD", "XAU/USD": "XAU/USD", "GOLD": "XAU/USD", "ORO": "XAU/USD",
+    "ORODOLAR": "XAU/USD", "ORODÓLAR": "XAU/USD",
+    "EURUSD": "EUR/USD", "EUR/USD": "EUR/USD", "GBPUSD": "GBP/USD", "GBP/USD": "GBP/USD",
+    "USDJPY": "USD/JPY", "USD/JPY": "USD/JPY", "GBPJPY": "GBP/JPY", "GBP/JPY": "GBP/JPY",
+    "EURGBP": "EUR/GBP", "EUR/GBP": "EUR/GBP", "EURJPY": "EUR/JPY", "EUR/JPY": "EUR/JPY",
+  };
+  const fxInstrument = FOREX_REDIRECT[sym];
+  if (fxInstrument) {
+    const { executeForexTool } = await import("./trading-forex");
+    return executeForexTool("forex_analyze", { instrument: fxInstrument });
+  }
 
   const [profile, quote, recs, target, financials, sentiment] = await Promise.all([
     getCompanyProfile(sym).catch(() => null),
