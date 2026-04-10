@@ -30,9 +30,10 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
-          SUPABASE_SERVICE_ROLE_KEY: placeholder
-          NEXT_PUBLIC_VAPID_PUBLIC_KEY: placeholder
+          NEXT_PUBLIC_SUPABASE_URL: https://fozuopfxequexdyivrqy.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvenVvcGZ4ZXF1ZXhkeWl2cnF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NjUyMzUsImV4cCI6MjA5MTI0MTIzNX0.aYpQgcot3YU8yL9j09xqh3-msPTjBGhlaeUeJLc76K0
+          SUPABASE_SERVICE_ROLE_KEY: placeholder-for-build-only
+          NEXT_PUBLIC_VAPID_PUBLIC_KEY: BDssBQOdh9kRyedu3UtxTvTgnrnv3-KWuo1HlgQVM8VH0zaDggvUhQZaDUY5N1M9opHd2K0KdgipqJX2nbUln_U
           VAPID_PRIVATE_KEY: placeholder
           OPENAI_API_KEY: placeholder
           FINNHUB_API_KEY: placeholder
