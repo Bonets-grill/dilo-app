@@ -246,20 +246,20 @@ export default function TradingPage() {
               onClick={() => setTab("stocks")}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-all ${tab === "stocks" ? "bg-[var(--card)] text-white shadow-sm" : "text-[var(--dim)]"}`}
             >
-              <BarChart3 size={14} /> Acciones
+              <BarChart3 size={14} /> {t("stocks")}
             </button>
             <button
               onClick={() => setTab("forex")}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-all ${tab === "forex" ? "bg-[var(--card)] text-white shadow-sm" : "text-[var(--dim)]"}`}
             >
-              <Globe size={14} /> Forex
+              <Globe size={14} /> {t("forex")}
             </button>
           </div>
         </div>
 
         {/* ===== FOREX TAB ===== */}
         {tab === "forex" && (
-          <ForexSection data={forexData} loading={forexLoading} error={forexError} onRetry={fetchForex} />
+          <ForexSection data={forexData} loading={forexLoading} error={forexError} onRetry={fetchForex} t={t} />
         )}
 
         {/* ===== STOCKS TAB ===== */}
@@ -465,7 +465,7 @@ export default function TradingPage() {
   );
 }
 
-function ForexSection({ data, loading, error, onRetry }: { data: ForexData | null; loading: boolean; error: string | null; onRetry: () => void }) {
+function ForexSection({ data, loading, error, onRetry, t }: { data: ForexData | null; loading: boolean; error: string | null; onRetry: () => void; t: (key: string, values?: Record<string, string>) => string }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -478,9 +478,9 @@ function ForexSection({ data, loading, error, onRetry }: { data: ForexData | nul
     return (
       <div className="rounded-xl bg-[var(--card)] border border-[var(--border)] p-6 text-center space-y-2">
         <Globe size={32} className="mx-auto text-[var(--dim)]" />
-        <p className="text-sm font-medium">Forex no disponible</p>
-        <p className="text-xs text-[var(--dim)]">El motor de forex no est&aacute; conectado. Verifica que el Python engine est&eacute; activo.</p>
-        <button onClick={onRetry} className="text-xs text-[var(--accent)] underline mt-2">Reintentar</button>
+        <p className="text-sm font-medium">{t("forexUnavailable")}</p>
+        <p className="text-xs text-[var(--dim)]">{t("forexUnavailableDesc")}</p>
+        <button onClick={onRetry} className="text-xs text-[var(--accent)] underline mt-2">{t("retry")}</button>
       </div>
     );
   }
@@ -489,8 +489,8 @@ function ForexSection({ data, loading, error, onRetry }: { data: ForexData | nul
     return (
       <div className="rounded-xl bg-[var(--card)] border border-[var(--border)] p-6 text-center space-y-2">
         <AlertTriangle size={24} className="mx-auto text-yellow-500" />
-        <p className="text-sm text-[var(--dim)]">Error cargando datos forex</p>
-        <button onClick={onRetry} className="text-xs text-[var(--accent)] underline">Reintentar</button>
+        <p className="text-sm text-[var(--dim)]">{t("forexErrorLoading")}</p>
+        <button onClick={onRetry} className="text-xs text-[var(--accent)] underline">{t("retry")}</button>
       </div>
     );
   }
@@ -504,7 +504,7 @@ function ForexSection({ data, loading, error, onRetry }: { data: ForexData | nul
       {killZone && (
         <div className="flex items-center gap-2 rounded-xl bg-green-500/10 border border-green-500/30 px-3 py-2">
           <Zap size={14} className="text-green-400" />
-          <span className="text-xs font-medium text-green-400">Kill Zone {killZone} activa</span>
+          <span className="text-xs font-medium text-green-400">{t("killZoneActive", { zone: killZone })}</span>
         </div>
       )}
 
@@ -512,9 +512,9 @@ function ForexSection({ data, loading, error, onRetry }: { data: ForexData | nul
       <div className="rounded-xl bg-[var(--card)] border border-[var(--border)] p-4">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-[10px] text-[var(--dim)] uppercase tracking-wider">Cuenta IG</p>
+            <p className="text-[10px] text-[var(--dim)] uppercase tracking-wider">{t("igAccount")}</p>
             <p className="text-2xl font-bold mt-0.5">
-              &euro;{account.balance.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              &euro;{account.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
           </div>
           <div className={`flex items-center gap-0.5 px-2 py-1 rounded-lg text-sm font-semibold ${plPositive ? "bg-green-500/15 text-green-400" : "bg-red-500/15 text-red-400"}`}>
@@ -523,29 +523,29 @@ function ForexSection({ data, loading, error, onRetry }: { data: ForexData | nul
           </div>
         </div>
         <div className="flex gap-4 mt-2 text-xs text-[var(--dim)]">
-          <span>Disponible: &euro;{account.available.toLocaleString("es-ES", { minimumFractionDigits: 2 })}</span>
-          <span>Dep&oacute;sito: &euro;{account.deposit.toLocaleString("es-ES", { minimumFractionDigits: 2 })}</span>
+          <span>{t("available")}: &euro;{account.available.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+          <span>{t("deposit")}: &euro;{account.deposit.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
         </div>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-3 gap-2">
         <div className="rounded-xl bg-[var(--card)] border border-[var(--border)] p-3 text-center">
-          <p className="text-[10px] text-[var(--dim)] mb-1">Win Rate</p>
+          <p className="text-[10px] text-[var(--dim)] mb-1">{t("winRate")}</p>
           <p className={`text-sm font-semibold ${stats.winRate >= 50 ? "text-green-400" : stats.totalSignals > 0 ? "text-red-400" : "text-[var(--dim)]"}`}>
             {stats.totalSignals > 0 ? `${stats.winRate.toFixed(0)}%` : "\u2014"}
           </p>
           <p className="text-[10px] text-[var(--dim)]">{stats.wins}W / {stats.losses}L</p>
         </div>
         <div className="rounded-xl bg-[var(--card)] border border-[var(--border)] p-3 text-center">
-          <p className="text-[10px] text-[var(--dim)] mb-1">Forex</p>
+          <p className="text-[10px] text-[var(--dim)] mb-1">{t("forex")}</p>
           <p className="text-sm font-semibold text-blue-400">
             {stats.forexWinRate > 0 ? `${stats.forexWinRate.toFixed(0)}%` : "\u2014"}
           </p>
           <p className="text-[10px] text-[var(--dim)]">win rate</p>
         </div>
         <div className="rounded-xl bg-[var(--card)] border border-[var(--border)] p-3 text-center">
-          <p className="text-[10px] text-[var(--dim)] mb-1">Oro</p>
+          <p className="text-[10px] text-[var(--dim)] mb-1">{t("gold")}</p>
           <p className="text-sm font-semibold text-yellow-400">
             {stats.goldWinRate > 0 ? `${stats.goldWinRate.toFixed(0)}%` : "\u2014"}
           </p>
@@ -556,12 +556,12 @@ function ForexSection({ data, loading, error, onRetry }: { data: ForexData | nul
       {/* Positions */}
       <div className="rounded-xl bg-[var(--card)] border border-[var(--border)] overflow-hidden">
         <div className="px-4 py-3 border-b border-[var(--border)] flex items-center justify-between">
-          <h3 className="text-sm font-semibold">Posiciones Forex</h3>
+          <h3 className="text-sm font-semibold">{t("forexPositions")}</h3>
           <span className="text-xs text-[var(--dim)]">{positions.length}</span>
         </div>
         {positions.length === 0 ? (
           <div className="px-4 py-6 text-center text-sm text-[var(--dim)]">
-            Sin posiciones abiertas
+            {t("noForexPositions")}
           </div>
         ) : (
           <div className="divide-y divide-[var(--border)]">
@@ -591,7 +591,7 @@ function ForexSection({ data, loading, error, onRetry }: { data: ForexData | nul
           <div className="px-4 py-3 border-b border-[var(--border)]">
             <h3 className="text-sm font-semibold flex items-center gap-1.5">
               <Target size={14} />
-              Se&ntilde;ales Forex
+              {t("forexSignals")}
             </h3>
           </div>
           <div className="divide-y divide-[var(--border)]">
@@ -620,7 +620,7 @@ function ForexSection({ data, loading, error, onRetry }: { data: ForexData | nul
                       {sig.pnl_pct != null && ` ${sig.pnl_pct >= 0 ? "+" : ""}${sig.pnl_pct.toFixed(1)}%`}
                     </span>
                   ) : (
-                    <span className="text-[10px] text-yellow-400">Pendiente</span>
+                    <span className="text-[10px] text-yellow-400">{t("pending")}</span>
                   )}
                 </div>
               </div>
@@ -635,7 +635,7 @@ function ForexSection({ data, loading, error, onRetry }: { data: ForexData | nul
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-semibold flex items-center gap-1.5">
               <Brain size={14} />
-              Aprendizaje Forex
+              {t("forexLearning")}
             </h3>
             <span className="text-sm font-bold text-blue-400">{learning.score}/100</span>
           </div>
@@ -648,15 +648,15 @@ function ForexSection({ data, loading, error, onRetry }: { data: ForexData | nul
           <div className="grid grid-cols-3 gap-2 text-center">
             <div>
               <p className="text-sm font-semibold">{stats.totalSignals}</p>
-              <p className="text-[9px] text-[var(--dim)]">Se&ntilde;ales</p>
+              <p className="text-[9px] text-[var(--dim)]">{t("signals")}</p>
             </div>
             <div>
               <p className="text-sm font-semibold">{stats.winRate > 0 ? `${stats.winRate.toFixed(0)}%` : "\u2014"}</p>
-              <p className="text-[9px] text-[var(--dim)]">Win Rate</p>
+              <p className="text-[9px] text-[var(--dim)]">{t("winRate")}</p>
             </div>
             <div>
               <p className="text-sm font-semibold">{learning.marketsAnalyzed}</p>
-              <p className="text-[9px] text-[var(--dim)]">Mercados</p>
+              <p className="text-[9px] text-[var(--dim)]">{t("markets")}</p>
             </div>
           </div>
         </div>
@@ -666,11 +666,11 @@ function ForexSection({ data, loading, error, onRetry }: { data: ForexData | nul
       <div className="grid grid-cols-2 gap-2">
         <Link href="/chat?q=escaneo%20forex" className="flex items-center gap-2 rounded-xl bg-[var(--card)] border border-[var(--border)] p-3 active:opacity-70 transition-opacity">
           <Globe size={16} className="text-blue-400" />
-          <span className="text-xs font-medium">Escanear Forex</span>
+          <span className="text-xs font-medium">{t("scanForex")}</span>
         </Link>
         <Link href="/chat?q=analiza%20oro%20dolar" className="flex items-center gap-2 rounded-xl bg-[var(--card)] border border-[var(--border)] p-3 active:opacity-70 transition-opacity">
           <Target size={16} className="text-yellow-400" />
-          <span className="text-xs font-medium">Analizar Oro</span>
+          <span className="text-xs font-medium">{t("analyzeGold")}</span>
         </Link>
       </div>
     </>
