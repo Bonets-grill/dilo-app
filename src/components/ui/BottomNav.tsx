@@ -3,12 +3,13 @@
 import { useTranslations } from "next-intl";
 import { usePathname } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
-import { MessageCircle, Users, BookOpen, Wallet, User, TrendingUp } from "lucide-react";
+import { MessageCircle, Users, BookOpen, Wallet, User, TrendingUp, Apple } from "lucide-react";
 
 const tabs = [
   { key: "chat", href: "/chat", icon: MessageCircle },
   { key: "trading", href: "/trading", icon: TrendingUp },
   { key: "journal", href: "/journal", icon: BookOpen },
+  { key: "nutrition", href: "/nutrition", icon: Apple },
   { key: "dm", href: "/dm", icon: Users },
   { key: "expenses", href: "/expenses", icon: Wallet },
   { key: "profile", href: "/settings", icon: User },
