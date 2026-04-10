@@ -13,7 +13,8 @@
     "trading": "Trading",
     "dm": "Messages",
     "journal": "Journal",
-    "nutrition": "Nutrition"
+    "nutrition": "Nutrition",
+    "wellness": "Wellness"
   },
   "chat": {
     "placeholder": "Type or speak...",
@@ -276,6 +277,26 @@
     "glasses": "glasses",
     "kgThisWeek": "kg this week",
     "adherence": "Adherence"
+  },
+  "wellness": {
+    "title": "Emotional Wellbeing",
+    "mood": "Mood",
+    "breathe": "Breathing",
+    "gratitude": "Gratitude",
+    "journal": "Emotional journal",
+    "grounding": "Grounding",
+    "thoughtChallenge": "Thought challenge",
+    "stats": "Stats",
+    "streak": "Streak",
+    "howFeelToday": "How are you feeling today?",
+    "moodHistory": "Mood history",
+    "exercisesWeek": "Exercises this week",
+    "currentStreak": "Current streak",
+    "days": "days",
+    "completed": "completed",
+    "startExercise": "Start exercise",
+    "disclaimer": "DILO offers evidence-based wellbeing techniques. It is not therapy or diagnosis. If you need professional help: 988 Suicide & Crisis Lifeline (call or text 988).",
+    "crisisDetected": "We've detected you may be going through a very difficult time."
   },
   "common": {
     "today": "Today",

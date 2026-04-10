@@ -51,6 +51,10 @@
     {
       "path": "/api/cron/nutrition-weekly",
       "schedule": "0 7 * * 1"
+    },
+    {
+      "path": "/api/cron/wellness-checkin",
+      "schedule": "0 20 * * *"
     }
   ]
 }

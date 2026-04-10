@@ -13,7 +13,8 @@
     "trading": "Trading",
     "dm": "Messages",
     "journal": "Journal",
-    "nutrition": "Nutrition"
+    "nutrition": "Nutrition",
+    "wellness": "Bien-etre"
   },
   "chat": {
     "placeholder": "Écris ou parle...",
@@ -276,6 +277,26 @@
     "glasses": "verres",
     "kgThisWeek": "kg cette semaine",
     "adherence": "Adherence"
+  },
+  "wellness": {
+    "title": "Bien-etre Emotionnel",
+    "mood": "Humeur",
+    "breathe": "Respiration",
+    "gratitude": "Gratitude",
+    "journal": "Journal emotionnel",
+    "grounding": "Ancrage",
+    "thoughtChallenge": "Defi de pensee",
+    "stats": "Statistiques",
+    "streak": "Serie",
+    "howFeelToday": "Comment te sens-tu aujourd'hui?",
+    "moodHistory": "Historique d'humeur",
+    "exercisesWeek": "Exercices cette semaine",
+    "currentStreak": "Serie actuelle",
+    "days": "jours",
+    "completed": "termines",
+    "startExercise": "Commencer un exercice",
+    "disclaimer": "DILO propose des techniques de bien-etre basees sur des preuves. Ce n'est ni une therapie ni un diagnostic. Si vous avez besoin d'aide: SOS Amitie 09 72 39 40 50 (24h).",
+    "crisisDetected": "Nous avons detecte que vous traversez peut-etre un moment tres difficile."
   },
   "common": {
     "today": "Aujourd'hui",

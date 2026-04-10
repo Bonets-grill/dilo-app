@@ -13,7 +13,8 @@
     "trading": "Trading",
     "dm": "Chat",
     "journal": "Tagebuch",
-    "nutrition": "Ernahrung"
+    "nutrition": "Ernahrung",
+    "wellness": "Wohlbefinden"
   },
   "chat": {
     "placeholder": "Schreib oder sprich...",
@@ -276,6 +277,26 @@
     "glasses": "Glaser",
     "kgThisWeek": "kg diese Woche",
     "adherence": "Einhaltung"
+  },
+  "wellness": {
+    "title": "Emotionales Wohlbefinden",
+    "mood": "Stimmung",
+    "breathe": "Atmung",
+    "gratitude": "Dankbarkeit",
+    "journal": "Emotionales Tagebuch",
+    "grounding": "Erdung",
+    "thoughtChallenge": "Gedanken-Challenge",
+    "stats": "Statistiken",
+    "streak": "Serie",
+    "howFeelToday": "Wie fuhlst du dich heute?",
+    "moodHistory": "Stimmungsverlauf",
+    "exercisesWeek": "Ubungen diese Woche",
+    "currentStreak": "Aktuelle Serie",
+    "days": "Tage",
+    "completed": "abgeschlossen",
+    "startExercise": "Ubung starten",
+    "disclaimer": "DILO bietet evidenzbasierte Wohlbefinden-Techniken. Es ist keine Therapie oder Diagnose. Wenn du professionelle Hilfe brauchst: Telefonseelsorge 0800 111 0 111 (24h, kostenlos).",
+    "crisisDetected": "Wir haben festgestellt, dass du moglicherweise eine sehr schwierige Zeit durchmachst."
   },
   "common": {
     "today": "Heute",
