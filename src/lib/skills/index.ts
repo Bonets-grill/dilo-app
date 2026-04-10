@@ -6,6 +6,7 @@ import { TRADING_TOOLS, executeTrading } from "./trading";
 import { MARKET_ANALYSIS_TOOLS, executeMarketAnalysis } from "./market-analysis";
 import { TRADING_CALENDAR_TOOLS, executeTradingCalendar } from "./trading-calendar";
 import { TRADING_SIGNAL_TOOLS, executeTradingSignals } from "./trading-signals";
+import { FOREX_TOOLS, executeForexTool } from "./trading-forex";
 
 // Base extended tools (always available)
 export const EXTENDED_TOOLS: OpenAI.ChatCompletionTool[] = [
@@ -23,6 +24,7 @@ export const ALL_TRADING_TOOLS: OpenAI.ChatCompletionTool[] = [
   ...MARKET_ANALYSIS_TOOLS,
   ...TRADING_CALENDAR_TOOLS,
   ...TRADING_SIGNAL_TOOLS,
+  ...FOREX_TOOLS,
 ];
 
 // Route tool execution to the right skill handler
@@ -79,6 +81,11 @@ export async function executeExtendedTool(
     }
 
     return executeTrading(toolName, input, keys, userId);
+  }
+
+  // Forex tools (IG Markets)
+  if (toolName.startsWith("forex_")) {
+    return executeForexTool(toolName, input);
   }
 
   // Not an extended tool — return null so the main executor handles it
