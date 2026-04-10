@@ -201,38 +201,45 @@ export default function ChatPage() {
     reader.onload = async () => {
       const base64 = reader.result as string;
       const uploadId = crypto.randomUUID();
-      const enhanceId = crypto.randomUUID();
+      const analyzeId = crypto.randomUUID();
 
       // Show original with inline base64
       setMsgs(p => [...p,
         { id: uploadId, role: "user", content: `__IMAGE__${base64}` },
-        { id: enhanceId, role: "assistant", content: "Mejorando tu foto... ⏳" },
+        { id: analyzeId, role: "assistant", content: "Analizando imagen... 🔍" },
       ]);
       setEnhancing(true);
 
       try {
-        // Resize image before sending (Stability max 1024x1024)
-        const resized = await resizeImage(file, 1024);
-        const fd = new FormData();
-        fd.append("image", resized);
-        fd.append("mode", "enhance");
-
-        const res = await fetch("/api/enhance-image", { method: "POST", body: fd });
+        // Analyze image with OCR / Vision AI
+        const res = await fetch("/api/ocr", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageUrl: base64 }),
+        });
         const data = await res.json();
 
-        if (data.success && data.image) {
-          setMsgs(p => p.map(m => m.id === enhanceId ? {
+        if (data.text) {
+          setMsgs(p => p.map(m => m.id === analyzeId ? {
             ...m,
-            content: `__IMAGE__${data.image}`,
+            content: `**Lo que veo en la imagen:**\n\n${data.text}`,
           } : m));
+          // Save messages
+          if (userId && convId) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (supabase.from("messages") as any).insert([
+              { conversation_id: convId, user_id: userId, role: "user", content: "[Foto enviada]" },
+              { conversation_id: convId, user_id: userId, role: "assistant", content: `**Lo que veo en la imagen:**\n\n${data.text}` },
+            ]);
+          }
         } else {
-          setMsgs(p => p.map(m => m.id === enhanceId ? {
+          setMsgs(p => p.map(m => m.id === analyzeId ? {
             ...m,
-            content: `❌ No se pudo mejorar: ${data.error || "error"}`,
+            content: "No pude analizar la imagen. Intenta con otra foto.",
           } : m));
         }
       } catch {
-        setMsgs(p => p.map(m => m.id === enhanceId ? { ...m, content: "❌ Error al mejorar" } : m));
+        setMsgs(p => p.map(m => m.id === analyzeId ? { ...m, content: "❌ Error al analizar" } : m));
       } finally {
         setEnhancing(false);
       }

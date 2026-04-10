@@ -4,7 +4,7 @@ import OpenAI from "openai";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
 /**
- * POST /api/ocr — Extract text from an image using GPT-4o-mini vision
+ * POST /api/ocr — Analyze an image: read text, describe content, extract data
  * Body: { imageUrl: string (base64 data URL or https URL) }
  */
 export async function POST(req: NextRequest) {
@@ -21,7 +21,16 @@ export async function POST(req: NextRequest) {
           content: [
             {
               type: "text",
-              text: "Extract ALL text from this image. Return only the text, preserve the layout as much as possible. If there are numbers, prices, dates, or any important data, include them. If there's no readable text, say 'No text found'.",
+              text: `Analiza esta imagen de forma completa y útil. Sigue estas reglas:
+
+1. Si hay TEXTO visible (documento, recibo, captura de pantalla, cartel, menú): extrae TODO el texto de forma legible.
+2. Si hay NÚMEROS o PRECIOS: destácalos claramente.
+3. Si es un RECIBO o FACTURA: extrae el total, la tienda, la fecha, y los items.
+4. Si es una CAPTURA DE PANTALLA: describe qué app es y qué muestra.
+5. Si es una FOTO de algo (persona, lugar, objeto): describe qué se ve.
+6. Si hay un PROBLEMA visible (error, avería, manchas): señálalo.
+
+Responde en español. Sé conciso pero completo. Si hay texto, prioriza extraerlo.`,
             },
             {
               type: "image_url",
@@ -32,11 +41,11 @@ export async function POST(req: NextRequest) {
       ],
     });
 
-    const text = response.choices[0]?.message?.content?.trim() || "No text found";
+    const text = response.choices[0]?.message?.content?.trim() || "No pude analizar la imagen.";
     return NextResponse.json({ text });
   } catch (err) {
     console.error("[OCR] Error:", err);
-    return NextResponse.json({ error: "OCR failed" }, { status: 500 });
+    return NextResponse.json({ error: "Analysis failed" }, { status: 500 });
   }
 }
 
