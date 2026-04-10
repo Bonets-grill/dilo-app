@@ -115,6 +115,20 @@ async function doAnalyzeStock(symbol: string): Promise<string> {
     return executeForexTool("forex_analyze", { instrument: fxInstrument });
   }
 
+  // Reject obvious non-ticker symbols (common words the LLM sends by mistake)
+  const NOT_TICKERS = new Set([
+    "TEMA", "CUBA", "COMO", "QUE", "HOY", "NOTICIAS", "NEWS", "HELLO", "HOLA",
+    "BIEN", "MAL", "GRACIAS", "THANKS", "HELP", "AYUDA", "RECETA", "DIETA",
+    "AGUA", "PESO", "PLAN", "COMIDA", "FOOD", "AGUA", "SALUD", "MOOD",
+    "RESPIRAR", "CALMA", "RELAX", "MEDITAR", "DORMIR", "SLEEP",
+  ]);
+  if (NOT_TICKERS.has(sym) || (sym.length > 5 && !/^\d/.test(sym))) {
+    return JSON.stringify({
+      not_a_ticker: true,
+      message: `"${symbol}" no es un símbolo de acciones. Si buscas noticias o información general, pregúntame directamente sin mencionar análisis de mercado.`,
+    });
+  }
+
   const [profile, quote, recs, target, financials, sentiment] = await Promise.all([
     getCompanyProfile(sym).catch(() => null),
     getQuote(sym).catch(() => null),
