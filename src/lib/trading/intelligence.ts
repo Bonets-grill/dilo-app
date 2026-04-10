@@ -113,84 +113,79 @@ function classifyRegime(avgRange: number, avgAbsChange: number): RegimeAnalysis 
  * Apply all intelligence filters to a potential signal.
  * Returns confidence adjustment + list of filters applied.
  *
- * Filter weights (evidence-based):
- *   RSI Divergence:  +10 / -15  (from Python engine, not here)
- *   Insider:         +5 / -3
- *   Sentiment:       +3 / -3
+ * ALL WEIGHTS START AT +5/-5 (equal).
+ * After 30 days, real data from filters_applied determines which
+ * weights to increase/decrease. No invented numbers.
  *
- * Order: Insider → Sentiment (structural first, noise last)
+ * Temporal note: Signals resolve at 24h.
+ *   - Sentiment: predicts 30min (VERY weak at 24h)
+ *   - Insider: predicts 1-6 months (background bias only at 24h)
+ *   - Regime: market context, not directional prediction
+ *   - Seasonality: monthly bias, weak at daily level
+ * All filters are SOFT — adjust confidence, never hard block.
+ * Data will tell us in 30 days which ones actually help.
  */
 export async function applySignalFilters(
   symbol: string,
   side: "BUY" | "SELL",
   baseConfidence: number,
 ): Promise<SignalFilters> {
+  const W = 5; // Uniform weight — data will refine this after 30 days
   let adjustment = 0;
   const filters: string[] = [];
   const context: string[] = [];
 
   // ── FILTER 1: Sentiment (Finnhub only, NO GPT) ──
+  // Temporal match: WEAK (predicts 30min, signals resolve 24h)
+  // Kept for data collection — may be removed after 30 days
   try {
     const sentiment = await getNewsSentiment(symbol);
     const bullish = sentiment?.sentiment?.bullishPercent || 0.5;
 
     if (side === "BUY" && bullish < 0.3) {
-      adjustment -= 3;
-      filters.push("sentiment_negative");
-      context.push(`Sentiment bajista (${(bullish * 100).toFixed(0)}% bullish) — penalización -3`);
-    } else if (side === "SELL" && bullish > 0.7) {
-      adjustment -= 3;
+      adjustment -= W;
       filters.push("sentiment_against");
-      context.push(`Sentiment alcista (${(bullish * 100).toFixed(0)}% bullish) contra SELL — penalización -3`);
+      context.push(`Sentiment ${(bullish * 100).toFixed(0)}% bullish contra BUY`);
+    } else if (side === "SELL" && bullish > 0.7) {
+      adjustment -= W;
+      filters.push("sentiment_against");
+      context.push(`Sentiment ${(bullish * 100).toFixed(0)}% bullish contra SELL`);
     } else if ((side === "BUY" && bullish > 0.6) || (side === "SELL" && bullish < 0.4)) {
-      adjustment += 3;
+      adjustment += W;
       filters.push("sentiment_aligned");
-      context.push(`Sentiment alineado con señal — bonus +3`);
+      context.push(`Sentiment alineado con ${side}`);
     }
   } catch { /* skip */ }
 
   // ── FILTER 2: Insider Transactions ──
+  // Temporal match: WEAK for 24h (predicts 1-6 months)
+  // But strongest academic evidence — keep as background bias
   try {
     const insider = await analyzeInsiderActivity(symbol);
-    if (insider.flag === "insider_bullish") {
-      if (side === "BUY") {
-        adjustment += 5;
-        filters.push("insider_bullish_aligned");
-        context.push(`${insider.buys} insider buys en 90 días — bonus +5`);
-      } else {
-        adjustment -= 3; // Not -10, insider selling is weak signal
-        filters.push("insider_bullish_against");
-        context.push(`${insider.buys} insider buys contra SELL — penalización -3`);
-      }
-    } else if (insider.flag === "insider_bearish") {
-      if (side === "SELL") {
-        adjustment += 5;
-        filters.push("insider_bearish_aligned");
-        context.push(`${insider.sells} insider sells — bonus +5`);
-      } else {
-        adjustment -= 3;
-        filters.push("insider_bearish_against");
-        context.push(`${insider.sells} insider sells contra BUY — penalización -3`);
-      }
+    if (insider.flag !== "neutral") {
+      const aligned = (insider.flag === "insider_bullish" && side === "BUY") ||
+                       (insider.flag === "insider_bearish" && side === "SELL");
+      adjustment += aligned ? W : -W;
+      filters.push(aligned ? "insider_aligned" : "insider_against");
+      context.push(`Insider: ${insider.buys} buys, ${insider.sells} sells (90d) → ${insider.flag}`);
     }
   } catch { /* skip */ }
 
-  // ── REGIME CONTEXT (informational, not a filter) ──
+  // ── FILTER 3: Regime (informational context + adjustment) ──
   try {
     const regime = await detectRegime();
-    context.push(`Régimen: ${regime.description}. ${regime.recommendation}`);
+    context.push(`Régimen: ${regime.description}`);
 
     if (regime.regime === "ranging_high_vol") {
-      adjustment -= 5;
+      adjustment -= W;
       filters.push("regime_dangerous");
-      context.push("Régimen peligroso — penalización -5");
     } else if (regime.regime === "trending_low_vol") {
-      adjustment += 2;
+      adjustment += W;
       filters.push("regime_favorable");
     }
   } catch { /* skip */ }
 
-  // ── SEASONALITY from symbol_profiles ──
+  // ── FILTER 4: Seasonality from symbol_profiles ──
   try {
     const { data: profile } = await supabase
       .from("symbol_profiles")
@@ -201,21 +196,17 @@ export async function applySignalFilters(
     if (profile) {
       const currentMonth = new Date().getMonth() + 1;
       if (profile.worst_months?.includes(currentMonth)) {
-        adjustment -= 3;
+        adjustment -= W;
         filters.push("seasonality_unfavorable");
-        context.push(`Mes desfavorable para ${symbol} — penalización -3`);
+        context.push(`Mes desfavorable para ${symbol}`);
       } else if (profile.best_months?.includes(currentMonth)) {
-        adjustment += 2;
+        adjustment += W;
         filters.push("seasonality_favorable");
-        context.push(`Mes favorable para ${symbol} — bonus +2`);
+        context.push(`Mes favorable para ${symbol}`);
       }
 
       if (profile.smc_win_rate && profile.total_signals_analyzed > 10) {
-        context.push(`Historial DILO: ${profile.smc_win_rate}% win rate en ${profile.total_signals_analyzed} señales. Mejor setup: ${profile.smc_best_setup}`);
-      }
-
-      if (profile.seasonality_notes) {
-        context.push(`Estacionalidad: ${profile.seasonality_notes}`);
+        context.push(`Historial DILO: ${profile.smc_win_rate}% win rate en ${profile.total_signals_analyzed} señales`);
       }
 
       if (profile.notes) {
@@ -224,13 +215,11 @@ export async function applySignalFilters(
     }
   } catch { /* skip */ }
 
-  const finalConfidence = Math.max(10, Math.min(95, baseConfidence + adjustment));
-
   return {
     confidenceAdjustment: adjustment,
     filtersApplied: filters,
     context,
-    blocked: finalConfidence < 40, // Below 40 = too risky
-    blockReason: finalConfidence < 40 ? `Confianza ajustada a ${finalConfidence}% (< 40% mínimo)` : undefined,
+    blocked: false, // Soft filters only — never hard block
+    blockReason: undefined,
   };
 }

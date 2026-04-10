@@ -122,27 +122,24 @@ export async function GET() {
 
               const adjustedConfidence = Math.max(10, Math.min(95, (signal.confidence || 60) + filterResult.confidenceAdjustment));
 
-              if (filterResult.blocked) {
-                // Signal blocked by filters — log but don't save
-                console.log(`[Trading Learn] Signal for ${sym} blocked: ${filterResult.blockReason}`);
-              } else {
-                await supabase.from("trading_signal_log").insert({
-                  user_id: null,
-                  symbol: sym,
-                  side: signal.side || "BUY",
-                  entry_price: signal.entry_price,
-                  stop_loss: signal.stop_loss,
-                  take_profit: signal.take_profit,
-                  setup_type: signal.setup_type || "smc_auto",
-                  confidence: adjustedConfidence,
-                  reasoning: [
-                    ...(signal.reasoning || [`Auto: ${smc.bias} bias, ${sweepsCount} sweeps, ${obsCount} OBs`]),
-                    ...filterResult.context,
-                  ],
-                  filters_applied: filterResult.filtersApplied,
-                });
-                signalsGenerated++;
-              }
+              // Always save signal with filters applied (soft filters only — never block)
+              // Data collection: after 30 days, compare win rate by filter to determine real weights
+              await supabase.from("trading_signal_log").insert({
+                user_id: null,
+                symbol: sym,
+                side: signal.side || "BUY",
+                entry_price: signal.entry_price,
+                stop_loss: signal.stop_loss,
+                take_profit: signal.take_profit,
+                setup_type: signal.setup_type || "smc_auto",
+                confidence: adjustedConfidence,
+                reasoning: [
+                  ...(signal.reasoning || [`Auto: ${smc.bias} bias, ${sweepsCount} sweeps, ${obsCount} OBs`]),
+                  ...filterResult.context,
+                ],
+                filters_applied: filterResult.filtersApplied,
+              });
+              signalsGenerated++;
             }
           }
         } catch { /* skip */ }
