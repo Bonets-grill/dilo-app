@@ -30,28 +30,33 @@ export async function GET(req: NextRequest) {
       "EUR/JPY": 100,
     };
 
-    const quotesPromises = WATCHLIST.map(async (instrument) => {
-      try {
-        const q = await getForexQuote(instrument);
-        const scale = SCALE[instrument] || 1;
-        return {
-          instrument,
-          bid: q.bid / scale,
-          offer: q.offer / scale,
-          change_pct: q.change_pct,
-          low: q.low / scale,
-          high: q.high / scale,
-          market_status: q.market_status,
-        };
-      } catch {
-        return { instrument, bid: 0, offer: 0, change_pct: 0, low: 0, high: 0, market_status: "unknown" };
+    // Fetch quotes sequentially to avoid IG rate limiting (max ~6 req/s)
+    async function fetchAllQuotes() {
+      const results = [];
+      for (const instrument of WATCHLIST) {
+        try {
+          const q = await getForexQuote(instrument);
+          const scale = SCALE[instrument] || 1;
+          results.push({
+            instrument,
+            bid: q.bid / scale,
+            offer: q.offer / scale,
+            change_pct: q.change_pct,
+            low: q.low / scale,
+            high: q.high / scale,
+            market_status: q.market_status,
+          });
+        } catch {
+          results.push({ instrument, bid: 0, offer: 0, change_pct: 0, low: 0, high: 0, market_status: "unknown" });
+        }
       }
-    });
+      return results;
+    }
 
     const [account, positionsData, quotesResults, signalsRes, statsRes, learningRes] = await Promise.all([
       getForexAccount().catch(() => null),
       getForexPositions().catch(() => ({ positions: [] })),
-      Promise.all(quotesPromises),
+      fetchAllQuotes(),
       supabase
         .from("trading_signal_log")
         .select("symbol, side, entry_price, stop_loss, take_profit, confidence, outcome, pnl, pnl_pct, market_type, filters_applied, created_at, resolved_at")
