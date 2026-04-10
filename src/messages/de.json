@@ -69,6 +69,9 @@
       "health": "Gesundheit",
       "shopping": "Einkaufen",
       "bills": "Rechnungen",
+      "auto": "Auto/Wagen",
+      "subscriptions": "Abonnements",
+      "education": "Bildung",
       "other": "Sonstiges"
     }
   },

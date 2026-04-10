@@ -68,7 +68,7 @@ const baseTools: OpenAI.ChatCompletionTool[] = [
               type: "object",
               properties: {
                 amount: { type: "number" },
-                category: { type: "string", enum: ["food", "transport", "entertainment", "home", "health", "shopping", "bills", "other"] },
+                category: { type: "string", enum: ["food", "transport", "entertainment", "home", "health", "shopping", "bills", "auto", "subscriptions", "education", "other"] },
                 description: { type: "string" },
               },
               required: ["amount", "description"],
