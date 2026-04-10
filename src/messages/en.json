@@ -69,6 +69,9 @@
       "health": "Health",
       "shopping": "Shopping",
       "bills": "Bills",
+      "auto": "Auto/Car",
+      "subscriptions": "Subscriptions",
+      "education": "Education",
       "other": "Other"
     }
   },
