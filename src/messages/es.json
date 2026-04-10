@@ -300,7 +300,8 @@
     "completed": "completados",
     "startExercise": "Empezar ejercicio",
     "disclaimer": "DILO ofrece tecnicas de bienestar basadas en evidencia. No es terapia ni diagnostico. Si necesitas ayuda profesional: 717 003 717 (24h, gratuito).",
-    "crisisDetected": "Hemos detectado que puedes estar pasando por un momento muy dificil."
+    "crisisDetected": "Hemos detectado que puedes estar pasando por un momento muy dificil.",
+    "frequentEmotions": "Emociones frecuentes"
   },
   "common": {
     "today": "Hoy",

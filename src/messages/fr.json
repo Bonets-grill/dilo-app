@@ -300,7 +300,8 @@
     "completed": "termines",
     "startExercise": "Commencer un exercice",
     "disclaimer": "DILO propose des techniques de bien-etre basees sur des preuves. Ce n'est ni une therapie ni un diagnostic. Si vous avez besoin d'aide: SOS Amitie 09 72 39 40 50 (24h).",
-    "crisisDetected": "Nous avons detecte que vous traversez peut-etre un moment tres difficile."
+    "crisisDetected": "Nous avons detecte que vous traversez peut-etre un moment tres difficile.",
+    "frequentEmotions": "Émotions fréquentes"
   },
   "common": {
     "today": "Aujourd'hui",
