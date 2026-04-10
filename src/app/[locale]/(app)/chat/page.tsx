@@ -19,7 +19,9 @@ export default function ChatPage() {
   const [rec, setRec] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [convId, setConvId] = useState<string | null>(null);
+  const [convId, _setConvId] = useState<string | null>(null);
+  const convIdRef = useRef<string | null>(null);
+  const setConvId = (id: string | null) => { convIdRef.current = id; _setConvId(id); };
   const [convList, setConvList] = useState<Conv[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [pendingSend, setPendingSend] = useState<PendingSend | null>(null);
@@ -118,11 +120,11 @@ export default function ChatPage() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: newMsgs.map(m => ({ role: m.role, content: m.content.startsWith("__IMAGE__") ? "[Foto]" : m.content })), locale, userId, conversationId: convId }),
+        body: JSON.stringify({ messages: newMsgs.map(m => ({ role: m.role, content: m.content.startsWith("__IMAGE__") ? "[Foto]" : m.content })), locale, userId, conversationId: convIdRef.current }),
       });
       if (!res.body) throw new Error();
       const newConvId = res.headers.get("X-Conversation-Id");
-      if (newConvId && newConvId !== convId) {
+      if (newConvId && newConvId !== convIdRef.current) {
         setConvId(newConvId);
         if (userId) {
           supabase.from("conversations").select("id, title, updated_at").eq("user_id", userId)
