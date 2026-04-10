@@ -10,7 +10,8 @@
     "expenses": "Spese",
     "profile": "Profilo",
     "store": "Negozio",
-    "trading": "Trading"
+    "trading": "Trading",
+    "dm": "Messaggi"
   },
   "chat": {
     "placeholder": "Scrivi o parla...",
@@ -205,6 +206,23 @@
     "cash": "Cash",
     "buyingPower": "Potere d'acquisto",
     "disclaimer": "Dati reali del tuo conto. La decisione finale è tua. Ogni trading comporta rischi."
+  },
+  "dm": {
+    "title": "Messaggi",
+    "findUsers": "Cerca utenti",
+    "searchPlaceholder": "Nome o email...",
+    "connected": "Connesso",
+    "pending": "In attesa",
+    "connect": "Connetti",
+    "noResults": "Nessun utente trovato",
+    "requests": "Richieste in attesa",
+    "wantsToConnect": "Vuole connettersi con te",
+    "noContacts": "Nessun contatto DILO",
+    "noContactsDesc": "Cerca utenti DILO per inviare messaggi diretti",
+    "startConversation": "Inizia la conversazione",
+    "typeMessage": "Scrivi un messaggio...",
+    "you": "Tu",
+    "externalChannels": "Canali esterni"
   },
   "common": {
     "today": "Oggi",
