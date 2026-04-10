@@ -384,7 +384,7 @@ export default function ChatPage() {
                   <img src={m.content.replace("__IMAGE__", "")} alt="Uploaded" className="rounded-2xl max-w-[80%] max-h-[300px] object-cover" />
                 ) : (
                   <div
-                    className="bg-[var(--bg3)] rounded-2xl rounded-br-sm px-3.5 py-2 text-[14px] leading-relaxed max-w-[80%]"
+                    className="chat-msg bg-[var(--bg3)] rounded-2xl rounded-br-sm px-3.5 py-2 text-[14px] leading-relaxed max-w-[80%]"
                     onTouchStart={e => startLongPress(m.id, m.content, m.role, e)}
                     onTouchEnd={cancelLongPress}
                     onTouchMove={cancelLongPress}
@@ -413,7 +413,7 @@ export default function ChatPage() {
                   </div>
                 ) : m.content ? (
                   <>
-                    <div className="chat-md"
+                    <div className="chat-md chat-msg"
                       onTouchStart={e => startLongPress(m.id, m.content, m.role, e)}
                       onTouchEnd={cancelLongPress}
                       onTouchMove={cancelLongPress}

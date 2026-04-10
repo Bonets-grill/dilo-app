@@ -53,6 +53,13 @@ input, textarea, select { font-size: 16px !important; }
   user-select: text !important;
 }
 
+/* Chat messages: block native selection, use custom long-press menu */
+.chat-msg, .chat-msg * {
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
+
 /* Context menu backdrop blur */
 .ctx-menu-backdrop {
   backdrop-filter: blur(8px);

@@ -17,7 +17,14 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
+  Mic,
+  Square,
+  ImagePlus,
+  ArrowUp,
+  Pencil,
+  X,
 } from "lucide-react";
+import { useLocale } from "next-intl";
 
 interface JournalEntry {
   id: string;
@@ -69,6 +76,7 @@ const CAT_ICONS: Record<string, typeof Briefcase> = {
 };
 
 export default function JournalPage() {
+  const locale = useLocale();
   const [userId, setUserId] = useState<string | null>(null);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -77,7 +85,14 @@ export default function JournalPage() {
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showInsights, setShowInsights] = useState(false);
+  const [rec, setRec] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const [voicePreview, setVoicePreview] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const mrRef = useRef<MediaRecorder | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const taRef = useRef<HTMLTextAreaElement>(null);
+  const voiceRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     const supabase = createBrowserSupabase();
@@ -138,6 +153,59 @@ export default function JournalPage() {
     setSending(false);
     setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
   }
+
+  async function toggleRec() {
+    if (rec) { mrRef.current?.stop(); return; }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : MediaRecorder.isTypeSupported("audio/mp4") ? "audio/mp4" : "";
+      const mr = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+      const chunks: Blob[] = [];
+      mrRef.current = mr;
+      mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+      mr.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop()); setRec(false);
+        if (!chunks.length) return;
+        setTranscribing(true);
+        try {
+          const blob = new Blob(chunks, { type: mr.mimeType }); const fd = new FormData();
+          fd.append("audio", blob, mr.mimeType.includes("mp4") ? "a.m4a" : "a.webm"); fd.append("locale", locale);
+          const res = await fetch("/api/transcribe", { method: "POST", body: fd });
+          if (res.ok) { const { text } = await res.json(); if (text?.trim()) setVoicePreview(text.trim()); }
+        } catch { /* */ }
+        setTranscribing(false);
+      };
+      mr.start(); setRec(true);
+      setTimeout(() => { if (mr.state === "recording") mr.stop(); }, 60000);
+    } catch { setRec(false); }
+  }
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !userId) return;
+    e.target.value = "";
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64 = reader.result as string;
+      // OCR the image and send as journal entry
+      try {
+        const res = await fetch("/api/ocr", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageUrl: base64 }),
+        });
+        const data = await res.json();
+        if (data.text) {
+          setInput(`[Foto] ${data.text}`);
+          setTimeout(() => taRef.current?.focus(), 50);
+        }
+      } catch { /* */ }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  useEffect(() => { if (voicePreview !== null) voiceRef.current?.focus(); }, [voicePreview]);
 
   function formatDate(iso: string) {
     const d = new Date(iso);
@@ -275,25 +343,58 @@ export default function JournalPage() {
         <div ref={endRef} />
       </div>
 
+      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+
+      {/* Voice transcription preview */}
+      {voicePreview !== null && (
+        <div className="flex-shrink-0 px-3 pt-2 pb-1 border-t border-[var(--border)] bg-[var(--bg2)]">
+          <div className="max-w-2xl mx-auto">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[12px] text-[var(--dim)] font-medium">Transcripci&oacute;n de audio</span>
+              <button onClick={() => setVoicePreview(null)} className="p-1 rounded-full hover:bg-[var(--bg3)]">
+                <X size={14} className="text-[var(--dim)]" />
+              </button>
+            </div>
+            <textarea ref={voiceRef} value={voicePreview} onChange={e => setVoicePreview(e.target.value)}
+              rows={5}
+              className="w-full bg-[var(--bg1)] rounded-xl border border-[var(--border)] px-3 py-2 text-[15px] text-white resize-none leading-7 max-h-[280px] focus:outline-none focus:border-white/30" />
+            <div className="flex gap-2 mt-1.5 mb-0.5 justify-end">
+              <button onClick={() => { const txt = voicePreview || ""; setVoicePreview(null); setInput(txt); setTimeout(() => taRef.current?.focus(), 50); }}
+                className="px-3 py-1.5 rounded-full text-[12px] font-medium bg-[var(--bg3)] text-white flex items-center gap-1.5">
+                <Pencil size={12} /> Editar
+              </button>
+              <button onClick={() => { const text = voicePreview || ""; setVoicePreview(null); setInput(text); setTimeout(() => sendEntry(), 50); }}
+                className="px-4 py-1.5 rounded-full text-[12px] font-medium bg-[var(--accent)] text-white flex items-center gap-1.5">
+                <ArrowUp size={12} /> Enviar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Input */}
-      <div className="flex-shrink-0 px-4 py-3 border-t border-[var(--border)]">
+      <div className={`flex-shrink-0 px-3 py-1.5 border-t border-[var(--border)] ${voicePreview !== null ? "hidden" : ""}`}>
         <div className="flex items-end gap-2">
-          <textarea
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendEntry(); } }}
-            placeholder="¿Cómo fue tu día?"
-            rows={1}
-            className="flex-1 bg-[var(--bg2)] border border-[var(--border)] rounded-2xl px-4 py-2.5 text-sm text-[var(--fg)] placeholder-[var(--dim)] focus:outline-none focus:border-[var(--accent)]/50 resize-none"
-            style={{ maxHeight: 100 }}
-          />
-          <button
-            onClick={sendEntry}
-            disabled={!input.trim() || sending}
-            className="w-10 h-10 rounded-full bg-[var(--accent)] text-white flex items-center justify-center disabled:opacity-40 flex-shrink-0"
-          >
-            <Send size={16} />
+          <button onClick={() => fileRef.current?.click()} className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 mb-0.5 bg-[var(--bg3)]">
+            <ImagePlus size={16} className="text-white" />
           </button>
+          <div className="flex-1 flex items-end bg-[var(--bg2)] rounded-2xl border border-[var(--border)] px-3 py-1.5">
+            <textarea ref={taRef} value={input}
+              onChange={e => { setInput(e.target.value); if (taRef.current) { taRef.current.style.height = "auto"; taRef.current.style.height = Math.min(taRef.current.scrollHeight, 100) + "px"; } }}
+              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendEntry(); } }}
+              placeholder={transcribing ? "Transcribiendo..." : rec ? "Grabando..." : "\u00bfC\u00f3mo fue tu d\u00eda?"}
+              rows={1} disabled={transcribing}
+              className="flex-1 bg-transparent text-[14px] text-white placeholder-[var(--dim)] resize-none leading-6 max-h-[100px] focus:outline-none disabled:opacity-50" />
+          </div>
+          {input.trim() ? (
+            <button onClick={sendEntry} disabled={sending} className="w-9 h-9 rounded-full bg-[var(--accent)] text-white flex items-center justify-center flex-shrink-0 disabled:opacity-30 mb-0.5">
+              <ArrowUp size={18} />
+            </button>
+          ) : (
+            <button onClick={toggleRec} disabled={transcribing} className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 mb-0.5 ${rec ? "bg-red-500 animate-pulse" : "bg-[var(--bg3)]"} ${transcribing ? "opacity-40" : ""}`}>
+              {rec ? <Square size={12} className="text-white" /> : <Mic size={16} className="text-white" />}
+            </button>
+          )}
         </div>
       </div>
     </div>
