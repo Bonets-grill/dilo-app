@@ -8,6 +8,7 @@ import { TRADING_CALENDAR_TOOLS, executeTradingCalendar } from "./trading-calend
 import { TRADING_SIGNAL_TOOLS, executeTradingSignals } from "./trading-signals";
 import { FOREX_TOOLS, executeForexTool } from "./trading-forex";
 import { NUTRITION_TOOLS, executeNutritionTool } from "./nutrition";
+import { WELLNESS_TOOLS, executeWellnessTool } from "./wellness";
 
 // Base extended tools (always available)
 export const EXTENDED_TOOLS: OpenAI.ChatCompletionTool[] = [
@@ -15,6 +16,7 @@ export const EXTENDED_TOOLS: OpenAI.ChatCompletionTool[] = [
   ...GMAIL_TOOLS,
   ...CALENDAR_TOOLS,
   ...NUTRITION_TOOLS,
+  ...WELLNESS_TOOLS,
 ];
 
 // Trading tools (only for users with Alpaca connected)
@@ -116,6 +118,11 @@ export async function executeExtendedTool(
   // Nutrition tools (always available)
   if (toolName.startsWith("nutrition_")) {
     return executeNutritionTool(toolName, input, userId);
+  }
+
+  // Wellness tools (always available)
+  if (toolName.startsWith("wellness_")) {
+    return executeWellnessTool(toolName, input, userId);
   }
 
   // Not an extended tool — return null so the main executor handles it

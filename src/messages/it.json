@@ -13,7 +13,8 @@
     "trading": "Trading",
     "dm": "Messaggi",
     "journal": "Diario",
-    "nutrition": "Nutrizione"
+    "nutrition": "Nutrizione",
+    "wellness": "Benessere"
   },
   "chat": {
     "placeholder": "Scrivi o parla...",
@@ -276,6 +277,26 @@
     "glasses": "bicchieri",
     "kgThisWeek": "kg questa settimana",
     "adherence": "Aderenza"
+  },
+  "wellness": {
+    "title": "Benessere Emotivo",
+    "mood": "Umore",
+    "breathe": "Respirazione",
+    "gratitude": "Gratitudine",
+    "journal": "Diario emotivo",
+    "grounding": "Radicamento",
+    "thoughtChallenge": "Sfida del pensiero",
+    "stats": "Statistiche",
+    "streak": "Serie",
+    "howFeelToday": "Come ti senti oggi?",
+    "moodHistory": "Storico umore",
+    "exercisesWeek": "Esercizi questa settimana",
+    "currentStreak": "Serie attuale",
+    "days": "giorni",
+    "completed": "completati",
+    "startExercise": "Inizia esercizio",
+    "disclaimer": "DILO offre tecniche di benessere basate su evidenze. Non e terapia ne diagnosi. Se hai bisogno di aiuto professionale: Telefono Amico 02 2327 2327 (24h).",
+    "crisisDetected": "Abbiamo rilevato che potresti attraversare un momento molto difficile."
   },
   "common": {
     "today": "Oggi",
