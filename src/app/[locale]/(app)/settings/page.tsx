@@ -47,8 +47,7 @@ export default function SettingsPage() {
   }, []);
 
   async function saveAlpacaKeys() {
-    if (!alpacaKeyId.trim() || !alpacaSecret.trim()) { setAlpacaError("Introduce ambas keys"); return; }
-    // Get fresh userId
+    if (!alpacaKeyId.trim() || !alpacaSecret.trim()) { setAlpacaError(t("enterBothKeys")); return; }
     let uid = userId;
     if (!uid) {
       const supabase = createBrowserSupabase();
@@ -56,7 +55,7 @@ export default function SettingsPage() {
       uid = data.user?.id || null;
       if (uid) setUserId(uid);
     }
-    if (!uid) { setAlpacaError("Necesitas iniciar sesión"); return; }
+    if (!uid) { setAlpacaError(t("needLogin")); return; }
     setAlpacaSaving(true); setAlpacaError(""); setAlpacaSuccess(false);
     try {
       const res = await fetch("/api/trading/keys", {
@@ -67,17 +66,24 @@ export default function SettingsPage() {
       const data = await res.json();
       if (!res.ok) { setAlpacaError(data.error); }
       else { setAlpacaConnected(true); setAlpacaPaper(data.paperMode); setAlpacaSuccess(true); setAlpacaKeyId(""); setAlpacaSecret(""); }
-    } catch { setAlpacaError("Error de conexión"); }
+    } catch { setAlpacaError(t("connectionError")); }
     setAlpacaSaving(false);
   }
 
   function changeLanguage(newLocale: string) {
-    // Navigate to the same page but in the new locale
     window.location.href = `/${newLocale}/settings`;
   }
 
   function goToStore() {
     router.push("/store");
+  }
+
+  function getLevelLabel(score: number) {
+    if (score < 20) return t("beginner");
+    if (score < 40) return t("learning");
+    if (score < 60) return t("intermediate");
+    if (score < 80) return t("advanced");
+    return t("expert");
   }
 
   return (
@@ -101,29 +107,29 @@ export default function SettingsPage() {
         <div className="rounded-xl bg-[var(--bg2)] border border-[var(--border)] overflow-hidden">
           <div className="px-3.5 py-2.5 flex items-center gap-3 border-b border-[var(--border)]">
             <TrendingUp size={16} className="text-[var(--dim)]" />
-            <span className="text-sm flex-1">Trading Copilot</span>
+            <span className="text-sm flex-1">{t("tradingCopilot")}</span>
             {alpacaConnected && <span className="text-xs text-green-400 flex items-center gap-1"><Check size={12} /> {alpacaPaper ? "Paper" : "Live"}</span>}
           </div>
           <div className="px-3.5 py-3 space-y-2.5">
             {alpacaConnected && !alpacaSuccess ? (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-green-400">Broker conectado</span>
-                <button onClick={() => setAlpacaConnected(false)} className="text-xs text-[var(--dim)] underline">Cambiar keys</button>
+                <span className="text-xs text-green-400">{t("brokerConnected")}</span>
+                <button onClick={() => setAlpacaConnected(false)} className="text-xs text-[var(--dim)] underline">{t("changeKeys")}</button>
               </div>
             ) : (
               <>
-                <p className="text-xs text-[var(--dim)]">Conecta tu cuenta de Alpaca para que DILO analice tu trading.</p>
-                <input value={alpacaKeyId} onChange={e => setAlpacaKeyId(e.target.value)} placeholder="API Key ID"
+                <p className="text-xs text-[var(--dim)]">{t("connectAlpacaDesc")}</p>
+                <input value={alpacaKeyId} onChange={e => setAlpacaKeyId(e.target.value)} placeholder={t("apiKeyId")}
                   className="w-full bg-[var(--bg1)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-white placeholder-[var(--dim)] focus:outline-none focus:border-white/30" />
-                <input value={alpacaSecret} onChange={e => setAlpacaSecret(e.target.value)} placeholder="Secret Key" type="password"
+                <input value={alpacaSecret} onChange={e => setAlpacaSecret(e.target.value)} placeholder={t("secretKey")} type="password"
                   className="w-full bg-[var(--bg1)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-white placeholder-[var(--dim)] focus:outline-none focus:border-white/30" />
                 {alpacaError && <p className="text-xs text-red-400">{alpacaError}</p>}
-                {alpacaSuccess && <p className="text-xs text-green-400">Conectado correctamente</p>}
+                {alpacaSuccess && <p className="text-xs text-green-400">{t("connectedOk")}</p>}
                 <button onClick={saveAlpacaKeys} disabled={alpacaSaving}
                   className="w-full py-2 rounded-lg bg-[var(--accent)] text-white text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2">
-                  {alpacaSaving ? <><Loader2 size={14} className="animate-spin" /> Verificando...</> : "Conectar Broker"}
+                  {alpacaSaving ? <><Loader2 size={14} className="animate-spin" /> {t("verifying")}</> : t("connectBroker")}
                 </button>
-                <p className="text-[10px] text-[var(--dim)]">Las keys se obtienen gratis en <a href="https://alpaca.markets" target="_blank" rel="noopener" className="underline">alpaca.markets</a> → Dashboard → API</p>
+                <p className="text-[10px] text-[var(--dim)]">{t("alpacaHelp")} <a href="https://alpaca.markets" target="_blank" rel="noopener" className="underline">alpaca.markets</a> &rarr; Dashboard &rarr; API</p>
               </>
             )}
           </div>
@@ -134,15 +140,14 @@ export default function SettingsPage() {
           <div className="rounded-xl bg-[var(--bg2)] border border-[var(--border)] overflow-hidden">
             <div className="px-3.5 py-2.5 flex items-center gap-3 border-b border-[var(--border)]">
               <span className="text-base">🧠</span>
-              <span className="text-sm flex-1">DILO Trading Intelligence</span>
+              <span className="text-sm flex-1">{t("tradingIntelligence")}</span>
               <span className="text-xs text-[var(--accent)] font-medium">{learningScore}%</span>
             </div>
             <div className="px-3.5 py-3 space-y-3">
-              {/* Progress bar */}
               <div>
                 <div className="flex justify-between text-[10px] text-[var(--dim)] mb-1">
-                  <span>Nivel de conocimiento</span>
-                  <span>{learningScore < 20 ? "Principiante" : learningScore < 40 ? "Aprendiendo" : learningScore < 60 ? "Intermedio" : learningScore < 80 ? "Avanzado" : "Experto"}</span>
+                  <span>{t("knowledgeLevel")}</span>
+                  <span>{getLevelLabel(learningScore)}</span>
                 </div>
                 <div className="w-full h-2.5 bg-[var(--bg1)] rounded-full overflow-hidden">
                   <div
@@ -155,16 +160,15 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* Stats grid */}
               {learningData && (
                 <div className="grid grid-cols-2 gap-2">
                   <div className="bg-[var(--bg1)] rounded-lg px-2.5 py-2 text-center">
                     <p className="text-[18px] font-bold text-white">{learningData.total_knowledge}</p>
-                    <p className="text-[9px] text-[var(--dim)]">Datos analizados</p>
+                    <p className="text-[9px] text-[var(--dim)]">{t("dataAnalyzed")}</p>
                   </div>
                   <div className="bg-[var(--bg1)] rounded-lg px-2.5 py-2 text-center">
                     <p className="text-[18px] font-bold text-white">{learningData.total_signals}</p>
-                    <p className="text-[9px] text-[var(--dim)]">Señales generadas</p>
+                    <p className="text-[9px] text-[var(--dim)]">{t("signalsGenerated")}</p>
                   </div>
                   <div className="bg-[var(--bg1)] rounded-lg px-2.5 py-2 text-center">
                     <p className="text-[18px] font-bold" style={{ color: learningData.win_rate >= 55 ? "#10b981" : learningData.win_rate >= 40 ? "#f59e0b" : "#ef4444" }}>{learningData.win_rate}%</p>
@@ -172,12 +176,12 @@ export default function SettingsPage() {
                   </div>
                   <div className="bg-[var(--bg1)] rounded-lg px-2.5 py-2 text-center">
                     <p className="text-[18px] font-bold text-white">{learningData.days_learning}</p>
-                    <p className="text-[9px] text-[var(--dim)]">Días aprendiendo</p>
+                    <p className="text-[9px] text-[var(--dim)]">{t("daysLearning")}</p>
                   </div>
                 </div>
               )}
 
-              <p className="text-[9px] text-[var(--dim)]">DILO analiza mercados cada día a las 7:00 AM y trackea sus propias señales para mejorar continuamente.</p>
+              <p className="text-[9px] text-[var(--dim)]">{t("learningDesc")}</p>
             </div>
           </div>
         )}
