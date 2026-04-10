@@ -135,15 +135,28 @@
   },
   "landing": {
     "hero": "Il tuo segretario personale con AI",
-    "subtitle": "Connetti il tuo WhatsApp. Parla. Lui si occupa del resto.",
+    "subtitle": "Parla con DILO via testo o voce. Gestisce WhatsApp, finanze, trading e molto altro.",
     "cta": "Inizia gratis",
-    "features": {
-      "messaging": "Invia messaggi per te",
-      "reading": "Legge e riassume le tue chat",
-      "reminders": "Promemoria intelligenti",
-      "expenses": "Controlla le tue spese",
-      "writing": "Traduce e redige",
-      "voice": "Funziona a voce"
+    "trustedBy": "Tutto in un'app. Nessuna app extra.",
+    "sections": {
+      "whatsapp": "WhatsApp Intelligente",
+      "whatsappDesc": "Invia messaggi per te, legge e riassume le chat. Digli solo cosa dire.",
+      "money": "Ti Fa Risparmiare",
+      "moneyDesc": "Benzina economica, prezzi luce in tempo reale, coupon, comparatori assicurazioni e supermercati.",
+      "trading": "Trading Copilot",
+      "tradingDesc": "Portfolio in tempo reale, segnali SMC, analisi Wall Street, gestione rischio automatica.",
+      "reminders": "Promemoria che Arrivano",
+      "remindersDesc": "Via push o WhatsApp. Avvisi multipli. Non dimenticare mai più nulla.",
+      "expenses": "Controllo Spese",
+      "expensesDesc": "Dì quanto hai speso e DILO categorizza. Riassunto giornaliero, settimanale e mensile.",
+      "voice": "Parla, Non Scrivere",
+      "voiceDesc": "Trascrizione vocale precisa. Parla nella tua lingua e DILO capisce.",
+      "images": "Genera Immagini",
+      "imagesDesc": "Logo, foto, illustrazioni. Dì cosa ti serve e DILO lo crea con l'AI.",
+      "search": "Ricerca Web",
+      "searchDesc": "Prezzi reali, notizie, voli, meteo. Risultati Google riassunti senza uscire dalla chat.",
+      "multilang": "5 Lingue",
+      "multilangDesc": "Español, English, Français, Italiano, Deutsch. Interfaccia e chat nella tua lingua."
     },
     "howItWorks": "Come funziona",
     "steps": {
@@ -157,10 +170,11 @@
     "pricing": {
       "title": "Prezzi",
       "free": "Gratis",
-      "freeDesc": "30 messaggi/giorno, skill base",
-      "skills": "Skill da",
-      "skillsDesc": "Attiva solo ciò che ti serve"
-    }
+      "freeDesc": "Chat + spese + promemoria + 5 ricerche/giorno",
+      "pro": "Pro 9,99€/mese",
+      "proDesc": "WhatsApp + trading + immagini + ricerche illimitate + risparmio intelligente"
+    },
+    "footer": "Fatto con l'AI perché tu faccia meno."
   },
   "trading": {
     "title": "Trading",

@@ -135,15 +135,28 @@
   },
   "landing": {
     "hero": "Ton secrétaire personnel avec IA",
-    "subtitle": "Connecte ton WhatsApp. Parle. Il s'occupe du reste.",
+    "subtitle": "Parle à DILO par texte ou voix. Il gère ton WhatsApp, tes finances, ton trading et bien plus.",
     "cta": "Commence gratuitement",
-    "features": {
-      "messaging": "Envoie des messages pour toi",
-      "reading": "Lit et résume tes chats",
-      "reminders": "Rappels intelligents",
-      "expenses": "Suis tes dépenses",
-      "writing": "Traduit et rédige",
-      "voice": "Fonctionne à la voix"
+    "trustedBy": "Tout dans une seule app. Pas d'apps en plus.",
+    "sections": {
+      "whatsapp": "WhatsApp Intelligent",
+      "whatsappDesc": "Envoie des messages pour toi, lit et résume tes chats. Dis-lui juste quoi dire.",
+      "money": "T'économise de l'Argent",
+      "moneyDesc": "Stations essence pas chères, prix électricité en temps réel, coupons, comparateurs.",
+      "trading": "Trading Copilot",
+      "tradingDesc": "Portfolio en temps réel, signaux SMC, analyse Wall Street, gestion du risque automatique.",
+      "reminders": "Rappels qui Arrivent",
+      "remindersDesc": "Par push ou WhatsApp. Alertes multiples. N'oublie plus jamais rien.",
+      "expenses": "Suivi des Dépenses",
+      "expensesDesc": "Dis combien tu as dépensé et DILO catégorise. Résumé quotidien, hebdomadaire et mensuel.",
+      "voice": "Parle, N'écris Pas",
+      "voiceDesc": "Transcription vocale précise. Parle dans ta langue et DILO comprend.",
+      "images": "Génère des Images",
+      "imagesDesc": "Logos, photos, illustrations. Dis ce qu'il te faut et DILO le crée avec l'IA.",
+      "search": "Recherche Web",
+      "searchDesc": "Prix réels, actus, vols, météo. Résultats Google résumés sans quitter le chat.",
+      "multilang": "5 Langues",
+      "multilangDesc": "Español, English, Français, Italiano, Deutsch. Interface et chat dans ta langue."
     },
     "howItWorks": "Comment ça marche",
     "steps": {
@@ -157,10 +170,11 @@
     "pricing": {
       "title": "Tarifs",
       "free": "Gratuit",
-      "freeDesc": "30 messages/jour, skills de base",
-      "skills": "Skills à partir de",
-      "skillsDesc": "Active seulement ce dont tu as besoin"
-    }
+      "freeDesc": "Chat + dépenses + rappels + 5 recherches/jour",
+      "pro": "Pro 9,99€/mois",
+      "proDesc": "WhatsApp + trading + images + recherches illimitées + économies intelligentes"
+    },
+    "footer": "Fait avec l'IA pour que tu en fasses moins."
   },
   "trading": {
     "title": "Trading",

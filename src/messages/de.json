@@ -135,15 +135,28 @@
   },
   "landing": {
     "hero": "Dein persönlicher KI-Sekretär",
-    "subtitle": "Verbinde dein WhatsApp. Sprich. Er erledigt den Rest.",
+    "subtitle": "Sprich mit DILO per Text oder Sprache. Er verwaltet WhatsApp, Finanzen, Trading und mehr.",
     "cta": "Kostenlos starten",
-    "features": {
-      "messaging": "Sendet Nachrichten für dich",
-      "reading": "Liest und fasst deine Chats zusammen",
-      "reminders": "Intelligente Erinnerungen",
-      "expenses": "Verfolge deine Ausgaben",
-      "writing": "Übersetzt und verfasst",
-      "voice": "Funktioniert per Sprache"
+    "trustedBy": "Alles in einer App. Keine Extra-Apps nötig.",
+    "sections": {
+      "whatsapp": "Smartes WhatsApp",
+      "whatsappDesc": "Sendet Nachrichten für dich, liest und fasst Chats zusammen. Sag einfach, was du sagen willst.",
+      "money": "Spart dir Geld",
+      "moneyDesc": "Günstige Tankstellen, Strompreise in Echtzeit, Coupons, Versicherungs- und Supermarktvergleiche.",
+      "trading": "Trading Copilot",
+      "tradingDesc": "Echtzeit-Portfolio, SMC-Signale, Wall-Street-Analyse, automatisches Risikomanagement.",
+      "reminders": "Erinnerungen die Ankommen",
+      "remindersDesc": "Per Push oder WhatsApp. Mehrfache Benachrichtigungen. Nie wieder etwas vergessen.",
+      "expenses": "Ausgabenverfolgung",
+      "expensesDesc": "Sag wie viel du ausgegeben hast und DILO kategorisiert es. Tages-, Wochen- und Monatsübersicht.",
+      "voice": "Sprich, Schreib Nicht",
+      "voiceDesc": "Präzise Spracherkennung. Sprich in deiner Sprache und DILO versteht.",
+      "images": "Bilder Generieren",
+      "imagesDesc": "Logos, Fotos, Illustrationen. Sag was du brauchst und DILO erstellt es mit KI.",
+      "search": "Websuche",
+      "searchDesc": "Echte Preise, Nachrichten, Flüge, Wetter. Google-Ergebnisse zusammengefasst ohne den Chat zu verlassen.",
+      "multilang": "5 Sprachen",
+      "multilangDesc": "Español, English, Français, Italiano, Deutsch. Interface und Chat in deiner Sprache."
     },
     "howItWorks": "So funktioniert's",
     "steps": {
@@ -157,10 +170,11 @@
     "pricing": {
       "title": "Preise",
       "free": "Kostenlos",
-      "freeDesc": "30 Nachrichten/Tag, Basis-Skills",
-      "skills": "Skills ab",
-      "skillsDesc": "Aktiviere nur, was du brauchst"
-    }
+      "freeDesc": "Chat + Ausgaben + Erinnerungen + 5 Suchen/Tag",
+      "pro": "Pro 9,99€/Monat",
+      "proDesc": "WhatsApp + Trading + Bilder + unbegrenzte Suchen + smartes Sparen"
+    },
+    "footer": "Mit KI gemacht, damit du weniger tun musst."
   },
   "trading": {
     "title": "Trading",

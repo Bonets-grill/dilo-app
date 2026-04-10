@@ -135,15 +135,28 @@
   },
   "landing": {
     "hero": "Your personal AI secretary",
-    "subtitle": "Connect your WhatsApp. Speak. It handles the rest.",
+    "subtitle": "Talk to DILO by text or voice. It manages your WhatsApp, finances, trading and much more.",
     "cta": "Start for free",
-    "features": {
-      "messaging": "Sends messages for you",
-      "reading": "Reads and summarizes your chats",
-      "reminders": "Smart reminders",
-      "expenses": "Track your spending",
-      "writing": "Translates and drafts",
-      "voice": "Works by voice"
+    "trustedBy": "Everything in one app. No extra apps needed.",
+    "sections": {
+      "whatsapp": "Smart WhatsApp",
+      "whatsappDesc": "Sends messages for you, reads and summarizes your chats, finds contacts. Just tell it what to say.",
+      "money": "Saves You Money",
+      "moneyDesc": "Cheap gas stations, real-time electricity prices, coupons, insurance and grocery comparisons.",
+      "trading": "Trading Copilot",
+      "tradingDesc": "Real-time portfolio, SMC signals, Wall Street analysis, automatic risk management.",
+      "reminders": "Reminders That Arrive",
+      "remindersDesc": "Via push or WhatsApp. Multiple alerts. Never forget anything again.",
+      "expenses": "Expense Tracking",
+      "expensesDesc": "Say how much you spent and DILO categorizes it. Daily, weekly and monthly summaries.",
+      "voice": "Speak, Don't Type",
+      "voiceDesc": "Accurate voice transcription. Speak in your language and DILO understands.",
+      "images": "Generate Images",
+      "imagesDesc": "Logos, photos, illustrations. Say what you need and DILO creates it with AI.",
+      "search": "Web Search",
+      "searchDesc": "Real prices, news, flights, weather. Google results summarized without leaving the chat.",
+      "multilang": "5 Languages",
+      "multilangDesc": "Español, English, Français, Italiano, Deutsch. Interface and chat in your language."
     },
     "howItWorks": "How it works",
     "steps": {
@@ -157,10 +170,11 @@
     "pricing": {
       "title": "Pricing",
       "free": "Free",
-      "freeDesc": "30 messages/day, basic skills",
-      "skills": "Skills from",
-      "skillsDesc": "Activate only what you need"
-    }
+      "freeDesc": "Chat + expenses + reminders + 5 searches/day",
+      "pro": "Pro €9.99/mo",
+      "proDesc": "WhatsApp + trading + images + unlimited search + smart savings"
+    },
+    "footer": "Made with AI so you do less."
   },
   "trading": {
     "title": "Trading",
