@@ -295,7 +295,8 @@
     "talking": "TALKING...",
     "holdToTalk": "HOLD TO TALK",
     "voiceMessage": "Voice message",
-    "recordingAudio": "Recording..."
+    "recordingAudio": "Recording...",
+    "blockUser": "Block user"
   },
   "nutrition": {
     "title": "Nutrition",

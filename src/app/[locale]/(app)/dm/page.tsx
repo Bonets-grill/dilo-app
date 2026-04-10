@@ -19,6 +19,9 @@ import {
   Square,
   Play,
   Pause,
+  ImagePlus,
+  Ban,
+  MoreVertical,
 } from "lucide-react";
 
 interface Contact {
@@ -75,11 +78,13 @@ export default function DMPage() {
   const [pttActive, setPttActive] = useState(false);
   const [pttStatus, setPttStatus] = useState<string>("disconnected");
   const [pttTalking, setPttTalking] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const pttRef = useRef<import("@/lib/rtc/ptt").PTTConnection | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mediaRecRef = useRef<MediaRecorder | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const imgRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const supabase = createBrowserSupabase();
@@ -134,19 +139,48 @@ export default function DMPage() {
     setChatWith({ id: otherId, name });
     setView("chat");
     setMessages([]);
+    setShowMenu(false);
 
     const res = await fetch(`/api/dm?userId=${userId}&otherId=${otherId}`);
     const data = await res.json();
     setMessages(data.messages || []);
     setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
 
-    // Poll for new messages every 3 seconds
+    // Supabase Realtime for instant messages (replaces polling)
     if (pollRef.current) clearInterval(pollRef.current);
-    pollRef.current = setInterval(async () => {
-      const r = await fetch(`/api/dm?userId=${userId}&otherId=${otherId}`);
-      const d = await r.json();
-      setMessages(d.messages || []);
-    }, 3000);
+    const supabase = createBrowserSupabase();
+    const channel = supabase.channel(`dm-${[userId, otherId].sort().join("-")}`)
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "direct_messages",
+        filter: `receiver_id=eq.${userId}`,
+      }, (payload) => {
+        const msg = payload.new as { id: string; sender_id: string; content: string; message_type: string; media_url: string | null; read_at: string | null; created_at: string };
+        if (msg.sender_id === otherId) {
+          setMessages(prev => {
+            if (prev.some(m => m.id === msg.id)) return prev;
+            return [...prev, {
+              id: msg.id,
+              fromMe: false,
+              content: msg.content,
+              type: msg.message_type,
+              mediaUrl: msg.media_url,
+              read: !!msg.read_at,
+              time: msg.created_at,
+            }];
+          });
+          setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+        }
+      })
+      .subscribe();
+
+    // Store channel ref for cleanup (reuse pollRef)
+    pollRef.current = setTimeout(() => {}, 0); // placeholder
+    const origCleanup = pollRef.current;
+    clearTimeout(origCleanup);
+    // Override closeChat cleanup
+    (pollRef as { current: unknown }).current = { __channel: channel } as unknown as ReturnType<typeof setInterval>;
   }
 
   async function sendMessage() {
@@ -253,10 +287,63 @@ export default function DMPage() {
     }
   }
 
+  async function sendImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !chatWith) return;
+    e.target.value = "";
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64 = reader.result as string;
+      // Optimistic update
+      setMessages(prev => [...prev, {
+        id: crypto.randomUUID(),
+        fromMe: true,
+        content: "[Imagen]",
+        type: "image",
+        mediaUrl: base64,
+        read: false,
+        time: new Date().toISOString(),
+      }]);
+      setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+
+      try {
+        await fetch("/api/dm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId, receiverId: chatWith.id, content: "[Imagen]", messageType: "image", mediaUrl: base64 }),
+          signal: AbortSignal.timeout(15000),
+        });
+      } catch { /* skip */ }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function blockUser() {
+    if (!chatWith || !userId) return;
+    await fetch("/api/connections", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, targetId: chatWith.id, action: "block" }),
+      signal: AbortSignal.timeout(10000),
+    });
+    setShowMenu(false);
+    closeChat();
+  }
+
   function closeChat() {
     setView("list");
     setChatWith(null);
-    if (pollRef.current) clearInterval(pollRef.current);
+    setShowMenu(false);
+    // Clean up Realtime channel
+    if (pollRef.current) {
+      const ref = pollRef.current as unknown as { __channel?: { unsubscribe: () => void } };
+      if (ref.__channel) {
+        ref.__channel.unsubscribe();
+      } else {
+        clearInterval(pollRef.current);
+      }
+    }
     if (userId) loadContacts(userId);
   }
 
@@ -292,7 +379,20 @@ export default function DMPage() {
             className={`p-2 rounded-lg transition-colors ${pttActive ? "bg-green-500/20 text-green-400" : "text-[var(--dim)]"}`}>
             <Mic size={18} />
           </button>
+          <div className="relative">
+            <button onClick={() => setShowMenu(!showMenu)} className="p-2 text-[var(--dim)]">
+              <MoreVertical size={18} />
+            </button>
+            {showMenu && (
+              <div className="absolute right-0 top-10 w-48 rounded-xl bg-[#1c1c1e] border border-white/10 shadow-2xl z-50 overflow-hidden">
+                <button onClick={blockUser} className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-red-400 active:bg-white/10">
+                  <Ban size={16} /> {t("blockUser")}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
+        {showMenu && <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />}
 
         {/* PTT Bar */}
         {pttActive && (
@@ -327,7 +427,9 @@ export default function DMPage() {
                   ? "bg-[var(--accent)] text-white rounded-br-md"
                   : "bg-[var(--bg2)] border border-[var(--border)] rounded-bl-md"
               }`}>
-                {m.type === "voice" && m.mediaUrl ? (
+                {m.type === "image" && m.mediaUrl ? (
+                  <img src={m.mediaUrl} alt="Imagen" className="rounded-xl max-w-full max-h-[200px] object-cover cursor-pointer" onClick={() => window.open(m.mediaUrl!, "_blank")} />
+                ) : m.type === "voice" && m.mediaUrl ? (
                   <button onClick={() => toggleAudio(m.mediaUrl!)} className="flex items-center gap-2">
                     {playingAudio === m.mediaUrl ? <Pause size={16} /> : <Play size={16} />}
                     <span className="text-xs">{t("voiceMessage")}</span>
@@ -345,6 +447,7 @@ export default function DMPage() {
         </div>
 
         {/* Input */}
+        <input ref={imgRef} type="file" accept="image/*" className="hidden" onChange={sendImage} />
         <div className="flex-shrink-0 px-4 py-3 border-t border-[var(--border)] flex items-center gap-2">
           {recording ? (
             <>
@@ -358,6 +461,9 @@ export default function DMPage() {
             </>
           ) : (
             <>
+              <button onClick={() => imgRef.current?.click()} className="w-9 h-9 rounded-full bg-[var(--bg2)] border border-[var(--border)] text-[var(--dim)] flex items-center justify-center flex-shrink-0">
+                <ImagePlus size={16} />
+              </button>
               <input
                 value={msgInput}
                 onChange={e => setMsgInput(e.target.value)}
