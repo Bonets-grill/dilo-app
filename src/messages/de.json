@@ -300,7 +300,8 @@
     "completed": "abgeschlossen",
     "startExercise": "Ubung starten",
     "disclaimer": "DILO bietet evidenzbasierte Wohlbefinden-Techniken. Es ist keine Therapie oder Diagnose. Wenn du professionelle Hilfe brauchst: Telefonseelsorge 0800 111 0 111 (24h, kostenlos).",
-    "crisisDetected": "Wir haben festgestellt, dass du moglicherweise eine sehr schwierige Zeit durchmachst."
+    "crisisDetected": "Wir haben festgestellt, dass du moglicherweise eine sehr schwierige Zeit durchmachst.",
+    "frequentEmotions": "Häufige Emotionen"
   },
   "common": {
     "today": "Heute",

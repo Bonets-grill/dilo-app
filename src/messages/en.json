@@ -300,7 +300,8 @@
     "completed": "completed",
     "startExercise": "Start exercise",
     "disclaimer": "DILO offers evidence-based wellbeing techniques. It is not therapy or diagnosis. If you need professional help: 988 Suicide & Crisis Lifeline (call or text 988).",
-    "crisisDetected": "We've detected you may be going through a very difficult time."
+    "crisisDetected": "We've detected you may be going through a very difficult time.",
+    "frequentEmotions": "Frequent emotions"
   },
   "common": {
     "today": "Today",

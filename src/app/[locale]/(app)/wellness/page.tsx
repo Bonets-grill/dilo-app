@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { useState, useEffect, useCallback } from "react";
 import { createBrowserSupabase } from "@/lib/supabase/client";
 import { Link } from "@/i18n/navigation";
@@ -51,7 +51,7 @@ const MOOD_COLORS = [
 
 export default function WellnessPage() {
   const t = useTranslations("wellness");
-  const tNav = useTranslations("nav");
+  const locale = useLocale();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -64,7 +64,6 @@ export default function WellnessPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const locale = document.documentElement.lang || "es";
       const res = await fetch(`/api/wellness/dashboard?locale=${locale}`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
@@ -216,7 +215,7 @@ export default function WellnessPage() {
       {data.emotion_frequency.length > 0 && (
         <div className="bg-[var(--card)] rounded-xl p-4 border border-[var(--border)]">
           <span className="text-sm font-medium block mb-2">
-            Emociones frecuentes
+            {t("frequentEmotions")}
           </span>
           <div className="flex flex-wrap gap-2">
             {data.emotion_frequency.map(({ emotion, count }) => (
