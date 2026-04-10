@@ -40,7 +40,7 @@ export default async function LocaleLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              (function(){var t=localStorage.getItem('dilo-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();
+              (function(){var t=localStorage.getItem('dilo-theme')||'dark';document.documentElement.setAttribute('data-theme',t);var e=localStorage.getItem('dilo-easy')==='true';if(e)document.documentElement.setAttribute('data-easy','true');})();
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
                   navigator.serviceWorker.register('/sw.js');

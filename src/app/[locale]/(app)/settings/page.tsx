@@ -4,7 +4,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { localeNames, localeFlags, locales } from "@/i18n/config";
 import type { Locale } from "@/i18n/config";
-import { Globe, Moon, Sun, CreditCard, Shield, Info, LogOut, ChevronRight, Sparkles, TrendingUp, Check, Loader2, AlertTriangle } from "lucide-react";
+import { Globe, Moon, Sun, CreditCard, Shield, Info, LogOut, ChevronRight, Sparkles, TrendingUp, Check, Loader2, AlertTriangle, Eye } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link } from "@/i18n/navigation";
 import { createBrowserSupabase } from "@/lib/supabase/client";
@@ -39,15 +39,17 @@ export default function SettingsPage() {
   const [learningScore, setLearningScore] = useState(0);
   const [learningData, setLearningData] = useState<{ total_knowledge: number; total_signals: number; win_rate: number; days_learning: number } | null>(null);
 
-  // Theme & Currency
+  // Theme & Currency & Easy Mode
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [currency, setCurrency] = useState("EUR");
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
+  const [easyMode, setEasyMode] = useState(false);
 
   useEffect(() => {
-    // Load theme from localStorage
+    // Load theme + easy mode from localStorage
     const saved = localStorage.getItem("dilo-theme") as "dark" | "light" | null;
     if (saved) setTheme(saved);
+    setEasyMode(localStorage.getItem("dilo-easy") === "true");
 
     const supabase = createBrowserSupabase();
     supabase.auth.getUser().then(({ data }) => {
@@ -76,6 +78,14 @@ export default function SettingsPage() {
     setTheme(next);
     localStorage.setItem("dilo-theme", next);
     document.documentElement.setAttribute("data-theme", next);
+  }
+
+  function toggleEasyMode() {
+    const next = !easyMode;
+    setEasyMode(next);
+    localStorage.setItem("dilo-easy", String(next));
+    if (next) document.documentElement.setAttribute("data-easy", "true");
+    else document.documentElement.removeAttribute("data-easy");
   }
 
   async function changeCurrency(code: string) {
@@ -260,6 +270,13 @@ export default function SettingsPage() {
           <button onClick={() => setShowCurrencyPicker(!showCurrencyPicker)} className="w-full flex items-center justify-between px-3.5 py-2.5">
             <div className="flex items-center gap-3"><CreditCard size={16} className="text-[var(--dim)]" /><span className="text-sm">{t("currency")}</span></div>
             <span className="text-sm text-[var(--dim)]">{currency}</span>
+          </button>
+          <button onClick={toggleEasyMode} className="w-full flex items-center justify-between px-3.5 py-2.5 border-t border-[var(--border)]">
+            <div className="flex items-center gap-3">
+              <Eye size={16} className={easyMode ? "text-[var(--accent)]" : "text-[var(--dim)]"} />
+              <span className="text-sm">Modo Fácil</span>
+            </div>
+            <span className="text-sm text-[var(--dim)]">{easyMode ? "ON" : "OFF"}</span>
           </button>
           {showCurrencyPicker && (
             <div className="px-2 py-2 grid grid-cols-2 gap-1.5">

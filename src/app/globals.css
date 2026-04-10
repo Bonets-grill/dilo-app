@@ -46,6 +46,28 @@ body {
 input, textarea, select { font-size: 16px !important; }
 * { -webkit-touch-callout: none; }
 
+/* Easy Mode — larger fonts, bigger buttons for elderly users */
+[data-easy="true"] {
+  font-size: 18px !important;
+}
+[data-easy="true"] .text-sm { font-size: 16px !important; }
+[data-easy="true"] .text-xs { font-size: 14px !important; }
+[data-easy="true"] .text-\[10px\] { font-size: 13px !important; }
+[data-easy="true"] .text-\[11px\] { font-size: 13px !important; }
+[data-easy="true"] .text-\[9px\] { font-size: 12px !important; }
+[data-easy="true"] .text-lg { font-size: 22px !important; }
+[data-easy="true"] .text-2xl { font-size: 28px !important; }
+[data-easy="true"] button, [data-easy="true"] a {
+  min-height: 48px;
+  min-width: 48px;
+}
+[data-easy="true"] .h-12 { height: 56px !important; }
+[data-easy="true"] .rounded-full { border-radius: 16px !important; }
+[data-easy="true"] input, [data-easy="true"] textarea {
+  font-size: 18px !important;
+  padding: 14px 16px !important;
+}
+
 /* Markdown inside chat */
 .chat-md p { margin: 0.4em 0; }
 .chat-md ul, .chat-md ol { margin: 0.4em 0; padding-left: 1.2em; }
