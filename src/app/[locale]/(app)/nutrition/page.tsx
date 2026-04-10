@@ -8,13 +8,13 @@ import {
   Apple,
   Droplets,
   UtensilsCrossed,
-  ShoppingCart,
   ChefHat,
   RefreshCw,
   Plus,
   TrendingDown,
   TrendingUp,
   Minus,
+  X,
 } from "lucide-react";
 
 interface DashboardData {
@@ -41,16 +41,29 @@ interface DashboardData {
     days_logged: number;
     adherence_pct: number;
   };
-  active_plan: { id: string; week_start: string; week_end: string; avg_calories: number } | null;
+  active_plan: { id: string; week_start: string; week_end: string; avg_calories: number; adherence_pct?: number } | null;
   weight_trend: Array<{ weight_kg: number; date: string }>;
 }
 
+type MealType = "breakfast" | "lunch" | "dinner" | "snack";
+
 export default function NutritionPage() {
   const t = useTranslations("nutrition");
-  const tNav = useTranslations("nav");
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showFoodForm, setShowFoodForm] = useState(false);
+  const [showPlan, setShowPlan] = useState(false);
+
+  // Food form state
+  const [foodName, setFoodName] = useState("");
+  const [mealType, setMealType] = useState<MealType>("lunch");
+  const [calories, setCalories] = useState("");
+  const [protein, setProtein] = useState("");
+  const [carbs, setCarbs] = useState("");
+  const [fat, setFat] = useState("");
+  const [formSaving, setFormSaving] = useState(false);
+  const [formSuccess, setFormSuccess] = useState(false);
 
   const fetchData = useCallback(async () => {
     const supabase = createBrowserSupabase();
@@ -74,6 +87,49 @@ export default function NutritionPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  async function handleFoodSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!foodName.trim() || !calories) return;
+    setFormSaving(true);
+
+    try {
+      const supabase = createBrowserSupabase();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: insertError } = await (supabase.from("nutrition_log") as any).insert({
+        user_id: user.id,
+        food_name: foodName.trim(),
+        meal_type: mealType,
+        calories: parseInt(calories) || 0,
+        protein_g: parseFloat(protein) || 0,
+        carbs_g: parseFloat(carbs) || 0,
+        fat_g: parseFloat(fat) || 0,
+        source: "manual",
+      });
+
+      if (insertError) throw insertError;
+
+      setFormSuccess(true);
+      setTimeout(() => {
+        setShowFoodForm(false);
+        setFormSuccess(false);
+        setFoodName("");
+        setCalories("");
+        setProtein("");
+        setCarbs("");
+        setFat("");
+        setMealType("lunch");
+        fetchData();
+      }, 800);
+    } catch {
+      // silent
+    } finally {
+      setFormSaving(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -231,15 +287,21 @@ export default function NutritionPage() {
 
       {/* Quick Actions */}
       <div className="px-4 grid grid-cols-3 gap-2 mb-4">
-        <Link href="/chat?q=registrar%20comida" className="flex flex-col items-center gap-1 p-3 rounded-xl bg-[var(--card)] border border-[var(--border)]">
+        <button
+          onClick={() => setShowFoodForm(true)}
+          className="flex flex-col items-center gap-1 p-3 rounded-xl bg-[var(--card)] border border-[var(--border)]"
+        >
           <Plus size={20} className="text-green-400" />
           <span className="text-[10px] text-[var(--dim)]">{t("addFood")}</span>
-        </Link>
-        <Link href="/chat?q=mi%20plan%20de%20comidas" className="flex flex-col items-center gap-1 p-3 rounded-xl bg-[var(--card)] border border-[var(--border)]">
+        </button>
+        <button
+          onClick={() => setShowPlan(true)}
+          className="flex flex-col items-center gap-1 p-3 rounded-xl bg-[var(--card)] border border-[var(--border)]"
+        >
           <UtensilsCrossed size={20} className="text-amber-400" />
           <span className="text-[10px] text-[var(--dim)]">{t("myPlan")}</span>
-        </Link>
-        <Link href="/chat?q=dame%20una%20receta%20saludable" className="flex flex-col items-center gap-1 p-3 rounded-xl bg-[var(--card)] border border-[var(--border)]">
+        </button>
+        <Link href="/chat?q=dame%20una%20receta%20saludable%20para%20el%20almuerzo" className="flex flex-col items-center gap-1 p-3 rounded-xl bg-[var(--card)] border border-[var(--border)]">
           <ChefHat size={20} className="text-purple-400" />
           <span className="text-[10px] text-[var(--dim)]">{t("recipe")}</span>
         </Link>
@@ -249,6 +311,163 @@ export default function NutritionPage() {
       <p className="px-4 text-[9px] text-[var(--dim)] text-center italic">
         {t("disclaimer")}
       </p>
+
+      {/* Food Log Modal */}
+      {showFoodForm && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60">
+          <div className="w-full max-w-lg bg-[var(--bg)] border-t border-[var(--border)] rounded-t-2xl p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold">{t("addFood")}</h3>
+              <button onClick={() => setShowFoodForm(false)}>
+                <X size={18} className="text-[var(--dim)]" />
+              </button>
+            </div>
+
+            {formSuccess ? (
+              <p className="text-center text-green-400 text-sm py-6">{t("logSuccess")}</p>
+            ) : (
+              <form onSubmit={handleFoodSubmit} className="space-y-3">
+                <input
+                  type="text"
+                  value={foodName}
+                  onChange={e => setFoodName(e.target.value)}
+                  placeholder={t("foodName")}
+                  required
+                  className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg2)] border border-[var(--border)] text-sm text-white placeholder-[var(--dim)] focus:outline-none"
+                />
+
+                <select
+                  value={mealType}
+                  onChange={e => setMealType(e.target.value as MealType)}
+                  className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg2)] border border-[var(--border)] text-sm text-white focus:outline-none"
+                >
+                  <option value="breakfast">{t("breakfast")}</option>
+                  <option value="lunch">{t("lunch")}</option>
+                  <option value="dinner">{t("dinner")}</option>
+                  <option value="snack">{t("snack")}</option>
+                </select>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] text-[var(--dim)]">{t("calories")} (kcal)</label>
+                    <input
+                      type="number"
+                      value={calories}
+                      onChange={e => setCalories(e.target.value)}
+                      required
+                      min={0}
+                      max={5000}
+                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg2)] border border-[var(--border)] text-sm text-white focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-[var(--dim)]">{t("protein")} (g)</label>
+                    <input
+                      type="number"
+                      value={protein}
+                      onChange={e => setProtein(e.target.value)}
+                      min={0}
+                      step={0.1}
+                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg2)] border border-[var(--border)] text-sm text-white focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-[var(--dim)]">{t("carbs")} (g)</label>
+                    <input
+                      type="number"
+                      value={carbs}
+                      onChange={e => setCarbs(e.target.value)}
+                      min={0}
+                      step={0.1}
+                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg2)] border border-[var(--border)] text-sm text-white focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-[var(--dim)]">{t("fat")} (g)</label>
+                    <input
+                      type="number"
+                      value={fat}
+                      onChange={e => setFat(e.target.value)}
+                      min={0}
+                      step={0.1}
+                      className="w-full px-3 py-2 rounded-xl bg-[var(--bg2)] border border-[var(--border)] text-sm text-white focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowFoodForm(false)}
+                    className="flex-1 py-2.5 rounded-xl border border-[var(--border)] text-sm text-[var(--dim)]"
+                  >
+                    {t("cancel")}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={formSaving}
+                    className="flex-1 py-2.5 rounded-xl bg-green-600 text-sm font-medium text-white disabled:opacity-50"
+                  >
+                    {formSaving ? "..." : t("submit")}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Plan Modal */}
+      {showPlan && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60">
+          <div className="w-full max-w-lg bg-[var(--bg)] border-t border-[var(--border)] rounded-t-2xl p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold">{t("planTitle")}</h3>
+              <button onClick={() => setShowPlan(false)}>
+                <X size={18} className="text-[var(--dim)]" />
+              </button>
+            </div>
+
+            {data.active_plan ? (
+              <div className="space-y-3">
+                <div className="bg-[var(--card)] rounded-xl p-3 border border-[var(--border)]">
+                  <div className="text-xs text-[var(--dim)] mb-1">{t("planWeek")}</div>
+                  <p className="text-sm font-medium">{data.active_plan.week_start} — {data.active_plan.week_end}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-[var(--card)] rounded-xl p-3 border border-[var(--border)]">
+                    <div className="text-xs text-[var(--dim)]">{t("planCalories")}</div>
+                    <p className="text-lg font-bold">{data.active_plan.avg_calories} <span className="text-xs font-normal text-[var(--dim)]">kcal</span></p>
+                  </div>
+                  {data.active_plan.adherence_pct != null && (
+                    <div className="bg-[var(--card)] rounded-xl p-3 border border-[var(--border)]">
+                      <div className="text-xs text-[var(--dim)]">{t("planAdherence")}</div>
+                      <p className="text-lg font-bold">{data.active_plan.adherence_pct}%</p>
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => setShowPlan(false)}
+                  className="w-full py-2.5 rounded-xl border border-[var(--border)] text-sm text-[var(--dim)] mt-2"
+                >
+                  {t("closePlan")}
+                </button>
+              </div>
+            ) : (
+              <div className="text-center py-6">
+                <UtensilsCrossed size={32} className="mx-auto text-[var(--dim)] mb-3" />
+                <p className="text-sm text-[var(--dim)]">{t("noPlan")}</p>
+                <button
+                  onClick={() => setShowPlan(false)}
+                  className="mt-4 px-6 py-2 rounded-xl border border-[var(--border)] text-sm text-[var(--dim)]"
+                >
+                  {t("closePlan")}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
