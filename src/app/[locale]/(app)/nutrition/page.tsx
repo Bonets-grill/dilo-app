@@ -89,7 +89,7 @@ export default function NutritionPage() {
         <Apple size={48} className="text-[var(--dim)]" />
         <h2 className="text-lg font-semibold">{t("onboardingTitle")}</h2>
         <p className="text-sm text-[var(--dim)]">{t("onboardingDesc")}</p>
-        <Link href="/chat?q=quiero%20configurar%20mi%20perfil%20nutricional" className="mt-2 px-4 py-2 bg-green-600 rounded-lg text-sm font-medium">
+        <Link href="/nutrition/setup" className="mt-2 px-6 py-3 bg-green-600 rounded-xl text-sm font-medium">
           {t("setup")}
         </Link>
       </div>
