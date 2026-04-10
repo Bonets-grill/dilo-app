@@ -33,9 +33,11 @@ export default function LoginPage() {
 
   async function handleGoogleLogin() {
     const supabase = createBrowserSupabase();
+    // Use current locale path for callback
+    const locale = window.location.pathname.split("/")[1] || "es";
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo: `${window.location.origin}/${locale}/auth/callback` },
     });
   }
 

@@ -47,6 +47,10 @@
     {
       "path": "/api/cron/monitor",
       "schedule": "0 23 * * *"
+    },
+    {
+      "path": "/api/cron/nutrition-weekly",
+      "schedule": "0 7 * * 1"
     }
   ]
 }
