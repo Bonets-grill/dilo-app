@@ -24,7 +24,7 @@ export const MARKET_ANALYSIS_TOOLS: OpenAI.ChatCompletionTool[] = [
     type: "function",
     function: {
       name: "market_analyze_stock",
-      description: "Deep analysis of a specific stock: price, analyst recommendations, price targets, fundamentals, news sentiment, risk level. Use when user asks about a specific stock or wants to know if it's a good opportunity.",
+      description: "Deep analysis of a US stock (AAPL, TSLA, NVDA, etc.): price, analyst recommendations, price targets, fundamentals, news sentiment. ONLY for US stocks listed on NYSE/NASDAQ. Do NOT use for forex pairs (EUR/USD, GBP/JPY) or gold (XAU/USD) — use forex_analyze instead.",
       parameters: {
         type: "object",
         properties: {
