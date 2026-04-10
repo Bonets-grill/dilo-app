@@ -112,18 +112,37 @@ export async function GET() {
             // Auto-generate signal if SMC found a high-confidence setup
             const signal = smc.signal as { side?: string; entry_price?: number; stop_loss?: number; take_profit?: number; confidence?: number; setup_type?: string; reasoning?: string[] } | null;
             if (signal && signal.entry_price && signal.stop_loss && signal.take_profit && (signal.confidence || 0) >= 60) {
-              await supabase.from("trading_signal_log").insert({
-                user_id: null, // system-generated, not user-specific
-                symbol: sym,
-                side: signal.side || "BUY",
-                entry_price: signal.entry_price,
-                stop_loss: signal.stop_loss,
-                take_profit: signal.take_profit,
-                setup_type: signal.setup_type || "smc_auto",
-                confidence: signal.confidence,
-                reasoning: signal.reasoning || [`Auto-generated: ${smc.bias} bias, ${sweepsCount} sweeps, ${obsCount} OBs`],
-              });
-              signalsGenerated++;
+              // Apply intelligence filters before saving signal
+              const { applySignalFilters } = await import("@/lib/trading/intelligence");
+              const filterResult = await applySignalFilters(
+                sym,
+                (signal.side || "BUY") as "BUY" | "SELL",
+                signal.confidence || 60,
+              );
+
+              const adjustedConfidence = Math.max(10, Math.min(95, (signal.confidence || 60) + filterResult.confidenceAdjustment));
+
+              if (filterResult.blocked) {
+                // Signal blocked by filters — log but don't save
+                console.log(`[Trading Learn] Signal for ${sym} blocked: ${filterResult.blockReason}`);
+              } else {
+                await supabase.from("trading_signal_log").insert({
+                  user_id: null,
+                  symbol: sym,
+                  side: signal.side || "BUY",
+                  entry_price: signal.entry_price,
+                  stop_loss: signal.stop_loss,
+                  take_profit: signal.take_profit,
+                  setup_type: signal.setup_type || "smc_auto",
+                  confidence: adjustedConfidence,
+                  reasoning: [
+                    ...(signal.reasoning || [`Auto: ${smc.bias} bias, ${sweepsCount} sweeps, ${obsCount} OBs`]),
+                    ...filterResult.context,
+                  ],
+                  filters_applied: filterResult.filtersApplied,
+                });
+                signalsGenerated++;
+              }
             }
           }
         } catch { /* skip */ }
