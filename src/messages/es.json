@@ -178,7 +178,9 @@
     "deleteConfirm": "¿Estás seguro? Se eliminarán TODOS tus datos permanentemente. Esta acción no se puede deshacer.",
     "deleteConfirmFinal": "ÚLTIMA CONFIRMACIÓN: ¿Realmente quieres eliminar tu cuenta y todos tus datos?",
     "configurePin": "Configurar PIN",
-    "configurePinDesc": "Acceso rápido con PIN de 4 dígitos"
+    "configurePinDesc": "Acceso rápido con PIN de 4 dígitos",
+    "inviteFriends": "Invitar amigos",
+    "inviteDesc": "Gana Premium gratis invitando a 10 amigos"
   },
   "landing": {
     "hero": "Tu secretario personal con AI",
@@ -344,6 +346,23 @@
     "planCalories": "Calorías promedio",
     "planAdherence": "Adherencia",
     "closePlan": "Cerrar"
+  },
+  "referrals": {
+    "title": "Invita amigos",
+    "subtitle": "Invita 10 amigos y obtén DILO Premium gratis por 1 mes",
+    "back": "Volver",
+    "progress": "Progreso",
+    "premiumUnlocked": "Premium desbloqueado",
+    "rewardDesc": "Invita a 10 amigos que se registren y obtén Premium gratis",
+    "clicks": "Clicks",
+    "registered": "Registrados",
+    "yourLink": "Tu enlace personal",
+    "shareOn": "Compartir en",
+    "shareMore": "Más opciones para compartir",
+    "shareText": "Prueba DILO, tu secretario personal con AI. Gestiona gastos, trading, WhatsApp, calendario y mucho más. Todo por voz o texto.",
+    "code": "Código",
+    "inviteFriends": "Invitar amigos",
+    "inviteDesc": "Gana Premium gratis"
   },
   "wellness": {
     "title": "Bienestar Emocional",

@@ -178,7 +178,9 @@
     "deleteConfirm": "Bist du sicher? ALLE deine Daten werden dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
     "deleteConfirmFinal": "LETZTE BESTÄTIGUNG: Willst du wirklich dein Konto und alle deine Daten löschen?",
     "configurePin": "PIN konfigurieren",
-    "configurePinDesc": "Schnellzugriff mit 4-stelliger PIN"
+    "configurePinDesc": "Schnellzugriff mit 4-stelliger PIN",
+    "inviteFriends": "Freunde einladen",
+    "inviteDesc": "Verdiene Premium kostenlos, indem du 10 Freunde einlädst"
   },
   "landing": {
     "hero": "Dein persönlicher KI-Sekretär",
@@ -344,6 +346,23 @@
     "planCalories": "Durchschnittliche Kalorien",
     "planAdherence": "Einhaltung",
     "closePlan": "Schließen"
+  },
+  "referrals": {
+    "title": "Freunde einladen",
+    "subtitle": "Lade 10 Freunde ein und erhalte DILO Premium kostenlos für 1 Monat",
+    "back": "Zurück",
+    "progress": "Fortschritt",
+    "premiumUnlocked": "Premium freigeschaltet",
+    "rewardDesc": "Lade 10 Freunde ein, die sich registrieren, und erhalte Premium kostenlos",
+    "clicks": "Klicks",
+    "registered": "Registriert",
+    "yourLink": "Dein persönlicher Link",
+    "shareOn": "Teilen auf",
+    "shareMore": "Weitere Optionen zum Teilen",
+    "shareText": "Probiere DILO, deinen persönlichen AI-Sekretär. Verwalte Ausgaben, Trading, WhatsApp, Kalender und mehr. Alles per Sprache oder Text.",
+    "code": "Code",
+    "inviteFriends": "Freunde einladen",
+    "inviteDesc": "Premium kostenlos verdienen"
   },
   "wellness": {
     "title": "Emotionales Wohlbefinden",

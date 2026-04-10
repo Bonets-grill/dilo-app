@@ -13,6 +13,12 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [refCode] = useState(() => {
+    if (typeof window !== "undefined") {
+      return new URLSearchParams(window.location.search).get("ref") || "";
+    }
+    return "";
+  });
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -42,7 +48,20 @@ export default function SignupPage() {
         email,
         name,
         locale: navigator.language || "es-ES",
+        referred_by: refCode || null,
       }, { onConflict: "id" });
+
+      // Track referral signup
+      if (refCode) {
+        try {
+          await fetch("/api/referral", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code: refCode, event: "signup", newUserId: data.user.id }),
+            signal: AbortSignal.timeout(10000),
+          });
+        } catch { /* skip */ }
+      }
     }
 
     // If email confirmation is required by Supabase

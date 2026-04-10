@@ -303,6 +303,18 @@ export default function SettingsPage() {
           <ChevronRight size={16} className="text-[var(--dim)]" />
         </Link>
 
+        {/* Referrals */}
+        <Link href="/referrals" className="flex items-center justify-between p-3.5 rounded-xl bg-[var(--accent)]/10 border border-[var(--accent)]/30">
+          <div className="flex items-center gap-3">
+            <Sparkles size={18} className="text-[var(--accent)]" />
+            <div className="text-left">
+              <p className="text-sm font-medium text-[var(--accent)]">{t("inviteFriends")}</p>
+              <p className="text-[10px] text-[var(--dim)]">{t("inviteDesc")}</p>
+            </div>
+          </div>
+          <ChevronRight size={16} className="text-[var(--dim)]" />
+        </Link>
+
         {/* Emergency */}
         <Link href="/emergency" className="flex items-center justify-between p-3.5 rounded-xl bg-red-500/10 border border-red-500/20">
           <div className="flex items-center gap-3">
