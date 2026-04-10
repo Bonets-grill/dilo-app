@@ -102,7 +102,7 @@ export default function ExpensesPage() {
         ) : expenses.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-sm text-[var(--dim)] mb-3">{t("addExpense")}</p>
-            <Link href="/chat" className="text-sm text-[var(--accent)]">Ir al chat &rarr;</Link>
+            <Link href="/chat" className="text-sm text-[var(--accent)]">{t("goToChat")} &rarr;</Link>
           </div>
         ) : (
           <div className="space-y-4">

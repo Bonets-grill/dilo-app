@@ -155,7 +155,7 @@ export default function ChatPage() {
 
         // While waiting for image generation, show loading indicator instead of raw text
         if (displayText.includes("Generando imagen") && !displayText.includes("__IMAGE__")) {
-          displayText = "Generando imagen... 🎨";
+          displayText = t("generatingImage") + " 🎨";
         }
 
         setMsgs(p => p.map(m => m.id === aId ? { ...m, content: displayText } : m));
@@ -199,7 +199,7 @@ export default function ChatPage() {
 
   function cancelSend() {
     setPendingSend(null);
-    setMsgs(p => [...p, { id: crypto.randomUUID(), role: "assistant", content: "Cancelado. No se envió nada." }]);
+    setMsgs(p => [...p, { id: crypto.randomUUID(), role: "assistant", content: t("cancelled") }]);
   }
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -217,7 +217,7 @@ export default function ChatPage() {
       // Show original with inline base64
       setMsgs(p => [...p,
         { id: uploadId, role: "user", content: `__IMAGE__${base64}` },
-        { id: analyzeId, role: "assistant", content: "Analizando imagen... 🔍" },
+        { id: analyzeId, role: "assistant", content: t("analyzingImage") + " 🔍" },
       ]);
       setEnhancing(true);
 
@@ -233,20 +233,20 @@ export default function ChatPage() {
         if (data.text) {
           setMsgs(p => p.map(m => m.id === analyzeId ? {
             ...m,
-            content: `**Lo que veo en la imagen:**\n\n${data.text}`,
+            content: `**${t("imageAnalysis")}**\n\n${data.text}`,
           } : m));
           // Save messages
           if (userId && convId) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             await (supabase.from("messages") as any).insert([
               { conversation_id: convId, user_id: userId, role: "user", content: "[Foto enviada]" },
-              { conversation_id: convId, user_id: userId, role: "assistant", content: `**Lo que veo en la imagen:**\n\n${data.text}` },
+              { conversation_id: convId, user_id: userId, role: "assistant", content: `**${t("imageAnalysis")}**\n\n${data.text}` },
             ]);
           }
         } else {
           setMsgs(p => p.map(m => m.id === analyzeId ? {
             ...m,
-            content: "No pude analizar la imagen. Intenta con otra foto.",
+            content: t("imageError"),
           } : m));
         }
       } catch {
@@ -404,7 +404,7 @@ export default function ChatPage() {
               <div key={m.id} className={`text-[14px] leading-[1.7] text-[#ccc] ${ctxMenu?.msgId === m.id ? "msg-highlight" : ""}`}>
                 {m.content?.startsWith("__IMAGE__") ? (
                   <div>
-                    <p className="text-xs text-[var(--dim)] mb-2">✨ Foto mejorada:</p>
+                    <p className="text-xs text-[var(--dim)] mb-2">✨ {t("enhancedPhoto")}</p>
                     <img
                       src={m.content.replace("__IMAGE__", "")}
                       alt="Enhanced"
@@ -414,7 +414,7 @@ export default function ChatPage() {
                         modal.className = "fixed inset-0 z-[999] bg-black/95 flex flex-col items-center justify-center p-4";
                         modal.onclick = () => modal.remove();
                         const src = m.content.replace("__IMAGE__", "");
-                        modal.innerHTML = `<img src="${src}" alt="Full" class="max-w-full max-h-[80vh] rounded-xl object-contain" /><a href="${src}" download="dilo-enhanced.png" class="mt-4 px-6 py-2.5 rounded-xl bg-white text-black text-sm font-medium" onclick="event.stopPropagation()">⬇ Descargar</a><button class="mt-2 text-sm text-gray-400" onclick="this.parentElement.remove()">Cerrar</button>`;
+                        modal.innerHTML = `<img src="${src}" alt="Full" class="max-w-full max-h-[80vh] rounded-xl object-contain" /><a href="${src}" download="dilo-enhanced.png" class="mt-4 px-6 py-2.5 rounded-xl bg-white text-black text-sm font-medium" onclick="event.stopPropagation()">⬇ ${t("download")}</a><button class="mt-2 text-sm text-gray-400" onclick="this.parentElement.remove()">${t("close")}</button>`;
                         document.body.appendChild(modal);
                       }}
                     />
@@ -446,8 +446,8 @@ export default function ChatPage() {
                                 modal.onclick = () => modal.remove();
                                 modal.innerHTML = `
                                   <img src="${src}" alt="Full" class="max-w-full max-h-[80vh] rounded-xl object-contain" />
-                                  <a href="${src}" download="dilo-image.png" class="mt-4 px-6 py-2.5 rounded-xl bg-white text-black text-sm font-medium" onclick="event.stopPropagation()">⬇ Descargar</a>
-                                  <button class="mt-2 text-sm text-gray-400" onclick="this.parentElement.remove()">Cerrar</button>
+                                  <a href="${src}" download="dilo-image.png" class="mt-4 px-6 py-2.5 rounded-xl bg-white text-black text-sm font-medium" onclick="event.stopPropagation()">⬇ ${t("download")}</a>
+                                  <button class="mt-2 text-sm text-gray-400" onclick="this.parentElement.remove()">${t("close")}</button>
                                 `;
                                 document.body.appendChild(modal);
                               }}
@@ -459,10 +459,10 @@ export default function ChatPage() {
                     {pendingSend && idx >= msgs.length - 2 && !busy && (
                       <div className="flex gap-2 mt-3">
                         <button onClick={confirmSend} className="px-4 py-2 rounded-xl bg-green-600 text-white text-sm font-medium hover:bg-green-500 transition">
-                          👍 Sí, enviar
+                          👍 {t("yes")}
                         </button>
                         <button onClick={cancelSend} className="px-4 py-2 rounded-xl bg-[var(--bg3)] text-[var(--muted)] text-sm font-medium hover:bg-[var(--border)] transition">
-                          👎 Cancelar
+                          👎 {t("cancel")}
                         </button>
                       </div>
                     )}
@@ -485,16 +485,16 @@ export default function ChatPage() {
             onTouchEnd={e => e.stopPropagation()}
           >
             <button onClick={ctxCopy} className="w-full flex items-center gap-3 px-4 py-3.5 text-left text-[15px] text-white active:bg-white/10 border-b border-white/5">
-              <Copy size={18} className="text-[#8e8e93]" /> Copiar
+              <Copy size={18} className="text-[#8e8e93]" /> {t("copy")}
             </button>
             <button onClick={ctxReply} className="w-full flex items-center gap-3 px-4 py-3.5 text-left text-[15px] text-white active:bg-white/10 border-b border-white/5">
-              <Reply size={18} className="text-[#8e8e93]" /> Responder
+              <Reply size={18} className="text-[#8e8e93]" /> {t("reply")}
             </button>
             <button onClick={ctxConsult} className="w-full flex items-center gap-3 px-4 py-3.5 text-left text-[15px] text-white active:bg-white/10 border-b border-white/5">
-              <Search size={18} className="text-[#8e8e93]" /> Consultar
+              <Search size={18} className="text-[#8e8e93]" /> {t("consult")}
             </button>
             <button onClick={ctxShare} className="w-full flex items-center gap-3 px-4 py-3.5 text-left text-[15px] text-white active:bg-white/10">
-              <Share2 size={18} className="text-[#8e8e93]" /> Compartir
+              <Share2 size={18} className="text-[#8e8e93]" /> {t("share")}
             </button>
           </div>
         </div>
@@ -507,7 +507,7 @@ export default function ChatPage() {
         <div className="flex-shrink-0 px-3 pt-2 pb-1 border-t border-[var(--border)] bg-[var(--bg2)]">
           <div className="max-w-2xl mx-auto">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[12px] text-[var(--dim)] font-medium">Transcripci&oacute;n de audio</span>
+              <span className="text-[12px] text-[var(--dim)] font-medium">{t("audioTranscription")}</span>
               <button onClick={() => setVoicePreview(null)} className="p-1 rounded-full hover:bg-[var(--bg3)]">
                 <X size={14} className="text-[var(--dim)]" />
               </button>
@@ -518,11 +518,11 @@ export default function ChatPage() {
             <div className="flex gap-2 mt-1.5 mb-0.5 justify-end">
               <button onClick={() => { const txt = voicePreview || ""; setVoicePreview(null); setInput(txt); setTimeout(() => { if (taRef.current) { taRef.current.style.height = "auto"; taRef.current.style.height = Math.min(taRef.current.scrollHeight, 100) + "px"; taRef.current.focus(); taRef.current.setSelectionRange(txt.length, txt.length); } }, 50); }}
                 className="px-3 py-1.5 rounded-full text-[12px] font-medium bg-[var(--bg3)] text-white flex items-center gap-1.5">
-                <Pencil size={12} /> Editar m&aacute;s
+                <Pencil size={12} /> {t("editMore")}
               </button>
               <button onClick={() => { const text = voicePreview || ""; setVoicePreview(null); setInput(text); setTimeout(() => send(text), 50); }}
                 className="px-4 py-1.5 rounded-full text-[12px] font-medium bg-white text-black flex items-center gap-1.5">
-                <ArrowUp size={12} /> Enviar
+                <ArrowUp size={12} /> {t("send")}
               </button>
             </div>
           </div>
@@ -537,7 +537,7 @@ export default function ChatPage() {
           <div className="flex-1 flex items-end bg-[var(--bg2)] rounded-2xl border border-[var(--border)] px-3 py-1.5">
             <textarea ref={taRef} value={input} onChange={e => onInput(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-              placeholder={transcribing ? "Transcribiendo..." : rec ? "Grabando..." : t("placeholder")}
+              placeholder={transcribing ? t("transcribing") : rec ? t("recording") : t("placeholder")}
               rows={1} disabled={transcribing}
               className="flex-1 bg-transparent text-[14px] text-white placeholder-[var(--dim)] resize-none leading-6 max-h-[100px] focus:outline-none disabled:opacity-50" />
           </div>

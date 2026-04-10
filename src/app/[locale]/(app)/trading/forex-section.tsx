@@ -124,7 +124,7 @@ export default function ForexSection({ data, loading, error, onRetry, t }: Props
       {quotes.length > 0 && (
         <div className="rounded-xl bg-[var(--card)] border border-[var(--border)] overflow-hidden">
           <div className="px-4 py-2.5 border-b border-[var(--border)]">
-            <h3 className="text-xs font-semibold text-[var(--dim)] uppercase tracking-wider">Market Overview</h3>
+            <h3 className="text-xs font-semibold text-[var(--dim)] uppercase tracking-wider">{t("marketOverview")}</h3>
           </div>
           <div className="divide-y divide-[var(--border)]">
             {quotes.map(q => {
@@ -187,14 +187,14 @@ export default function ForexSection({ data, loading, error, onRetry, t }: Props
           <p className="text-sm font-semibold text-blue-400">
             {stats.forexWinRate > 0 ? `${stats.forexWinRate.toFixed(0)}%` : "\u2014"}
           </p>
-          <p className="text-[10px] text-[var(--dim)]">win rate</p>
+          <p className="text-[10px] text-[var(--dim)]">{t("winRate")}</p>
         </div>
         <div className="rounded-xl bg-[var(--card)] border border-[var(--border)] p-3 text-center">
           <p className="text-[10px] text-[var(--dim)] mb-1">{t("gold")}</p>
           <p className="text-sm font-semibold text-yellow-400">
             {stats.goldWinRate > 0 ? `${stats.goldWinRate.toFixed(0)}%` : "\u2014"}
           </p>
-          <p className="text-[10px] text-[var(--dim)]">win rate</p>
+          <p className="text-[10px] text-[var(--dim)]">{t("winRate")}</p>
         </div>
       </div>
 

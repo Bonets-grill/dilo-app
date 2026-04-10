@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { createBrowserSupabase } from "@/lib/supabase/client";
 import {
   Send,
@@ -76,6 +77,7 @@ const CAT_ICONS: Record<string, typeof Briefcase> = {
 };
 
 export default function JournalPage() {
+  const t = useTranslations("journal");
   const locale = useLocale();
   const [userId, setUserId] = useState<string | null>(null);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
@@ -228,7 +230,7 @@ export default function JournalPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <BookOpen size={18} className="text-[var(--accent)]" />
-            <h2 className="text-base font-semibold">Mi Diario</h2>
+            <h2 className="text-base font-semibold">{t("title")}</h2>
           </div>
           <button onClick={() => setShowInsights(!showInsights)}
             className="flex items-center gap-1 text-xs text-[var(--dim)] px-2 py-1 rounded-lg bg-[var(--bg2)]">
@@ -243,7 +245,7 @@ export default function JournalPage() {
             {/* Active goals */}
             {goals.length > 0 && (
               <div>
-                <p className="text-[10px] text-[var(--dim)] uppercase tracking-wider mb-1.5">Metas activas</p>
+                <p className="text-[10px] text-[var(--dim)] uppercase tracking-wider mb-1.5">{t("activeGoals")}</p>
                 {goals.map(g => (
                   <div key={g.id} className="flex items-center gap-2 mb-1.5">
                     <Target size={12} className="text-[var(--accent)]" />
@@ -257,7 +259,7 @@ export default function JournalPage() {
             {/* Top lessons */}
             {lessons.length > 0 && (
               <div>
-                <p className="text-[10px] text-[var(--dim)] uppercase tracking-wider mb-1.5">Lecciones aprendidas</p>
+                <p className="text-[10px] text-[var(--dim)] uppercase tracking-wider mb-1.5">{t("lessonsLearned")}</p>
                 {lessons.slice(0, 5).map(l => (
                   <div key={l.id} className="flex items-start gap-2 mb-1.5">
                     <Lightbulb size={12} className="text-yellow-400 mt-0.5" />
@@ -269,7 +271,7 @@ export default function JournalPage() {
 
             {goals.length === 0 && lessons.length === 0 && (
               <p className="text-xs text-[var(--dim)] text-center py-2">
-                Cuéntale a DILO sobre tu día y empezará a extraer lecciones y metas automáticamente.
+                {t("emptyDesc")}
               </p>
             )}
           </div>
@@ -281,10 +283,9 @@ export default function JournalPage() {
         {entries.length === 0 && (
           <div className="text-center py-16">
             <BookOpen size={40} className="text-[var(--dim)] mx-auto mb-4" />
-            <p className="text-sm text-[var(--muted)] mb-2">Tu diario personal con DILO</p>
+            <p className="text-sm text-[var(--muted)] mb-2">{t("emptyTitle")}</p>
             <p className="text-xs text-[var(--dim)] max-w-xs mx-auto">
-              Cuéntale cómo fue tu día, qué decisiones tomaste, qué aprendiste.
-              DILO escucha, aprende, y te aconseja basado en tu historial.
+              {t("emptyDesc")}
             </p>
           </div>
         )}
@@ -350,7 +351,7 @@ export default function JournalPage() {
         <div className="flex-shrink-0 px-3 pt-2 pb-1 border-t border-[var(--border)] bg-[var(--bg2)]">
           <div className="max-w-2xl mx-auto">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[12px] text-[var(--dim)] font-medium">Transcripci&oacute;n de audio</span>
+              <span className="text-[12px] text-[var(--dim)] font-medium">{t("audioTranscription")}</span>
               <button onClick={() => setVoicePreview(null)} className="p-1 rounded-full hover:bg-[var(--bg3)]">
                 <X size={14} className="text-[var(--dim)]" />
               </button>
@@ -361,11 +362,11 @@ export default function JournalPage() {
             <div className="flex gap-2 mt-1.5 mb-0.5 justify-end">
               <button onClick={() => { const txt = voicePreview || ""; setVoicePreview(null); setInput(txt); setTimeout(() => taRef.current?.focus(), 50); }}
                 className="px-3 py-1.5 rounded-full text-[12px] font-medium bg-[var(--bg3)] text-white flex items-center gap-1.5">
-                <Pencil size={12} /> Editar
+                <Pencil size={12} /> {t("editMore")}
               </button>
               <button onClick={() => { const text = voicePreview || ""; setVoicePreview(null); setInput(text); setTimeout(() => sendEntry(), 50); }}
                 className="px-4 py-1.5 rounded-full text-[12px] font-medium bg-[var(--accent)] text-white flex items-center gap-1.5">
-                <ArrowUp size={12} /> Enviar
+                <ArrowUp size={12} /> {t("send")}
               </button>
             </div>
           </div>
@@ -382,7 +383,7 @@ export default function JournalPage() {
             <textarea ref={taRef} value={input}
               onChange={e => { setInput(e.target.value); if (taRef.current) { taRef.current.style.height = "auto"; taRef.current.style.height = Math.min(taRef.current.scrollHeight, 100) + "px"; } }}
               onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendEntry(); } }}
-              placeholder={transcribing ? "Transcribiendo..." : rec ? "Grabando..." : "\u00bfC\u00f3mo fue tu d\u00eda?"}
+              placeholder={transcribing ? t("transcribing") : rec ? t("recording") : t("placeholder")}
               rows={1} disabled={transcribing}
               className="flex-1 bg-transparent text-[14px] text-white placeholder-[var(--dim)] resize-none leading-6 max-h-[100px] focus:outline-none disabled:opacity-50" />
           </div>

@@ -224,7 +224,7 @@ export default function SettingsPage() {
                   </div>
                   <div className="bg-[var(--bg1)] rounded-lg px-2.5 py-2 text-center">
                     <p className="text-[18px] font-bold" style={{ color: learningData.win_rate >= 55 ? "#10b981" : learningData.win_rate >= 40 ? "#f59e0b" : "#ef4444" }}>{learningData.win_rate}%</p>
-                    <p className="text-[9px] text-[var(--dim)]">Win Rate</p>
+                    <p className="text-[9px] text-[var(--dim)]">{t("winRate")}</p>
                   </div>
                   <div className="bg-[var(--bg1)] rounded-lg px-2.5 py-2 text-center">
                     <p className="text-[18px] font-bold text-white">{learningData.days_learning}</p>
@@ -274,7 +274,7 @@ export default function SettingsPage() {
           <button onClick={toggleEasyMode} className="w-full flex items-center justify-between px-3.5 py-2.5 border-t border-[var(--border)]">
             <div className="flex items-center gap-3">
               <Eye size={16} className={easyMode ? "text-[var(--accent)]" : "text-[var(--dim)]"} />
-              <span className="text-sm">Modo Fácil</span>
+              <span className="text-sm">{t("easyMode")}</span>
             </div>
             <span className="text-sm text-[var(--dim)]">{easyMode ? "ON" : "OFF"}</span>
           </button>
@@ -296,8 +296,8 @@ export default function SettingsPage() {
           <div className="flex items-center gap-3">
             <AlertTriangle size={18} className="text-red-400" />
             <div className="text-left">
-              <p className="text-sm font-medium text-red-400">DILO Emergencia</p>
-              <p className="text-[10px] text-[var(--dim)]">Contactos de emergencia, Modo Aventura, detección de caídas</p>
+              <p className="text-sm font-medium text-red-400">{t("emergency")}</p>
+              <p className="text-[10px] text-[var(--dim)]">{t("emergencyDesc")}</p>
             </div>
           </div>
           <ChevronRight size={16} className="text-[var(--dim)]" />
@@ -311,12 +311,12 @@ export default function SettingsPage() {
             if (!userId) return;
             window.open(`/api/user/export?userId=${userId}`, "_blank");
           }} className="w-full flex items-center gap-3 px-3.5 py-2.5 text-left">
-            <Info size={16} className="text-[var(--dim)]" /><span className="text-sm">Exportar mis datos</span>
+            <Info size={16} className="text-[var(--dim)]" /><span className="text-sm">{t("exportData")}</span>
           </button>
           <button onClick={async () => {
             if (!userId) return;
-            if (!confirm("¿Estás seguro? Se eliminarán TODOS tus datos permanentemente. Esta acción no se puede deshacer.")) return;
-            if (!confirm("ÚLTIMA CONFIRMACIÓN: ¿Realmente quieres eliminar tu cuenta y todos tus datos?")) return;
+            if (!confirm(t("deleteConfirm"))) return;
+            if (!confirm(t("deleteConfirmFinal"))) return;
             await fetch("/api/user/delete", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -326,7 +326,7 @@ export default function SettingsPage() {
             await supabase.auth.signOut();
             window.location.href = `/${locale}/login`;
           }} className="w-full flex items-center gap-3 px-3.5 py-2.5 text-left text-red-400">
-            <Shield size={16} /><span className="text-sm">Eliminar mi cuenta</span>
+            <Shield size={16} /><span className="text-sm">{t("deleteAccount")}</span>
           </button>
         </div>
 

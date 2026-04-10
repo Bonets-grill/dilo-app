@@ -299,7 +299,7 @@ export default function DMPage() {
           <div className="flex-shrink-0 px-4 py-2 border-b border-[var(--border)] bg-[var(--bg2)]">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[10px] text-[var(--dim)]">
-                Walkie-talkie: {pttStatus === "connected" ? "Conectado" : pttStatus === "receiving" ? "Recibiendo..." : pttStatus}
+                {t("walkieTalkie")}: {pttStatus === "connected" ? t("connected") : pttStatus === "receiving" ? t("receiving") : pttStatus}
               </span>
               <span className={`w-2 h-2 rounded-full ${pttStatus === "connected" || pttStatus === "receiving" ? "bg-green-400" : "bg-yellow-400 animate-pulse"}`} />
             </div>
@@ -310,7 +310,7 @@ export default function DMPage() {
                 pttTalking ? "bg-red-500 text-white scale-[0.98]" : "bg-[var(--bg3)] border border-[var(--border)] text-[var(--dim)]"
               }`}
             >
-              {pttTalking ? "HABLANDO..." : "MANTENER PARA HABLAR"}
+              {pttTalking ? t("talking") : t("holdToTalk")}
             </button>
           </div>
         )}
@@ -330,7 +330,7 @@ export default function DMPage() {
                 {m.type === "voice" && m.mediaUrl ? (
                   <button onClick={() => toggleAudio(m.mediaUrl!)} className="flex items-center gap-2">
                     {playingAudio === m.mediaUrl ? <Pause size={16} /> : <Play size={16} />}
-                    <span className="text-xs">Mensaje de voz</span>
+                    <span className="text-xs">{t("voiceMessage")}</span>
                   </button>
                 ) : (
                   <p>{m.content}</p>
@@ -350,7 +350,7 @@ export default function DMPage() {
             <>
               <div className="flex-1 flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/30 rounded-full">
                 <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                <span className="text-xs text-red-400">Grabando...</span>
+                <span className="text-xs text-red-400">{t("recordingAudio")}</span>
               </div>
               <button onClick={stopRecording} className="w-9 h-9 rounded-full bg-red-500 text-white flex items-center justify-center">
                 <Square size={14} />

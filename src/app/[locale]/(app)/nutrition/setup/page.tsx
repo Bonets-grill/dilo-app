@@ -25,6 +25,7 @@ const MEDICAL_OPTIONS = ["diabetes", "kidney_disease", "eating_disorder", "pregn
 
 export default function NutritionSetupPage() {
   const t = useTranslations("nutrition");
+  const ts = useTranslations("nutritionSetup");
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -111,6 +112,18 @@ export default function NutritionSetupPage() {
     }, { onConflict: "user_id" });
 
     if (dbErr) { setError(dbErr.message); setSaving(false); return; }
+
+    // Auto-generate first meal plan in background
+    try {
+      await fetch("/api/nutrition/generate-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id }),
+      });
+    } catch {
+      // Plan generation is not blocking — user can request later
+    }
+
     router.push("/nutrition");
   }
 
@@ -144,33 +157,33 @@ export default function NutritionSetupPage() {
         {/* Step: Body metrics */}
         {currentStep === "body" && (
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold mb-2">Datos corporales</h3>
+            <h3 className="text-sm font-semibold mb-2">{ts("bodyData")}</h3>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-[var(--dim)] mb-1 block">Edad</label>
+                <label className="text-xs text-[var(--dim)] mb-1 block">{ts("age")}</label>
                 <input type="number" value={age} onChange={e => setAge(e.target.value)} placeholder="30" min={14} max={100}
                   className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg2)] border border-[var(--border)] text-sm focus:outline-none focus:border-green-500" />
               </div>
               <div>
-                <label className="text-xs text-[var(--dim)] mb-1 block">Sexo</label>
+                <label className="text-xs text-[var(--dim)] mb-1 block">{ts("sex")}</label>
                 <div className="flex gap-2">
                   <button onClick={() => setSex("male")} className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition ${sex === "male" ? "bg-blue-500/20 border-blue-500 text-blue-400" : "bg-[var(--bg2)] border-[var(--border)] text-[var(--dim)]"}`}>
-                    Hombre
+                    {ts("male")}
                   </button>
                   <button onClick={() => setSex("female")} className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition ${sex === "female" ? "bg-pink-500/20 border-pink-500 text-pink-400" : "bg-[var(--bg2)] border-[var(--border)] text-[var(--dim)]"}`}>
-                    Mujer
+                    {ts("female")}
                   </button>
                 </div>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-[var(--dim)] mb-1 block">Peso (kg)</label>
+                <label className="text-xs text-[var(--dim)] mb-1 block">{ts("weightKg")}</label>
                 <input type="number" value={weightKg} onChange={e => setWeightKg(e.target.value)} placeholder="75" step="0.1" min={30} max={300}
                   className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg2)] border border-[var(--border)] text-sm focus:outline-none focus:border-green-500" />
               </div>
               <div>
-                <label className="text-xs text-[var(--dim)] mb-1 block">Altura (cm)</label>
+                <label className="text-xs text-[var(--dim)] mb-1 block">{ts("heightCm")}</label>
                 <input type="number" value={heightCm} onChange={e => setHeightCm(e.target.value)} placeholder="175" min={100} max={250}
                   className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg2)] border border-[var(--border)] text-sm focus:outline-none focus:border-green-500" />
               </div>
@@ -181,13 +194,13 @@ export default function NutritionSetupPage() {
         {/* Step: Activity level */}
         {currentStep === "activity" && (
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold mb-2">Nivel de actividad</h3>
+            <h3 className="text-sm font-semibold mb-2">{ts("activityLevel")}</h3>
             {([
-              { val: "sedentary", label: "Sedentario", desc: "Oficina, poco movimiento" },
-              { val: "light", label: "Ligero", desc: "Caminar 1-3 veces/semana" },
-              { val: "moderate", label: "Moderado", desc: "Ejercicio 3-5 veces/semana" },
-              { val: "active", label: "Activo", desc: "Ejercicio intenso 6-7 veces/semana" },
-              { val: "very_active", label: "Muy activo", desc: "Atleta, trabajo físico intenso" },
+              { val: "sedentary", label: ts("sedentary"), desc: ts("sedentaryDesc") },
+              { val: "light", label: ts("light"), desc: ts("lightDesc") },
+              { val: "moderate", label: ts("moderate"), desc: ts("moderateDesc") },
+              { val: "active", label: ts("active"), desc: ts("activeDesc") },
+              { val: "very_active", label: ts("veryActive"), desc: ts("veryActiveDesc") },
             ] as const).map(opt => (
               <button key={opt.val} onClick={() => setActivityLevel(opt.val)}
                 className={`w-full text-left px-4 py-3 rounded-xl border transition ${activityLevel === opt.val ? "bg-green-500/15 border-green-500" : "bg-[var(--bg2)] border-[var(--border)]"}`}>
@@ -201,11 +214,11 @@ export default function NutritionSetupPage() {
         {/* Step: Goal */}
         {currentStep === "goal" && (
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold mb-2">Objetivo</h3>
+            <h3 className="text-sm font-semibold mb-2">{ts("goal")}</h3>
             {([
-              { val: "lose", label: "Perder grasa", icon: "🔥" },
-              { val: "maintain", label: "Mantener peso", icon: "⚖️" },
-              { val: "gain", label: "Ganar masa muscular", icon: "💪" },
+              { val: "lose", label: ts("lose"), icon: "🔥" },
+              { val: "maintain", label: ts("maintain"), icon: "⚖️" },
+              { val: "gain", label: ts("gain"), icon: "💪" },
             ] as const).map(opt => (
               <button key={opt.val} onClick={() => setGoal(opt.val)}
                 className={`w-full text-left px-4 py-3.5 rounded-xl border transition flex items-center gap-3 ${goal === opt.val ? "bg-green-500/15 border-green-500" : "bg-[var(--bg2)] border-[var(--border)]"}`}>
@@ -215,7 +228,7 @@ export default function NutritionSetupPage() {
             ))}
             {goal === "lose" && (
               <div className="mt-3">
-                <label className="text-xs text-[var(--dim)] mb-1 block">Ritmo de pérdida (kg/semana)</label>
+                <label className="text-xs text-[var(--dim)] mb-1 block">{ts("lossRate")}</label>
                 <div className="flex gap-2">
                   {["0.25", "0.5", "0.75", "1.0"].map(v => (
                     <button key={v} onClick={() => setWeeklyTarget(v)}
@@ -232,15 +245,15 @@ export default function NutritionSetupPage() {
         {/* Step: Diet type */}
         {currentStep === "diet" && (
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold mb-2">Tipo de dieta</h3>
+            <h3 className="text-sm font-semibold mb-2">{ts("dietType")}</h3>
             {([
-              { val: "balanced", label: "Equilibrada", desc: "Sin restricciones" },
-              { val: "mediterranean", label: "Mediterránea", desc: "Aceite oliva, pescado, verduras" },
-              { val: "vegetarian", label: "Vegetariana", desc: "Sin carne ni pescado" },
-              { val: "vegan", label: "Vegana", desc: "Sin productos animales" },
-              { val: "keto", label: "Keto", desc: "Baja en carbos, alta en grasas" },
-              { val: "paleo", label: "Paleo", desc: "Sin procesados, sin granos" },
-              { val: "pescatarian", label: "Pescetariana", desc: "Vegetariana + pescado" },
+              { val: "balanced", label: ts("balanced"), desc: ts("balancedDesc") },
+              { val: "mediterranean", label: ts("mediterranean"), desc: ts("mediterraneanDesc") },
+              { val: "vegetarian", label: ts("vegetarian"), desc: ts("vegetarianDesc") },
+              { val: "vegan", label: ts("vegan"), desc: ts("veganDesc") },
+              { val: "keto", label: ts("keto"), desc: ts("ketoDesc") },
+              { val: "paleo", label: ts("paleo"), desc: ts("paleoDesc") },
+              { val: "pescatarian", label: ts("pescatarian"), desc: ts("pescatarianDesc") },
             ] as const).map(opt => (
               <button key={opt.val} onClick={() => setDietType(opt.val)}
                 className={`w-full text-left px-4 py-3 rounded-xl border transition ${dietType === opt.val ? "bg-green-500/15 border-green-500" : "bg-[var(--bg2)] border-[var(--border)]"}`}>
@@ -254,8 +267,8 @@ export default function NutritionSetupPage() {
         {/* Step: Allergies */}
         {currentStep === "allergies" && (
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold">Alergias e intolerancias</h3>
-            <p className="text-xs text-[var(--dim)]">Selecciona todas las que apliquen. Si ninguna, continúa.</p>
+            <h3 className="text-sm font-semibold">{ts("allergies")}</h3>
+            <p className="text-xs text-[var(--dim)]">{ts("allergiesHint")}</p>
             <div className="flex flex-wrap gap-2">
               {ALLERGY_OPTIONS.map(a => (
                 <button key={a} onClick={() => toggleArray(allergies, a, setAllergies)}
@@ -265,8 +278,8 @@ export default function NutritionSetupPage() {
               ))}
             </div>
             <div>
-              <label className="text-xs text-[var(--dim)] mb-1 block">Alimentos que no te gustan (separados por coma)</label>
-              <input type="text" value={dislikedFoods} onChange={e => setDislikedFoods(e.target.value)} placeholder="brócoli, hígado, atún..."
+              <label className="text-xs text-[var(--dim)] mb-1 block">{ts("dislikedFoods")}</label>
+              <input type="text" value={dislikedFoods} onChange={e => setDislikedFoods(e.target.value)} placeholder={ts("dislikedPlaceholder")}
                 className="w-full px-3 py-2.5 rounded-xl bg-[var(--bg2)] border border-[var(--border)] text-sm focus:outline-none focus:border-green-500" />
             </div>
           </div>
@@ -275,8 +288,8 @@ export default function NutritionSetupPage() {
         {/* Step: Medical conditions */}
         {currentStep === "medical" && (
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold">Condiciones médicas</h3>
-            <p className="text-xs text-[var(--dim)]">Para tu seguridad. Algunas condiciones requieren supervisión profesional.</p>
+            <h3 className="text-sm font-semibold">{ts("medicalConditions")}</h3>
+            <p className="text-xs text-[var(--dim)]">{ts("medicalHint")}</p>
             <div className="flex flex-wrap gap-2">
               {MEDICAL_OPTIONS.map(c => (
                 <button key={c} onClick={() => {
@@ -284,7 +297,7 @@ export default function NutritionSetupPage() {
                   else { setMedicalConditions(prev => prev.filter(x => x !== "none")); toggleArray(medicalConditions.filter(x => x !== "none"), c, setMedicalConditions); }
                 }}
                   className={`px-3 py-2 rounded-full text-xs font-medium border transition ${medicalConditions.includes(c) ? c === "none" ? "bg-green-500/20 border-green-500 text-green-400" : "bg-yellow-500/20 border-yellow-500 text-yellow-400" : "bg-[var(--bg2)] border-[var(--border)] text-[var(--dim)]"}`}>
-                  {c === "none" ? "Ninguna" : c.replace(/_/g, " ")}
+                  {c === "none" ? ts("none") : c.replace(/_/g, " ")}
                 </button>
               ))}
             </div>
@@ -300,13 +313,13 @@ export default function NutritionSetupPage() {
         {/* Step: Summary */}
         {currentStep === "summary" && (
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold">Tu plan personalizado</h3>
+            <h3 className="text-sm font-semibold">{ts("summary")}</h3>
 
             <div className="p-4 rounded-xl bg-[var(--bg2)] border border-[var(--border)] space-y-3">
               <div className="text-center">
-                <p className="text-xs text-[var(--dim)]">Calorías diarias objetivo</p>
+                <p className="text-xs text-[var(--dim)]">{ts("dailyCaloriesTarget")}</p>
                 <p className="text-3xl font-bold text-green-400">{Math.round(targetCal)}</p>
-                <p className="text-[10px] text-[var(--dim)]">kcal/día (mínimo seguro: {minCal})</p>
+                <p className="text-[10px] text-[var(--dim)]">{ts("kcalDay", { min: String(minCal) })}</p>
               </div>
 
               <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[var(--border)]">
@@ -327,9 +340,9 @@ export default function NutritionSetupPage() {
 
             <div className="p-3 rounded-xl bg-[var(--bg2)] border border-[var(--border)] text-xs text-[var(--dim)] space-y-1">
               <p>BMR: {Math.round(bmr)} kcal &bull; TDEE: {Math.round(tdee)} kcal</p>
-              <p>Agua: {Math.round(numWeight * 33)} ml/día &bull; Fibra: {macros.fiber_g}g/día</p>
-              <p>Dieta: {dietType} &bull; Objetivo: {goal === "lose" ? `Perder ${weeklyTarget} kg/sem` : goal === "gain" ? "Ganar masa" : "Mantener"}</p>
-              {allergies.length > 0 && <p>Alergias: {allergies.join(", ")}</p>}
+              <p>{ts("water")}: {Math.round(numWeight * 33)} ml &bull; {ts("fiber")}: {macros.fiber_g}g</p>
+              <p>{ts("diet")}: {dietType} &bull; {ts("goal")}: {goal === "lose" ? ts("goalSummaryLose", { rate: weeklyTarget }) : goal === "gain" ? ts("goalSummaryGain") : ts("goalSummaryMaintain")}</p>
+              {allergies.length > 0 && <p>{ts("allergyLabel")}: {allergies.join(", ")}</p>}
             </div>
 
             <p className="text-[9px] text-[var(--dim)] italic">{t("disclaimer")}</p>
@@ -342,12 +355,12 @@ export default function NutritionSetupPage() {
             <button onClick={save} disabled={saving}
               className="w-full py-3 rounded-xl bg-green-600 text-white font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50">
               <Check size={16} />
-              {saving ? "Guardando..." : "Guardar y empezar"}
+              {saving ? ts("saving") : ts("saveAndStart")}
             </button>
           ) : (
             <button onClick={next} disabled={!canNext()}
               className="w-full py-3 rounded-xl bg-white text-black font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-30">
-              Siguiente <ArrowRight size={16} />
+              {ts("next")} <ArrowRight size={16} />
             </button>
           )}
         </div>
