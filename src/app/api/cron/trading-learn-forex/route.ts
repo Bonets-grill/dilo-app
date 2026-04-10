@@ -106,6 +106,16 @@ export async function GET() {
             filtersApplied.push(...filterResult.filtersApplied);
           } catch { /* skip if intelligence not available */ }
 
+          // Query trading memory for historical context
+          let memoryContext: string[] = [];
+          try {
+            const { queryMemory } = await import("@/lib/trading/memory");
+            const memory = await queryMemory(instrument, signal.setup_type || "smc_forex_mtf", market_type, killZone.zone);
+            signal.confidence = Math.max(10, Math.min(95, signal.confidence + memory.confidenceAdjustment));
+            memoryContext = [...memory.context, ...memory.warnings];
+            if (memory.confidenceAdjustment !== 0) filtersApplied.push("memory_adjusted");
+          } catch { /* skip if memory not available */ }
+
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await (supabase.from("trading_signal_log") as any).insert({
             user_id: null,
@@ -116,7 +126,7 @@ export async function GET() {
             take_profit: signal.take_profit,
             setup_type: signal.setup_type || "smc_forex_mtf",
             confidence: signal.confidence,
-            reasoning: signal.reasoning || [],
+            reasoning: [...(signal.reasoning || []), ...memoryContext],
             filters_applied: filtersApplied,
             market_type,
           });

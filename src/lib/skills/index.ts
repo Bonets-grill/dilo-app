@@ -9,6 +9,8 @@ import { TRADING_SIGNAL_TOOLS, executeTradingSignals } from "./trading-signals";
 import { FOREX_TOOLS, executeForexTool } from "./trading-forex";
 import { NUTRITION_TOOLS, executeNutritionTool } from "./nutrition";
 import { WELLNESS_TOOLS, executeWellnessTool } from "./wellness";
+import { TRADING_MEMORY_TOOLS, executeTradingMemoryTool } from "./trading-memory";
+import { KNOWLEDGE_TOOLS, executeKnowledgeTool } from "./knowledge";
 
 // Base extended tools (always available)
 export const EXTENDED_TOOLS: OpenAI.ChatCompletionTool[] = [
@@ -24,6 +26,12 @@ export { TRADING_TOOLS };
 
 // Forex tools (independent of Alpaca — uses IG Markets)
 export { FOREX_TOOLS };
+
+// Trading memory tools (always available with trading)
+export { TRADING_MEMORY_TOOLS };
+
+// Knowledge tools (always available)
+export { KNOWLEDGE_TOOLS };
 
 // Stock trading tools (Alpaca connected)
 export const ALL_TRADING_TOOLS: OpenAI.ChatCompletionTool[] = [
@@ -126,6 +134,16 @@ export async function executeExtendedTool(
   // Wellness tools (always available)
   if (toolName.startsWith("wellness_")) {
     return executeWellnessTool(toolName, input, userId);
+  }
+
+  // Trading memory tools
+  if (toolName === "trading_memory" || toolName === "trading_insights") {
+    return executeTradingMemoryTool(toolName, input);
+  }
+
+  // Knowledge tools (always available)
+  if (toolName.startsWith("knowledge_")) {
+    return executeKnowledgeTool(toolName, input);
   }
 
   // Not an extended tool — return null so the main executor handles it

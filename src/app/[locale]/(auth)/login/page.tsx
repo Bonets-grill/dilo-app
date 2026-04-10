@@ -53,10 +53,12 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const res = await fetch("/api/auth/pin", {
+      // Verify PIN and get session token from server
+      const res = await fetch("/api/auth/pin-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "verify", email: email.trim(), pin: code }),
+        body: JSON.stringify({ email: email.trim(), pin: code }),
+        signal: AbortSignal.timeout(10000),
       });
       const data = await res.json();
 
@@ -68,16 +70,14 @@ export default function LoginPage() {
         return;
       }
 
-      // PIN verified — sign in with Supabase using stored password
-      // We use signInWithPassword as fallback
+      // Exchange token for Supabase session
       const supabase = createBrowserSupabase();
-      const { error: authErr } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: code + "_pin_" + data.userId.slice(0, 8),
+      const { error: authErr } = await supabase.auth.verifyOtp({
+        token_hash: data.token_hash,
+        type: "magiclink",
       });
 
       if (authErr) {
-        // If PIN auth fails with Supabase, try the old password flow
         setMode("password");
         setError(t("passwordFallback"));
         setLoading(false);
