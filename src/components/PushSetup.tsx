@@ -24,11 +24,11 @@ export default function PushSetup() {
       const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       if (!vapidKey || vapidKey === "placeholder") return;
 
-      // Unsubscribe old subscription if VAPID key changed, then re-subscribe
-      const existingSub = await reg.pushManager.getSubscription();
-      if (existingSub) {
-        await existingSub.unsubscribe();
-      }
+      // Always unsubscribe + re-subscribe to ensure VAPID key match
+      try {
+        const existingSub = await reg.pushManager.getSubscription();
+        if (existingSub) await existingSub.unsubscribe();
+      } catch { /* ignore unsubscribe errors */ }
 
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
@@ -41,19 +41,21 @@ export default function PushSetup() {
       if (!user) return;
 
       const subJson = sub.toJSON();
+      if (!subJson.endpoint || !subJson.keys) { console.error("[Push] Invalid subscription"); return; }
 
-      // Delete old subscriptions for this user, then insert fresh one
+      // Delete ALL old subscriptions for this user, then insert the fresh one
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase.from("push_subscriptions") as any).delete().eq("user_id", user.id);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase.from("push_subscriptions") as any).insert({
+      const { error } = await (supabase.from("push_subscriptions") as any).insert({
         user_id: user.id,
-        endpoint: subJson.endpoint!,
+        endpoint: subJson.endpoint,
         keys: subJson.keys,
         user_agent: navigator.userAgent,
       });
 
-      console.log("[Push] Subscription saved (old ones cleaned)");
+      if (error) console.error("[Push] DB save failed:", error);
+      else console.log("[Push] Subscription saved:", subJson.endpoint.slice(0, 50));
     } catch (e) {
       console.error("[Push] Registration failed:", e);
     }
