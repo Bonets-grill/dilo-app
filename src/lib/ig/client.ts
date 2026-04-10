@@ -51,9 +51,24 @@ export async function analyzeForexMTF(instrument: string) {
   });
 }
 
+// IG epic map — resolved from /forex/instruments, cached in memory
+const EPIC_MAP: Record<string, string> = {
+  "EUR/USD": "CS.D.EURUSD.TODAY.IP",
+  "GBP/USD": "CS.D.GBPUSD.TODAY.IP",
+  "USD/JPY": "CS.D.USDJPY.TODAY.IP",
+  "GBP/JPY": "CS.D.GBPJPY.TODAY.IP",
+  "EUR/GBP": "CS.D.EURGBP.TODAY.IP",
+  "EUR/JPY": "CS.D.EURJPY.TODAY.IP",
+  "AUD/USD": "CS.D.AUDUSD.TODAY.IP",
+  "USD/CHF": "CS.D.USDCHF.TODAY.IP",
+  "XAU/USD": "CS.D.USCGC.TODAY.IP",
+  "GOLD": "CS.D.USCGC.TODAY.IP",
+};
+
 /** Get real-time bid/ask price */
 export async function getForexQuote(instrument: string) {
-  return forexFetch(`/quote/${encodeURIComponent(instrument)}`);
+  const epic = EPIC_MAP[instrument] || instrument;
+  return forexFetch(`/quote/${encodeURIComponent(epic)}`);
 }
 
 /** Get IG account balance and equity */

@@ -19,10 +19,30 @@ export async function GET(req: NextRequest) {
   try {
     // Fetch live quotes for watchlist
     const WATCHLIST = ["XAU/USD", "EUR/USD", "GBP/USD", "USD/JPY", "GBP/JPY", "EUR/GBP", "EUR/JPY"];
+    // IG returns prices in "points" — need to normalize to standard forex prices
+    const SCALE: Record<string, number> = {
+      "XAU/USD": 1,       // Gold already in correct format from IG
+      "EUR/USD": 10000,
+      "GBP/USD": 10000,
+      "USD/JPY": 100,
+      "GBP/JPY": 100,
+      "EUR/GBP": 10000,
+      "EUR/JPY": 100,
+    };
+
     const quotesPromises = WATCHLIST.map(async (instrument) => {
       try {
         const q = await getForexQuote(instrument);
-        return { instrument, bid: q.bid, offer: q.offer, change_pct: q.change_pct, low: q.low, high: q.high, market_status: q.market_status };
+        const scale = SCALE[instrument] || 1;
+        return {
+          instrument,
+          bid: q.bid / scale,
+          offer: q.offer / scale,
+          change_pct: q.change_pct,
+          low: q.low / scale,
+          high: q.high / scale,
+          market_status: q.market_status,
+        };
       } catch {
         return { instrument, bid: 0, offer: 0, change_pct: 0, low: 0, high: 0, market_status: "unknown" };
       }
