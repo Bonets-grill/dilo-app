@@ -11,6 +11,7 @@ import { NUTRITION_TOOLS, executeNutritionTool } from "./nutrition";
 import { WELLNESS_TOOLS, executeWellnessTool } from "./wellness";
 import { TRADING_MEMORY_TOOLS, executeTradingMemoryTool } from "./trading-memory";
 import { KNOWLEDGE_TOOLS, executeKnowledgeTool } from "./knowledge";
+import { ENTERTAINMENT_TOOLS, executeEntertainmentTool } from "./entertainment";
 
 // Base extended tools (always available)
 export const EXTENDED_TOOLS: OpenAI.ChatCompletionTool[] = [
@@ -32,6 +33,9 @@ export { TRADING_MEMORY_TOOLS };
 
 // Knowledge tools (always available)
 export { KNOWLEDGE_TOOLS };
+
+// Entertainment tools (always available)
+export { ENTERTAINMENT_TOOLS };
 
 // Stock trading tools (Alpaca connected)
 export const ALL_TRADING_TOOLS: OpenAI.ChatCompletionTool[] = [
@@ -144,6 +148,11 @@ export async function executeExtendedTool(
   // Knowledge tools (always available)
   if (toolName.startsWith("knowledge_")) {
     return executeKnowledgeTool(toolName, input);
+  }
+
+  // Entertainment tools (always available)
+  if (toolName.startsWith("entertainment_")) {
+    return executeEntertainmentTool(toolName, input);
   }
 
   // Not an extended tool — return null so the main executor handles it
