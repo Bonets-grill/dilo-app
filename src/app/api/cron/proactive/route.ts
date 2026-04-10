@@ -219,6 +219,62 @@ export async function GET() {
         }
       }
 
+      // ── WEATHER ALERTS ──
+      if (hour >= 7 && hour <= 10) {
+        try {
+          // Get user's city from facts
+          const { data: cityFacts } = await supabase
+            .from("user_facts")
+            .select("fact")
+            .eq("user_id", user.id)
+            .eq("category", "identity")
+            .or("fact.ilike.%vive en%,fact.ilike.%ciudad%,fact.ilike.%lives in%")
+            .limit(1);
+
+          let city = "Madrid"; // fallback
+          if (cityFacts && cityFacts.length > 0) {
+            // Extract city name from fact like "Vive en Las Palmas"
+            const match = cityFacts[0].fact.match(/(?:vive en|ciudad|lives in)\s+(.+)/i);
+            if (match) city = match[1].trim().replace(/\.$/, "");
+          }
+
+          const { getWeather } = await import("@/lib/weather/client");
+          const weather = await getWeather(city);
+
+          if (weather) {
+            // Rain alert
+            const rainToday = weather.forecast[0]?.precipitationSum || 0;
+            if (rainToday > 2) {
+              insights.push({
+                type: "weather_rain",
+                content: `Hoy llueve en ${weather.location} (${rainToday}mm). Lleva paraguas.`,
+                priority: 7,
+              });
+            }
+
+            // Extreme heat
+            const maxTemp = weather.forecast[0]?.tempMax || 0;
+            if (maxTemp >= 38) {
+              insights.push({
+                type: "weather_heat",
+                content: `Alerta calor en ${weather.location}: ${maxTemp}°C hoy. Hidrátate y evita el sol directo de 12 a 17h.`,
+                priority: 7,
+              });
+            }
+
+            // Extreme cold
+            const minTemp = weather.forecast[0]?.tempMin || 0;
+            if (minTemp <= 0) {
+              insights.push({
+                type: "weather_cold",
+                content: `Frío intenso en ${weather.location}: mínima ${minTemp}°C. Abrígate bien.`,
+                priority: 6,
+              });
+            }
+          }
+        } catch { /* skip weather if unavailable */ }
+      }
+
       // ── BIRTHDAY REMINDERS ──
       {
         const tomorrow = new Date(now.getTime() + 24 * 3600000);
