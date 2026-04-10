@@ -97,6 +97,16 @@ interface ForexData {
     forexWinRate: number;
     goldWinRate: number;
   };
+  quotes: Array<{
+    instrument: string;
+    bid: number;
+    offer: number;
+    change_pct: number;
+    low: number;
+    high: number;
+    market_status: string;
+  }>;
+  session: string;
   killZone: string | null;
   learning: {
     score: number;
@@ -495,16 +505,55 @@ function ForexSection({ data, loading, error, onRetry, t }: { data: ForexData | 
     );
   }
 
-  const { account, positions, signals, stats, killZone, learning } = data;
+  const { account, positions, signals, stats, quotes, session, killZone, learning } = data;
   const plPositive = account.profit_loss >= 0;
 
   return (
     <>
-      {/* Kill Zone Banner */}
-      {killZone && (
-        <div className="flex items-center gap-2 rounded-xl bg-green-500/10 border border-green-500/30 px-3 py-2">
-          <Zap size={14} className="text-green-400" />
-          <span className="text-xs font-medium text-green-400">{t("killZoneActive", { zone: killZone })}</span>
+      {/* Session + Kill Zone */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+          <span className="text-xs text-[var(--dim)]">{session}</span>
+        </div>
+        {killZone && (
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-green-500/10 border border-green-500/30">
+            <Zap size={12} className="text-green-400" />
+            <span className="text-[10px] font-medium text-green-400">{t("killZoneActive", { zone: killZone })}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Live Market Quotes */}
+      {quotes.length > 0 && (
+        <div className="rounded-xl bg-[var(--card)] border border-[var(--border)] overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-[var(--border)]">
+            <h3 className="text-xs font-semibold text-[var(--dim)] uppercase tracking-wider">Market Overview</h3>
+          </div>
+          <div className="divide-y divide-[var(--border)]">
+            {quotes.map(q => {
+              const isGold = q.instrument.includes("XAU");
+              const decimals = isGold || q.instrument.includes("JPY") ? 2 : 5;
+              const positive = q.change_pct >= 0;
+              return (
+                <div key={q.instrument} className="px-4 py-2.5 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {isGold && <span className="text-yellow-400 text-xs">&#9679;</span>}
+                    <div>
+                      <p className="text-xs font-semibold">{q.instrument}</p>
+                      <p className="text-[10px] text-[var(--dim)]">{q.low.toFixed(decimals)} &mdash; {q.high.toFixed(decimals)}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-mono font-semibold">{q.bid.toFixed(decimals)}</p>
+                    <p className={`text-[10px] font-medium ${positive ? "text-green-400" : "text-red-400"}`}>
+                      {positive ? "+" : ""}{q.change_pct.toFixed(2)}%
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
