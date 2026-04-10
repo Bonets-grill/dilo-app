@@ -77,7 +77,30 @@ export async function GET() {
       } catch { /* skip individual symbol errors */ }
     }
 
-    // ── 2. SMC ANALYSIS via Python Engine ──
+    // ── 2. ANTI-DRAWDOWN CHECK ──
+    // If recent win rate < 40% on 20+ resolved signals, penalize all new signals
+    // "Aflojar filtros durante drawdown es catastrófico" — prop firm data
+    let drawdownPenalty = 0;
+    {
+      const { data: recent20 } = await supabase
+        .from("trading_signal_log")
+        .select("outcome")
+        .not("outcome", "is", null)
+        .neq("outcome", "expired")
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (recent20 && recent20.length >= 20) {
+        const wins20 = recent20.filter(s => s.outcome === "win").length;
+        const winRate20 = (wins20 / recent20.length) * 100;
+        if (winRate20 < 40) {
+          drawdownPenalty = -15; // Heavy penalty — reduce signal quality threshold
+          console.log(`[Trading Learn] Anti-drawdown active: ${winRate20.toFixed(1)}% win rate on last 20 signals → penalty ${drawdownPenalty}`);
+        }
+      }
+    }
+
+    // ── 3. SMC ANALYSIS via Python Engine ──
     const engineUp = await isEngineAvailable();
     if (engineUp) {
       for (const sym of watchlist.slice(0, 5)) { // Top 5 to save engine calls
@@ -120,7 +143,7 @@ export async function GET() {
                 signal.confidence || 60,
               );
 
-              const adjustedConfidence = Math.max(10, Math.min(95, (signal.confidence || 60) + filterResult.confidenceAdjustment));
+              const adjustedConfidence = Math.max(10, Math.min(95, (signal.confidence || 60) + filterResult.confidenceAdjustment + drawdownPenalty));
 
               // Always save signal with filters applied (soft filters only — never block)
               // Data collection: after 30 days, compare win rate by filter to determine real weights
