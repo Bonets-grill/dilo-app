@@ -116,3 +116,75 @@ El Smart Router detecta intención con regex y ejecuta directo:
 - NUNCA hablar positivamente de suicidio/autolesión
 - Si usuario menciona suicidio → empatía + historia inspiradora + teléfono de ayuda
 - DILO es un AMIGO que se preocupa de verdad
+
+---
+
+## LOCKED FILES — DILO TRADER (DO NOT MODIFY)
+
+These files have been audited, tested, and are running in production.
+Do NOT modify, rename, delete, refactor, or "improve" them.
+If a task requires changing a locked file, STOP and ask the user first.
+
+### Python Trading Engine (/Users/lifeonmotus/Projects/dilo-trading-engine/)
+
+| Archivo | Qué protege | Fecha lock |
+|---------|-------------|------------|
+| `app/core/risk_engine.py` | 9 hardcoded risk rules. NEVER override. Most valuable component. | 2026-04-10 |
+| `app/models/signal.py` | Data models (TradingSignal, RiskDecision, SweepDetection) | 2026-04-10 |
+| `app/main.py` | 7 API endpoints, session_closed check, NaN handling, real AccountState | 2026-04-10 |
+| `app/analysis/smc_analyzer.py` | SMC patterns (OBs, FVGs, BOS, CHoCH, sweeps, bias, signal gen + FVG +5 boost) | 2026-04-10 |
+
+### Trading Infrastructure (Next.js)
+
+| Archivo | Qué protege | Fecha lock |
+|---------|-------------|------------|
+| `src/lib/alpaca/client.ts` | 10 Alpaca broker functions | 2026-04-10 |
+| `src/lib/finnhub/client.ts` | 10 Finnhub market data functions | 2026-04-10 |
+| `src/lib/finnhub/insider.ts` | Insider transactions + analyzeInsiderActivity() | 2026-04-10 |
+| `src/lib/trading/intelligence.ts` | 4 filters (sentiment, insider, regime, seasonality), uniform W=5, NO GPT, 5-day rolling, soft only | 2026-04-10 |
+| `src/lib/trading/engine-client.ts` | Python engine HTTP client with accountState | 2026-04-10 |
+| `src/lib/trading/profile.ts` | Trading profile CRUD + session management | 2026-04-10 |
+| `src/lib/cron/logger.ts` | Cron execution logger | 2026-04-10 |
+
+### Cron Jobs
+
+| Archivo | Qué protege | Fecha lock |
+|---------|-------------|------------|
+| `src/app/api/cron/trading-learn/route.ts` | Daily 7AM: 9 markets, SMC, signals with filters_applied, resolution, anti-drawdown, learning stats | 2026-04-10 |
+| `src/app/api/cron/trading-snapshot/route.ts` | Daily 22:00: portfolio snapshot | 2026-04-10 |
+| `src/app/api/cron/trading-update-profiles/route.ts` | Monthly: auto-update symbol_profiles + Finnhub + insider | 2026-04-10 |
+| `src/app/api/cron/monitor/route.ts` | Daily 23:00: checks all crons, WhatsApp alert on failure | 2026-04-10 |
+
+### API Routes
+
+| Archivo | Qué protege | Fecha lock |
+|---------|-------------|------------|
+| `src/app/api/trading/dashboard/route.ts` | Dashboard: Alpaca single P&L source, dayPnl added to week/month, -0.00% fix, openPositions | 2026-04-10 |
+| `src/app/api/trading/learning/route.ts` | Learning stats endpoint (multi-tenant filtered) | 2026-04-10 |
+| `src/app/api/trading/keys/route.ts` | Alpaca key management | 2026-04-10 |
+
+### Migrations (NEVER modify existing, only add new 014+)
+
+All migrations 001 through 013 are locked.
+
+### Config
+
+| Archivo | Qué protege | Fecha lock |
+|---------|-------------|------------|
+| `vercel.json` | 11 crons configured | 2026-04-10 |
+
+### WHAT YOU CAN DO
+
+- Create NEW files (new features, new endpoints, new migrations 014+)
+- Add NEW crons (add to vercel.json + create route file)
+- Add NEW trading tools (add to src/lib/skills/)
+- Read any locked file for context
+
+### WHAT YOU CANNOT DO
+
+- Modify, delete, rename, or "refactor" any locked file
+- Change risk engine parameters
+- Change filter weights (data determines weights after 30 days)
+- Remove the session_closed check
+- Change the FVG +5 boost without evidence
+- Add GPT/OpenAI calls to intelligence.ts

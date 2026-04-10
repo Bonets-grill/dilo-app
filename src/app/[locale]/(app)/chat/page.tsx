@@ -2,7 +2,7 @@
 
 import { useTranslations, useLocale } from "next-intl";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ArrowUp, Mic, Square, Plus, MessageCircle, ImagePlus, MapPin, X, Pencil } from "lucide-react";
+import { ArrowUp, Mic, Square, Plus, MessageCircle, ImagePlus, X, Pencil, Copy, Reply, Search, Share2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { createBrowserSupabase } from "@/lib/supabase/client";
 
@@ -33,6 +33,9 @@ export default function ChatPage() {
   const [showLocationBanner, setShowLocationBanner] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
   const pendingQueryRef = useRef<string | null>(null);
+  const [ctxMenu, setCtxMenu] = useState<{ msgId: string; text: string; role: string; y: number } | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTriggered = useRef(false);
   const supabase = createBrowserSupabase();
 
   useEffect(() => {
@@ -291,6 +294,47 @@ export default function ChatPage() {
     } catch { setRec(false); }
   }
 
+  // --- Context menu (long-press) handlers ---
+  function startLongPress(msgId: string, text: string, role: string, e: React.TouchEvent | React.MouseEvent) {
+    longPressTriggered.current = false;
+    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+    longPressTimer.current = setTimeout(() => {
+      longPressTriggered.current = true;
+      // Haptic feedback if available
+      if (navigator.vibrate) navigator.vibrate(20);
+      setCtxMenu({ msgId, text, role, y: clientY });
+    }, 500);
+  }
+  function cancelLongPress() {
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+  }
+  function ctxCopy() {
+    if (ctxMenu) navigator.clipboard.writeText(ctxMenu.text);
+    setCtxMenu(null);
+  }
+  function ctxReply() {
+    if (!ctxMenu) return;
+    const quote = ctxMenu.text.length > 80 ? ctxMenu.text.slice(0, 80) + "..." : ctxMenu.text;
+    setInput(`> ${quote}\n\n`);
+    setCtxMenu(null);
+    setTimeout(() => taRef.current?.focus(), 100);
+  }
+  function ctxConsult() {
+    if (!ctxMenu) return;
+    const snippet = ctxMenu.text.length > 200 ? ctxMenu.text.slice(0, 200) + "..." : ctxMenu.text;
+    setCtxMenu(null);
+    send(`Explícame más sobre esto: "${snippet}"`);
+  }
+  function ctxShare() {
+    if (!ctxMenu) return;
+    if (navigator.share) {
+      navigator.share({ text: ctxMenu.text }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(ctxMenu.text);
+    }
+    setCtxMenu(null);
+  }
+
   const hasText = input.trim().length > 0;
 
   if (showHistory) {
@@ -335,15 +379,21 @@ export default function ChatPage() {
         ) : (
           <div className="max-w-2xl mx-auto py-4 space-y-4">
             {msgs.map((m, idx) => m.role === "user" ? (
-              <div key={m.id} className="flex justify-end">
+              <div key={m.id} className={`flex justify-end ${ctxMenu?.msgId === m.id ? "msg-highlight" : ""}`}>
                 {m.content.startsWith("__IMAGE__") ? (
                   <img src={m.content.replace("__IMAGE__", "")} alt="Uploaded" className="rounded-2xl max-w-[80%] max-h-[300px] object-cover" />
                 ) : (
-                  <div className="bg-[var(--bg3)] rounded-2xl rounded-br-sm px-3.5 py-2 text-[14px] leading-relaxed max-w-[80%]">{m.content}</div>
+                  <div
+                    className="chat-msg bg-[var(--bg3)] rounded-2xl rounded-br-sm px-3.5 py-2 text-[14px] leading-relaxed max-w-[80%]"
+                    onTouchStart={e => startLongPress(m.id, m.content, m.role, e)}
+                    onTouchEnd={cancelLongPress}
+                    onTouchMove={cancelLongPress}
+                    onContextMenu={e => { e.preventDefault(); setCtxMenu({ msgId: m.id, text: m.content, role: m.role, y: e.clientY }); }}
+                  >{m.content}</div>
                 )}
               </div>
             ) : (
-              <div key={m.id} className="text-[14px] leading-[1.7] text-[#ccc]">
+              <div key={m.id} className={`text-[14px] leading-[1.7] text-[#ccc] ${ctxMenu?.msgId === m.id ? "msg-highlight" : ""}`}>
                 {m.content?.startsWith("__IMAGE__") ? (
                   <div>
                     <p className="text-xs text-[var(--dim)] mb-2">✨ Foto mejorada:</p>
@@ -363,7 +413,12 @@ export default function ChatPage() {
                   </div>
                 ) : m.content ? (
                   <>
-                    <div className="chat-md">
+                    <div className="chat-md chat-msg"
+                      onTouchStart={e => startLongPress(m.id, m.content, m.role, e)}
+                      onTouchEnd={cancelLongPress}
+                      onTouchMove={cancelLongPress}
+                      onContextMenu={e => { e.preventDefault(); setCtxMenu({ msgId: m.id, text: m.content, role: m.role, y: e.clientY }); }}
+                    >
                       <ReactMarkdown components={{
                         a: ({ href, children }) => (
                           <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline hover:text-blue-300 break-all">
@@ -411,6 +466,31 @@ export default function ChatPage() {
           </div>
         )}
       </div>
+
+      {/* Context menu overlay */}
+      {ctxMenu && (
+        <div className="fixed inset-0 z-[100] ctx-menu-backdrop bg-black/40" onClick={() => setCtxMenu(null)} onTouchEnd={() => setCtxMenu(null)}>
+          <div
+            className="ctx-menu absolute left-1/2 -translate-x-1/2 w-[220px] rounded-2xl bg-[#1c1c1e] border border-white/10 overflow-hidden shadow-2xl"
+            style={{ top: Math.min(ctxMenu.y, window.innerHeight - 280) }}
+            onClick={e => e.stopPropagation()}
+            onTouchEnd={e => e.stopPropagation()}
+          >
+            <button onClick={ctxCopy} className="w-full flex items-center gap-3 px-4 py-3.5 text-left text-[15px] text-white active:bg-white/10 border-b border-white/5">
+              <Copy size={18} className="text-[#8e8e93]" /> Copiar
+            </button>
+            <button onClick={ctxReply} className="w-full flex items-center gap-3 px-4 py-3.5 text-left text-[15px] text-white active:bg-white/10 border-b border-white/5">
+              <Reply size={18} className="text-[#8e8e93]" /> Responder
+            </button>
+            <button onClick={ctxConsult} className="w-full flex items-center gap-3 px-4 py-3.5 text-left text-[15px] text-white active:bg-white/10 border-b border-white/5">
+              <Search size={18} className="text-[#8e8e93]" /> Consultar
+            </button>
+            <button onClick={ctxShare} className="w-full flex items-center gap-3 px-4 py-3.5 text-left text-[15px] text-white active:bg-white/10">
+              <Share2 size={18} className="text-[#8e8e93]" /> Compartir
+            </button>
+          </div>
+        </div>
+      )}
 
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
 
