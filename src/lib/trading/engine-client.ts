@@ -34,8 +34,22 @@ export async function analyzeSMC(
   period = "3mo",
   accountSize = 20000,
   riskPct = 0.5,
+  accountState?: {
+    equity?: number;
+    open_positions?: number;
+    daily_pnl?: number;
+    daily_trades?: number;
+    peak_balance?: number;
+    consecutive_losses?: number;
+    session_closed?: boolean;
+  },
 ) {
-  return engineFetch("/analyze", { symbol, timeframe, period, account_size: accountSize, risk_pct: riskPct });
+  return engineFetch("/analyze", {
+    symbol, timeframe, period,
+    account_size: accountSize,
+    risk_pct: riskPct,
+    ...(accountState || {}),
+  });
 }
 
 /**
