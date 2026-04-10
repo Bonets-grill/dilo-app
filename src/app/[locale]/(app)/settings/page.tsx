@@ -304,8 +304,30 @@ export default function SettingsPage() {
         </Link>
 
         <div className="rounded-xl bg-[var(--bg2)] border border-[var(--border)] divide-y divide-[var(--border)]">
-          <div className="flex items-center gap-3 px-3.5 py-2.5"><Shield size={16} className="text-[var(--dim)]" /><span className="text-sm">{t("privacy")}</span></div>
-          <div className="flex items-center gap-3 px-3.5 py-2.5"><Info size={16} className="text-[var(--dim)]" /><span className="text-sm">{t("about")}</span></div>
+          <Link href="/legal" className="flex items-center gap-3 px-3.5 py-2.5">
+            <Shield size={16} className="text-[var(--dim)]" /><span className="text-sm">{t("privacy")}</span>
+          </Link>
+          <button onClick={async () => {
+            if (!userId) return;
+            window.open(`/api/user/export?userId=${userId}`, "_blank");
+          }} className="w-full flex items-center gap-3 px-3.5 py-2.5 text-left">
+            <Info size={16} className="text-[var(--dim)]" /><span className="text-sm">Exportar mis datos</span>
+          </button>
+          <button onClick={async () => {
+            if (!userId) return;
+            if (!confirm("¿Estás seguro? Se eliminarán TODOS tus datos permanentemente. Esta acción no se puede deshacer.")) return;
+            if (!confirm("ÚLTIMA CONFIRMACIÓN: ¿Realmente quieres eliminar tu cuenta y todos tus datos?")) return;
+            await fetch("/api/user/delete", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ userId, confirm: true }),
+            });
+            const supabase = (await import("@/lib/supabase/client")).createBrowserSupabase();
+            await supabase.auth.signOut();
+            window.location.href = `/${locale}/login`;
+          }} className="w-full flex items-center gap-3 px-3.5 py-2.5 text-left text-red-400">
+            <Shield size={16} /><span className="text-sm">Eliminar mi cuenta</span>
+          </button>
         </div>
 
         <button onClick={async () => {

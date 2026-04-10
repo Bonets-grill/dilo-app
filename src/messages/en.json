@@ -11,7 +11,8 @@
     "profile": "Profile",
     "store": "Store",
     "trading": "Trading",
-    "dm": "Messages"
+    "dm": "Messages",
+    "journal": "Journal"
   },
   "chat": {
     "placeholder": "Type or speak...",

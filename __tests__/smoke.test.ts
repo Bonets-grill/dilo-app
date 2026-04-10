@@ -129,7 +129,7 @@ import * as path from "path";
 const ROOT = path.resolve(__dirname, "..");
 
 describe("File Structure", () => {
-  const criticalFiles = [
+  const criticalFiles: string[] = [
     "src/app/api/chat/route.ts",
     "src/app/api/cron/reminders/route.ts",
     "src/app/api/cron/briefing/route.ts",
@@ -154,6 +154,10 @@ describe("File Structure", () => {
     "src/lib/finnhub/client.ts",
     "src/lib/cron/logger.ts",
     "src/lib/rtc/ptt.ts",
+    "src/app/api/journal/route.ts",
+    "src/app/[locale]/(app)/journal/page.tsx",
+    "src/app/[locale]/(app)/emergency/page.tsx",
+    "src/app/[locale]/(app)/dm/page.tsx",
     "src/lib/push/send.ts",
     "src/lib/agent/router.ts",
     "src/components/EmergencySystem.tsx",
@@ -179,6 +183,7 @@ describe("File Structure", () => {
 describe("i18n completeness", () => {
   const languages = ["es", "en", "fr", "it", "de"];
   const requiredNamespaces = ["nav", "chat", "trading", "dm", "settings", "common"];
+  const requiredNavKeys = ["chat", "trading", "dm", "journal", "expenses", "profile"];
 
   for (const lang of languages) {
     test(`${lang}.json has all required namespaces`, () => {
@@ -190,10 +195,11 @@ describe("i18n completeness", () => {
       }
     });
 
-    test(`${lang}.json nav has trading and dm keys`, () => {
+    test(`${lang}.json nav has all required keys`, () => {
       const content = JSON.parse(fs.readFileSync(path.join(ROOT, `src/messages/${lang}.json`), "utf-8"));
-      expect(content.nav).toHaveProperty("trading");
-      expect(content.nav).toHaveProperty("dm");
+      for (const key of requiredNavKeys) {
+        expect(content.nav).toHaveProperty(key);
+      }
     });
   }
 });
@@ -209,6 +215,7 @@ describe("Database migrations", () => {
     "008_cron_logs.sql",
     "009_direct_messaging.sql",
     "010_proactive_emergency.sql",
+    "011_journal.sql",
   ];
 
   for (const migration of migrations) {
