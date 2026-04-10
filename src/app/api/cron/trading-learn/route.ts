@@ -200,11 +200,11 @@ export async function GET() {
               if (sig.side === "BUY") {
                 if (currentPrice >= sig.take_profit) { outcome = "win"; pnl = sig.take_profit - sig.entry_price; }
                 else if (currentPrice <= sig.stop_loss) { outcome = "loss"; pnl = sig.stop_loss - sig.entry_price; }
-                else { pnl = currentPrice - sig.entry_price; outcome = pnl > 0 ? "win" : "loss"; }
+                else { pnl = currentPrice - sig.entry_price; outcome = "expired"; }
               } else {
                 if (currentPrice <= sig.take_profit) { outcome = "win"; pnl = sig.entry_price - sig.take_profit; }
                 else if (currentPrice >= sig.stop_loss) { outcome = "loss"; pnl = sig.entry_price - sig.stop_loss; }
-                else { pnl = sig.entry_price - currentPrice; outcome = pnl > 0 ? "win" : "loss"; }
+                else { pnl = sig.entry_price - currentPrice; outcome = "expired"; }
               }
 
               const pnlPct = sig.entry_price > 0 ? (pnl / sig.entry_price * 100) : 0;
@@ -229,7 +229,8 @@ export async function GET() {
       .from("trading_knowledge").select("id", { count: "exact", head: true });
 
     const { data: signalStats } = await supabase
-      .from("trading_signal_log").select("outcome");
+      .from("trading_signal_log").select("outcome")
+      .not("outcome", "is", null);
 
     const totalSignals = signalStats?.length || 0;
     const signalsWon = signalStats?.filter(s => s.outcome === "win").length || 0;
@@ -238,7 +239,7 @@ export async function GET() {
 
     // Learning score: weighted combination of data quantity + signal quality
     const dataScore = Math.min(40, (totalKnowledge || 0) / 10); // Max 40 from data
-    const signalScore = totalSignals > 5 ? Math.min(30, winRate * 0.5) : 0; // Max 30 from win rate
+    const signalScore = totalSignals > 0 ? Math.min(30, winRate * 0.5) : 0; // Max 30 from win rate
     const patternScore = Math.min(20, patternsDetected); // Max 20 from patterns today
     const consistencyScore = marketsAnalyzed >= 5 ? 10 : marketsAnalyzed * 2; // Max 10 from coverage
     const learningScore = Math.round(Math.min(100, dataScore + signalScore + patternScore + consistencyScore));

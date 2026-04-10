@@ -645,6 +645,13 @@ async function doPlaceOrder(auth: AlpacaAuth, userId: string, input: Record<stri
   const limitPrice = input.limit_price as number | undefined;
   const confirmed = input.confirmed === true;
 
+  // Check if session is closed (daily loss/profit limit reached)
+  const { getTradingProfile } = await import("@/lib/trading/profile");
+  const profile = await getTradingProfile(userId);
+  if (profile?.session_closed) {
+    return "⛔ Sesión cerrada. Has alcanzado tu límite diario. Protege tu cuenta. Vuelve mañana." + DISCLAIMER;
+  }
+
   // ALWAYS check rules first
   const ruleResult = await doRulesCheck(auth, userId, { symbol, side, qty });
   const ruleData = JSON.parse(ruleResult);
