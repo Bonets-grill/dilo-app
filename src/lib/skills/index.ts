@@ -18,12 +18,20 @@ export const EXTENDED_TOOLS: OpenAI.ChatCompletionTool[] = [
 // Trading tools (only for users with Alpaca connected)
 export { TRADING_TOOLS };
 
-// Market analysis + calendar + signals (for users with Alpaca connected)
+// Forex tools (independent of Alpaca — uses IG Markets)
+export { FOREX_TOOLS };
+
+// Stock trading tools (Alpaca connected)
 export const ALL_TRADING_TOOLS: OpenAI.ChatCompletionTool[] = [
   ...TRADING_TOOLS,
   ...MARKET_ANALYSIS_TOOLS,
   ...TRADING_CALENDAR_TOOLS,
   ...TRADING_SIGNAL_TOOLS,
+];
+
+// All trading tools including forex (for users with both)
+export const ALL_TRADING_AND_FOREX_TOOLS: OpenAI.ChatCompletionTool[] = [
+  ...ALL_TRADING_TOOLS,
   ...FOREX_TOOLS,
 ];
 
