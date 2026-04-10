@@ -43,6 +43,14 @@ const MODULE_ICONS: Record<string, typeof Heart> = {
   grounding: Hand,
 };
 
+const MODULE_QUERIES: Record<string, string> = {
+  thought_challenge: "quiero%20hacer%20un%20desafio%20de%20pensamientos",
+  breathing_478: "ejercicio%20de%20respiracion",
+  gratitude: "ejercicio%20de%20gratitud",
+  grounding_54321: "necesito%20calmarme%20anclaje",
+  emotional_journal: "quiero%20escribir%20en%20mi%20diario%20emocional",
+};
+
 const MOOD_COLORS = [
   "", // 0
   "#ef4444", "#f97316", "#f59e0b", "#eab308", "#a3e635",
@@ -139,7 +147,7 @@ export default function WellnessPage() {
           )}
         </div>
       ) : (
-        <Link href="/chat" className="block">
+        <Link href="/chat?q=como%20me%20siento%20hoy" className="block">
           <div className="bg-gradient-to-r from-pink-900/40 to-purple-900/40 rounded-xl p-4 border border-pink-800/30">
             <p className="text-sm font-medium">{t("howFeelToday")}</p>
             <p className="text-xs text-[var(--dim)] mt-1">
@@ -237,7 +245,7 @@ export default function WellnessPage() {
           {data.available_modules.map((mod) => {
             const IconComp = MODULE_ICONS[mod.type] || Heart;
             return (
-              <Link href="/chat" key={mod.id}>
+              <Link href={`/chat?q=${MODULE_QUERIES[mod.id] || "bienestar"}`} key={mod.id}>
                 <div className="bg-[var(--card)] rounded-xl p-3 border border-[var(--border)] flex items-center gap-3 active:scale-[0.98] transition-transform">
                   <div className="w-9 h-9 rounded-lg bg-pink-900/30 flex items-center justify-center">
                     <IconComp size={18} className="text-pink-400" />
