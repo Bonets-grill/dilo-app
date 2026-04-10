@@ -37,6 +37,10 @@
       "schedule": "0 10,13,18,21 * * *"
     },
     {
+      "path": "/api/cron/trading-update-profiles",
+      "schedule": "0 6 1 * *"
+    },
+    {
       "path": "/api/cron/monitor",
       "schedule": "0 23 * * *"
     }
