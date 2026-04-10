@@ -295,7 +295,8 @@
     "talking": "PARLANDO...",
     "holdToTalk": "TIENI PREMUTO PER PARLARE",
     "voiceMessage": "Messaggio vocale",
-    "recordingAudio": "Registrazione..."
+    "recordingAudio": "Registrazione...",
+    "blockUser": "Blocca utente"
   },
   "nutrition": {
     "title": "Nutrizione",

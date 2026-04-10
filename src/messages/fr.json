@@ -295,7 +295,8 @@
     "talking": "EN TRAIN DE PARLER...",
     "holdToTalk": "MAINTENIR POUR PARLER",
     "voiceMessage": "Message vocal",
-    "recordingAudio": "Enregistrement..."
+    "recordingAudio": "Enregistrement...",
+    "blockUser": "Bloquer l'utilisateur"
   },
   "nutrition": {
     "title": "Nutrition",
