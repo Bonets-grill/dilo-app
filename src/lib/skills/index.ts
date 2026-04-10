@@ -72,8 +72,11 @@ export async function executeExtendedTool(
     const sym = ((input.symbol as string) || "").toUpperCase().replace(/\s+/g, "");
     const FOREX_MAP: Record<string, string> = {
       "XAU": "XAU/USD", "XAUUSD": "XAU/USD", "XAU/USD": "XAU/USD", "GOLD": "XAU/USD", "ORO": "XAU/USD",
-      "EURUSD": "EUR/USD", "EUR/USD": "EUR/USD", "GBPUSD": "GBP/USD", "GBP/USD": "GBP/USD",
-      "USDJPY": "USD/JPY", "USD/JPY": "USD/JPY", "GBPJPY": "GBP/JPY", "GBP/JPY": "GBP/JPY",
+      "ORODOLAR": "XAU/USD", "ORODÓLAR": "XAU/USD", "ORODOLLAR": "XAU/USD",
+      "EURO": "EUR/USD", "EUR": "EUR/USD", "EURUSD": "EUR/USD", "EUR/USD": "EUR/USD", "EURODOLAR": "EUR/USD",
+      "LIBRA": "GBP/USD", "GBP": "GBP/USD", "GBPUSD": "GBP/USD", "GBP/USD": "GBP/USD",
+      "YEN": "USD/JPY", "JPY": "USD/JPY", "USDJPY": "USD/JPY", "USD/JPY": "USD/JPY",
+      "GBPJPY": "GBP/JPY", "GBP/JPY": "GBP/JPY",
       "EURGBP": "EUR/GBP", "EUR/GBP": "EUR/GBP", "EURJPY": "EUR/JPY", "EUR/JPY": "EUR/JPY",
     };
     const fxInstrument = FOREX_MAP[sym];
