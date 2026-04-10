@@ -143,7 +143,19 @@ export async function GET() {
                 signal.confidence || 60,
               );
 
-              const adjustedConfidence = Math.max(10, Math.min(95, (signal.confidence || 60) + filterResult.confidenceAdjustment + drawdownPenalty));
+              // Query trading memory for historical context
+              let memoryAdjustment = 0;
+              let memoryContext: string[] = [];
+              try {
+                const { queryMemory } = await import("@/lib/trading/memory");
+                const { detectRegime } = await import("@/lib/trading/intelligence");
+                const regime = await detectRegime().catch(() => ({ regime: "unknown" }));
+                const memory = await queryMemory(sym, signal.setup_type || "smc_auto", "stocks", regime.regime);
+                memoryAdjustment = memory.confidenceAdjustment;
+                memoryContext = [...memory.context, ...memory.warnings];
+              } catch { /* skip if memory not available */ }
+
+              const adjustedConfidence = Math.max(10, Math.min(95, (signal.confidence || 60) + filterResult.confidenceAdjustment + drawdownPenalty + memoryAdjustment));
 
               // Always save signal with filters applied (soft filters only — never block)
               // Data collection: after 30 days, compare win rate by filter to determine real weights
@@ -159,6 +171,7 @@ export async function GET() {
                 reasoning: [
                   ...(signal.reasoning || [`Auto: ${smc.bias} bias, ${sweepsCount} sweeps, ${obsCount} OBs`]),
                   ...filterResult.context,
+                  ...memoryContext,
                 ],
                 filters_applied: filterResult.filtersApplied,
               });
