@@ -231,40 +231,19 @@ export default function EmergencySystem() {
         </div>
       )}
 
-      {/* DILO URGENCIA floating button — only visible if emergency contacts configured */}
-      {userId && (
-        <div className="fixed bottom-20 right-4 z-50">
-          {/* Adventure mode indicator */}
-          {adventureMode && (
-            <button
-              onClick={toggleAdventure}
-              className="mb-2 w-10 h-10 rounded-full bg-green-500/20 border border-green-500/40 flex items-center justify-center text-green-400 text-xs animate-pulse"
-              title="Modo Aventura activo"
-            >
-              📍
-            </button>
-          )}
-
-          {/* Emergency button */}
-          <button
-            onTouchStart={startHold}
-            onTouchEnd={endHold}
-            onMouseDown={startHold}
-            onMouseUp={endHold}
-            onMouseLeave={endHold}
-            className={`relative w-12 h-12 rounded-full flex items-center justify-center text-lg shadow-lg transition-all ${
-              holding ? "bg-red-600 scale-110" : "bg-red-500/20 border border-red-500/30"
-            }`}
-          >
-            🚨
-            {holding && (
-              <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 44 44">
-                <circle cx="22" cy="22" r="20" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2" />
-                <circle cx="22" cy="22" r="20" fill="none" stroke="white" strokeWidth="2"
-                  strokeDasharray={`${holdProgress * 1.26} 126`} strokeLinecap="round" />
-              </svg>
-            )}
-          </button>
+      {/* DILO URGENCIA — only shows when actively holding (triggered from /emergency page) */}
+      {holding && (
+        <div className="fixed inset-0 z-[9998] bg-red-900/90 flex flex-col items-center justify-center p-6">
+          <div className="relative w-32 h-32 mb-4">
+            <svg className="w-full h-full -rotate-90" viewBox="0 0 44 44">
+              <circle cx="22" cy="22" r="20" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="2" />
+              <circle cx="22" cy="22" r="20" fill="none" stroke="white" strokeWidth="3"
+                strokeDasharray={`${holdProgress * 1.26} 126`} strokeLinecap="round" />
+            </svg>
+            <span className="absolute inset-0 flex items-center justify-center text-4xl">🚨</span>
+          </div>
+          <p className="text-white text-lg font-bold">Enviando alerta...</p>
+          <p className="text-white/60 text-sm mt-1">Suelta para cancelar</p>
         </div>
       )}
     </>
