@@ -52,20 +52,26 @@ export default function ChatPage() {
       setUserId(uid);
       supabase.from("conversations").select("id, title, updated_at").eq("user_id", uid)
         .order("updated_at", { ascending: false }).limit(20)
-        .then(({ data: convs }) => {
+        .then(async ({ data: convs }) => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const list = (convs as any[] || []) as Conv[];
           setConvList(list);
-          if (list.length > 0) loadConversation(list[0].id);
+          if (list.length > 0) await loadConversation(list[0].id);
+          // Send pending query AFTER conversation is loaded (so convId is set)
+          if (pendingQueryRef.current) {
+            const pending = pendingQueryRef.current;
+            pendingQueryRef.current = null;
+            setTimeout(() => send(pending), 100);
+          }
         });
     });
     // City loaded from user_facts on server side — no browser geolocation needed
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auto-send pending query AFTER userId is available (React state updated)
+  // Fallback: if no conversations exist, send after userId is ready
   useEffect(() => {
-    if (userId && pendingQueryRef.current) {
+    if (userId && pendingQueryRef.current && convList.length === 0) {
       const pending = pendingQueryRef.current;
       pendingQueryRef.current = null;
       setTimeout(() => send(pending), 200);
