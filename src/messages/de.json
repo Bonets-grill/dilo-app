@@ -174,7 +174,9 @@
     "exportData": "Meine Daten exportieren",
     "deleteAccount": "Mein Konto löschen",
     "deleteConfirm": "Bist du sicher? ALLE deine Daten werden dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
-    "deleteConfirmFinal": "LETZTE BESTÄTIGUNG: Willst du wirklich dein Konto und alle deine Daten löschen?"
+    "deleteConfirmFinal": "LETZTE BESTÄTIGUNG: Willst du wirklich dein Konto und alle deine Daten löschen?",
+    "configurePin": "PIN konfigurieren",
+    "configurePinDesc": "Schnellzugriff mit 4-stelliger PIN"
   },
   "landing": {
     "hero": "Dein persönlicher KI-Sekretär",
@@ -375,6 +377,21 @@
     "enterResponse": "Schreibe deine Antwort...",
     "continue": "Weiter",
     "saving": "Speichern..."
+  },
+  "changePin": {
+    "titleChange": "PIN ändern",
+    "titleSetup": "PIN einrichten",
+    "subtitleChange": "Gib deine aktuelle PIN ein, um sie zu ändern",
+    "subtitleSetup": "Erstelle eine PIN für schnellen Zugang",
+    "currentPin": "Aktuelle PIN",
+    "newPin": "Neue PIN",
+    "confirmPin": "Neue PIN bestätigen",
+    "wrongPin": "Falsche PIN",
+    "mismatch": "Die PINs stimmen nicht überein",
+    "saved": "PIN erfolgreich aktualisiert",
+    "saving": "Speichern...",
+    "error": "Fehler beim Speichern der PIN",
+    "back": "Zurück"
   },
   "pinSetup": {
     "title": "Erstelle deine PIN",

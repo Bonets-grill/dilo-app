@@ -174,7 +174,9 @@
     "exportData": "Export my data",
     "deleteAccount": "Delete my account",
     "deleteConfirm": "Are you sure? ALL your data will be permanently deleted. This action cannot be undone.",
-    "deleteConfirmFinal": "FINAL CONFIRMATION: Do you really want to delete your account and all your data?"
+    "deleteConfirmFinal": "FINAL CONFIRMATION: Do you really want to delete your account and all your data?",
+    "configurePin": "Configure PIN",
+    "configurePinDesc": "Quick access with 4-digit PIN"
   },
   "landing": {
     "hero": "Your personal AI secretary",
@@ -375,6 +377,21 @@
     "enterResponse": "Write your response...",
     "continue": "Continue",
     "saving": "Saving..."
+  },
+  "changePin": {
+    "titleChange": "Change PIN",
+    "titleSetup": "Set up PIN",
+    "subtitleChange": "Enter your current PIN to change it",
+    "subtitleSetup": "Create a PIN for quick access",
+    "currentPin": "Current PIN",
+    "newPin": "New PIN",
+    "confirmPin": "Confirm new PIN",
+    "wrongPin": "Incorrect PIN",
+    "mismatch": "PINs do not match",
+    "saved": "PIN updated successfully",
+    "saving": "Saving...",
+    "error": "Error saving PIN",
+    "back": "Back"
   },
   "pinSetup": {
     "title": "Create your PIN",

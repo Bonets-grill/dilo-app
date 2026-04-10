@@ -291,6 +291,18 @@ export default function SettingsPage() {
           )}
         </div>
 
+        {/* PIN */}
+        <Link href="/change-pin" className="flex items-center justify-between p-3.5 rounded-xl bg-[var(--bg2)] border border-[var(--border)]">
+          <div className="flex items-center gap-3">
+            <Shield size={18} className="text-[var(--dim)]" />
+            <div className="text-left">
+              <p className="text-sm font-medium">{t("configurePin")}</p>
+              <p className="text-[10px] text-[var(--dim)]">{t("configurePinDesc")}</p>
+            </div>
+          </div>
+          <ChevronRight size={16} className="text-[var(--dim)]" />
+        </Link>
+
         {/* Emergency */}
         <Link href="/emergency" className="flex items-center justify-between p-3.5 rounded-xl bg-red-500/10 border border-red-500/20">
           <div className="flex items-center gap-3">

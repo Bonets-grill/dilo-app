@@ -174,7 +174,9 @@
     "exportData": "Exportar mis datos",
     "deleteAccount": "Eliminar mi cuenta",
     "deleteConfirm": "¿Estás seguro? Se eliminarán TODOS tus datos permanentemente. Esta acción no se puede deshacer.",
-    "deleteConfirmFinal": "ÚLTIMA CONFIRMACIÓN: ¿Realmente quieres eliminar tu cuenta y todos tus datos?"
+    "deleteConfirmFinal": "ÚLTIMA CONFIRMACIÓN: ¿Realmente quieres eliminar tu cuenta y todos tus datos?",
+    "configurePin": "Configurar PIN",
+    "configurePinDesc": "Acceso rápido con PIN de 4 dígitos"
   },
   "landing": {
     "hero": "Tu secretario personal con AI",
@@ -375,6 +377,21 @@
     "enterResponse": "Escribe tu respuesta...",
     "continue": "Continuar",
     "saving": "Guardando..."
+  },
+  "changePin": {
+    "titleChange": "Cambiar PIN",
+    "titleSetup": "Configurar PIN",
+    "subtitleChange": "Introduce tu PIN actual para cambiarlo",
+    "subtitleSetup": "Crea un PIN para entrar rápido",
+    "currentPin": "PIN actual",
+    "newPin": "Nuevo PIN",
+    "confirmPin": "Confirma el nuevo PIN",
+    "wrongPin": "PIN incorrecto",
+    "mismatch": "Los PIN no coinciden",
+    "saved": "PIN actualizado correctamente",
+    "saving": "Guardando...",
+    "error": "Error al guardar el PIN",
+    "back": "Volver"
   },
   "pinSetup": {
     "title": "Crea tu PIN",
