@@ -25,11 +25,12 @@ export async function GET(req: NextRequest) {
     .from("trading_knowledge")
     .select("id", { count: "exact", head: true });
 
-  // Get signal stats
+  // Get signal stats — user's own signals + system signals (user_id IS NULL)
   const { data: signals } = await supabase
     .from("trading_signal_log")
     .select("outcome")
-    .not("outcome", "is", null);
+    .not("outcome", "is", null)
+    .or(userId ? `user_id.eq.${userId},user_id.is.null` : "user_id.is.null");
 
   const totalSignals = signals?.length || 0;
   const wins = signals?.filter(s => s.outcome === "win").length || 0;
