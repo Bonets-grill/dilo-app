@@ -6,6 +6,11 @@ import { routing } from "./i18n/routing";
 const intlMiddleware = createIntlMiddleware(routing);
 
 export async function middleware(request: NextRequest) {
+  // Skip intl middleware for auth callback (it's a route handler, not a page)
+  if (request.nextUrl.pathname.includes("/auth/callback")) {
+    return NextResponse.next();
+  }
+
   // Run intl middleware first (locale detection, redirects)
   const response = intlMiddleware(request);
 
