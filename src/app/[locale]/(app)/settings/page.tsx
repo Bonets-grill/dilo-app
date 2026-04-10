@@ -4,8 +4,9 @@ import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { localeNames, localeFlags, locales } from "@/i18n/config";
 import type { Locale } from "@/i18n/config";
-import { Globe, Moon, Sun, CreditCard, Shield, Info, LogOut, ChevronRight, Sparkles, TrendingUp, Check, Loader2 } from "lucide-react";
+import { Globe, Moon, Sun, CreditCard, Shield, Info, LogOut, ChevronRight, Sparkles, TrendingUp, Check, Loader2, AlertTriangle } from "lucide-react";
 import { useState, useEffect } from "react";
+import { Link } from "@/i18n/navigation";
 import { createBrowserSupabase } from "@/lib/supabase/client";
 
 const CURRENCIES = [
@@ -272,6 +273,18 @@ export default function SettingsPage() {
             </div>
           )}
         </div>
+
+        {/* Emergency */}
+        <Link href="/emergency" className="flex items-center justify-between p-3.5 rounded-xl bg-red-500/10 border border-red-500/20">
+          <div className="flex items-center gap-3">
+            <AlertTriangle size={18} className="text-red-400" />
+            <div className="text-left">
+              <p className="text-sm font-medium text-red-400">DILO Emergencia</p>
+              <p className="text-[10px] text-[var(--dim)]">Contactos de emergencia, Modo Aventura, detección de caídas</p>
+            </div>
+          </div>
+          <ChevronRight size={16} className="text-[var(--dim)]" />
+        </Link>
 
         <div className="rounded-xl bg-[var(--bg2)] border border-[var(--border)] divide-y divide-[var(--border)]">
           <div className="flex items-center gap-3 px-3.5 py-2.5"><Shield size={16} className="text-[var(--dim)]" /><span className="text-sm">{t("privacy")}</span></div>

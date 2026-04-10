@@ -21,6 +21,7 @@ const EXPECTED_CRONS: Record<string, string> = {
   "trading-learn": "7:00 L-V",
   "trading-snapshot": "22:00 L-V",
   "price-check": "10:00",
+  "proactive": "10:00, 13:00, 18:00, 21:00",
 };
 
 /**

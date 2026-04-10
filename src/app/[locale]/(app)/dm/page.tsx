@@ -15,6 +15,10 @@ import {
   Users,
   Clock,
   Loader2,
+  Mic,
+  Square,
+  Play,
+  Pause,
 } from "lucide-react";
 
 interface Contact {
@@ -66,8 +70,12 @@ export default function DMPage() {
   const [msgInput, setMsgInput] = useState("");
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [recording, setRecording] = useState(false);
+  const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const mediaRecRef = useRef<MediaRecorder | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     const supabase = createBrowserSupabase();
@@ -163,6 +171,61 @@ export default function DMPage() {
     setSending(false);
   }
 
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mr = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      const chunks: Blob[] = [];
+      mr.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+      mr.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        const blob = new Blob(chunks, { type: "audio/webm" });
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const base64 = reader.result as string;
+          // Send as voice message
+          setMessages(prev => [...prev, {
+            id: crypto.randomUUID(), fromMe: true, content: "[Audio]",
+            type: "voice", mediaUrl: base64, read: false, time: new Date().toISOString(),
+          }]);
+          setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+          if (chatWith) {
+            await fetch("/api/dm", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ userId, receiverId: chatWith.id, content: "[Audio]", messageType: "voice", mediaUrl: base64 }),
+            });
+          }
+        };
+        reader.readAsDataURL(blob);
+      };
+      mr.start();
+      mediaRecRef.current = mr;
+      setRecording(true);
+    } catch { /* mic not available */ }
+  }
+
+  function stopRecording() {
+    if (mediaRecRef.current && mediaRecRef.current.state !== "inactive") {
+      mediaRecRef.current.stop();
+    }
+    setRecording(false);
+  }
+
+  function toggleAudio(url: string) {
+    if (playingAudio === url) {
+      audioRef.current?.pause();
+      setPlayingAudio(null);
+    } else {
+      if (audioRef.current) audioRef.current.pause();
+      const audio = new Audio(url);
+      audio.onended = () => setPlayingAudio(null);
+      audio.play();
+      audioRef.current = audio;
+      setPlayingAudio(url);
+    }
+  }
+
   function closeChat() {
     setView("list");
     setChatWith(null);
@@ -212,7 +275,14 @@ export default function DMPage() {
                   ? "bg-[var(--accent)] text-white rounded-br-md"
                   : "bg-[var(--bg2)] border border-[var(--border)] rounded-bl-md"
               }`}>
-                <p>{m.content}</p>
+                {m.type === "voice" && m.mediaUrl ? (
+                  <button onClick={() => toggleAudio(m.mediaUrl!)} className="flex items-center gap-2">
+                    {playingAudio === m.mediaUrl ? <Pause size={16} /> : <Play size={16} />}
+                    <span className="text-xs">Mensaje de voz</span>
+                  </button>
+                ) : (
+                  <p>{m.content}</p>
+                )}
                 <p className={`text-[9px] mt-0.5 ${m.fromMe ? "text-white/60" : "text-[var(--dim)]"}`}>
                   {formatTime(m.time)}
                 </p>
@@ -224,20 +294,38 @@ export default function DMPage() {
 
         {/* Input */}
         <div className="flex-shrink-0 px-4 py-3 border-t border-[var(--border)] flex items-center gap-2">
-          <input
-            value={msgInput}
-            onChange={e => setMsgInput(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && !e.shiftKey && sendMessage()}
-            placeholder={t("typeMessage")}
-            className="flex-1 bg-[var(--bg2)] border border-[var(--border)] rounded-full px-4 py-2 text-sm text-[var(--fg)] placeholder-[var(--dim)] focus:outline-none focus:border-[var(--accent)]/50"
-          />
-          <button
-            onClick={sendMessage}
-            disabled={!msgInput.trim() || sending}
-            className="w-9 h-9 rounded-full bg-[var(--accent)] text-white flex items-center justify-center disabled:opacity-40"
-          >
-            <Send size={16} />
-          </button>
+          {recording ? (
+            <>
+              <div className="flex-1 flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/30 rounded-full">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-xs text-red-400">Grabando...</span>
+              </div>
+              <button onClick={stopRecording} className="w-9 h-9 rounded-full bg-red-500 text-white flex items-center justify-center">
+                <Square size={14} />
+              </button>
+            </>
+          ) : (
+            <>
+              <input
+                value={msgInput}
+                onChange={e => setMsgInput(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && !e.shiftKey && sendMessage()}
+                placeholder={t("typeMessage")}
+                className="flex-1 bg-[var(--bg2)] border border-[var(--border)] rounded-full px-4 py-2 text-sm text-[var(--fg)] placeholder-[var(--dim)] focus:outline-none focus:border-[var(--accent)]/50"
+              />
+              {msgInput.trim() ? (
+                <button onClick={sendMessage} disabled={sending}
+                  className="w-9 h-9 rounded-full bg-[var(--accent)] text-white flex items-center justify-center disabled:opacity-40">
+                  <Send size={16} />
+                </button>
+              ) : (
+                <button onClick={startRecording}
+                  className="w-9 h-9 rounded-full bg-[var(--bg2)] border border-[var(--border)] text-[var(--dim)] flex items-center justify-center">
+                  <Mic size={16} />
+                </button>
+              )}
+            </>
+          )}
         </div>
       </div>
     );

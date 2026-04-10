@@ -64,6 +64,30 @@ export async function POST(req: NextRequest) {
           },
         });
 
+        // Track for proactive intelligence (unanswered messages, commitments)
+        if (userId) {
+          // Detect commitments: "te lo envío el lunes", "quedamos el jueves", "nos vemos a las 9"
+          const commitmentMatch = text.match(/(?:te\s+(?:lo\s+)?(?:envío|mando|paso|doy)|quedamos|nos\s+vemos|te\s+llamo|te\s+escribo|te\s+confirmo|lo\s+tengo\s+(?:el|para))\s+.*?(?:lunes|martes|miércoles|jueves|viernes|sábado|domingo|mañana|hoy|esta\s+tarde|esta\s+noche|\d{1,2}(?::\d{2})?)/i);
+          const hasCommitment = !!commitmentMatch;
+
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (supabase.from("whatsapp_tracking") as any).insert({
+              user_id: userId,
+              phone,
+              contact_name: pushName || null,
+              direction: "in",
+              message_preview: text.slice(0, 200),
+              has_commitment: hasCommitment,
+              commitment_text: hasCommitment ? commitmentMatch![0] : null,
+              responded: false,
+            });
+          } catch { /* skip */ }
+
+          // Mark previous outgoing messages to this contact as "conversation active"
+          // (they responded, so user doesn't need "unanswered" alert for their messages)
+        }
+
         // Send PUSH notification to user
         if (userId) {
           const { data: subs } = await supabase

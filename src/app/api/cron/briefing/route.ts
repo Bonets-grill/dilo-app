@@ -106,6 +106,18 @@ async function generateDailyInsight(user: {
   const daysInMonth = new Date().getDate();
   const dailyAvg = daysInMonth > 1 ? monthTotal / (daysInMonth - 1) : 0;
 
+  // Trading data (if user has it)
+  const { data: tradingProfile } = await supabase.from("trading_profiles")
+    .select("pnl_today, trades_today, daily_goal, account_size")
+    .eq("user_id", user.id).maybeSingle();
+
+  // Unanswered WhatsApp messages
+  const { data: unanswered } = await supabase.from("whatsapp_tracking")
+    .select("contact_name")
+    .eq("user_id", user.id).eq("direction", "in").eq("responded", false)
+    .gte("created_at", yesterday + "T00:00:00")
+    .limit(5);
+
   const prompt = `Eres DILO, el asistente personal de ${name}. Genera un briefing matutino BREVE y ÚTIL.
 
 DATOS DE AYER:
@@ -116,6 +128,8 @@ ${expenseTotal > dailyAvg * 1.5 && dailyAvg > 0 ? `- ⚠️ Ayer gastó ${Math.r
 
 HOY:
 ${reminderList.length > 0 ? `- Recordatorios: ${reminderList.join(", ")}` : "- Sin recordatorios pendientes"}
+${tradingProfile ? `- Trading: cuenta €${tradingProfile.account_size}, objetivo diario €${tradingProfile.daily_goal}` : ""}
+${unanswered && unanswered.length > 0 ? `- WhatsApp sin responder: ${unanswered.map(u => u.contact_name || "desconocido").join(", ")}` : ""}
 
 LO QUE SABES DE ${name.toUpperCase()}:
 ${factList.length > 0 ? factList.map(f => `- ${f}`).join("\n") : "- Aún poco, es usuario nuevo"}

@@ -1,6 +1,7 @@
 import BottomNav from "@/components/ui/BottomNav";
 import PushSetup from "@/components/PushSetup";
 import InstallBanner from "@/components/InstallBanner";
+import EmergencySystem from "@/components/EmergencySystem";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -12,6 +13,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       <BottomNav />
+      <EmergencySystem />
       <div className="flex-shrink-0 h-[env(safe-area-inset-bottom)]" />
     </div>
   );
