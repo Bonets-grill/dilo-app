@@ -14,6 +14,8 @@ import {
   Apple,
   Heart,
   Users,
+  Phone,
+  ShoppingBag,
   X,
 } from "lucide-react";
 
@@ -29,7 +31,9 @@ const primaryTabs = [
 const extraModules = [
   { key: "nutrition", href: "/nutrition", icon: Apple, color: "text-green-400" },
   { key: "wellness", href: "/wellness", icon: Heart, color: "text-pink-400" },
+  { key: "market", href: "/market", icon: ShoppingBag, color: "text-orange-400" },
   { key: "dm", href: "/dm", icon: Users, color: "text-blue-400" },
+  { key: "calls", href: "/calls", icon: Phone, color: "text-green-400" },
   { key: "profile", href: "/settings", icon: User, color: "text-[var(--dim)]" },
 ] as const;
 

@@ -4,6 +4,7 @@ import BottomNav from "@/components/ui/BottomNav";
 import PushSetup from "@/components/PushSetup";
 import InstallBanner from "@/components/InstallBanner";
 import EmergencySystem from "@/components/EmergencySystem";
+import ClientProviders from "@/components/ClientProviders";
 
 export default async function AppLayout({
   children,
@@ -27,11 +28,13 @@ export default async function AppLayout({
       <PushSetup />
       <InstallBanner />
       <div className="flex-shrink-0 h-[env(safe-area-inset-top)]" />
+      <ClientProviders userId={user.id}>
       <main className="flex-1 min-h-0 overflow-hidden">
         {children}
       </main>
       <BottomNav />
       <EmergencySystem />
+      </ClientProviders>
       <div className="flex-shrink-0 h-[env(safe-area-inset-bottom)]" />
     </div>
   );
