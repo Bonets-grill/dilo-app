@@ -47,7 +47,7 @@ export async function GET() {
         // Check if user has WhatsApp connected
         const { data: channel } = await supabase
           .from("channels")
-          .select("instance_name, phone, status")
+          .select("id, instance_name, phone, status")
           .eq("user_id", reminder.user_id)
           .eq("type", "whatsapp")
           .eq("status", "connected")
@@ -57,8 +57,24 @@ export async function GET() {
         if (channel && evoUrl && evoKey) {
           try {
             const instName = channel.instance_name || `dilo_${reminder.user_id.slice(0, 8)}`;
-            // Send to user's own WhatsApp number
-            const phone = channel.phone || reminder.target_phone;
+
+            // Get user's own phone number from the connected WhatsApp instance
+            let phone = channel.phone;
+            if (!phone) {
+              const infoRes = await fetch(`${evoUrl}/instance/connectionState/${instName}`, {
+                headers: { apikey: evoKey },
+              });
+              if (infoRes.ok) {
+                const info = await infoRes.json();
+                // Evolution API returns the connected number in instance info
+                phone = info?.instance?.owner || info?.instance?.wuid?.replace("@s.whatsapp.net", "") || null;
+                // Save phone for future use
+                if (phone) {
+                  await supabase.from("channels").update({ phone }).eq("id", channel.id);
+                }
+              }
+            }
+
             if (phone) {
               const res = await fetch(`${evoUrl}/message/sendText/${instName}`, {
                 method: "POST",
