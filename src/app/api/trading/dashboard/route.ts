@@ -41,15 +41,28 @@ export async function GET(req: NextRequest) {
     const dayPnlPct = lastEquity > 0 ? (dayPnl / lastEquity * 100) : 0;
 
     // Weekly & monthly P&L
+    // IMPORTANT: Alpaca portfolio history does NOT include today's intradía P&L
+    // We add dayPnl (equity - last_equity) to get the real total
     let weekPnl = 0, weekPnlPct = 0, monthPnl = 0, monthPnlPct = 0;
     if (histWeek?.profit_loss?.length) {
-      weekPnl = histWeek.profit_loss.reduce((s: number, v: number) => s + (v || 0), 0);
+      const histWeekPnl = histWeek.profit_loss.reduce((s: number, v: number) => s + (v || 0), 0);
+      weekPnl = histWeekPnl + dayPnl; // Add today's intradía
       weekPnlPct = histWeek.base_value > 0 ? (weekPnl / histWeek.base_value * 100) : 0;
+    } else {
+      weekPnl = dayPnl; // Only today's data
+      weekPnlPct = dayPnlPct;
     }
     if (histMonth?.profit_loss?.length) {
-      monthPnl = histMonth.profit_loss.reduce((s: number, v: number) => s + (v || 0), 0);
+      const histMonthPnl = histMonth.profit_loss.reduce((s: number, v: number) => s + (v || 0), 0);
+      monthPnl = histMonthPnl + dayPnl; // Add today's intradía
       monthPnlPct = histMonth.base_value > 0 ? (monthPnl / histMonth.base_value * 100) : 0;
+    } else {
+      monthPnl = dayPnl;
+      monthPnlPct = dayPnlPct;
     }
+    // Fix -0.00% display issue
+    if (Math.abs(weekPnlPct) < 0.005) weekPnlPct = 0;
+    if (Math.abs(monthPnlPct) < 0.005) monthPnlPct = 0;
 
     // Format positions
     const positionsData = positions.map(p => ({
@@ -75,12 +88,13 @@ export async function GET(req: NextRequest) {
     const sessionStatus = profile ? {
       tradesToday: profile.last_reset_date === today ? profile.trades_today : 0,
       maxTrades: profile.max_trades_per_day,
-      pnlToday: profile.last_reset_date === today ? profile.pnl_today : 0,
+      pnlToday: dayPnl, // Use Alpaca as single source of truth (real-time)
       dailyGoal: profile.daily_goal,
       sessionClosed: profile.last_reset_date === today ? profile.session_closed : false,
       riskPerTrade: profile.risk_per_trade_amount,
       accountSize: profile.account_size,
       tradingStyle: profile.trading_style,
+      openPositions: positions.length, // For UI clarity
     } : null;
 
     return NextResponse.json({

@@ -1,20 +1,21 @@
 /**
  * DILO Trading Intelligence — Market regime detection, sentiment scoring,
- * multi-timeframe analysis, and symbol profile enrichment.
+ * insider analysis, and symbol profile enrichment.
  *
- * NEW FILE — does not modify any existing code.
+ * All functions are FILTERS that adjust signal confidence.
+ * Each filter is tagged in filters_applied[] for measurement.
  */
 
 import { createClient } from "@supabase/supabase-js";
-import { getQuote, getBasicFinancials, getNewsSentiment, getCompanyNews, getRecommendations } from "@/lib/finnhub/client";
-import OpenAI from "openai";
+import { getQuote, getNewsSentiment } from "@/lib/finnhub/client";
+import { analyzeInsiderActivity } from "@/lib/finnhub/insider";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// ── REGIME DETECTION ──
+// ── TYPES ──
 
 export type MarketRegime = "trending_low_vol" | "trending_high_vol" | "ranging_low_vol" | "ranging_high_vol";
 
@@ -22,209 +23,203 @@ export interface RegimeAnalysis {
   regime: MarketRegime;
   description: string;
   recommendation: string;
-  volatility_percentile: number; // 0-100
-  trend_strength: number; // 0-100
 }
 
-/**
- * Detect current market regime using SPY as proxy.
- * Uses Finnhub quote data to estimate volatility and trend.
- */
+export interface SignalFilters {
+  confidenceAdjustment: number;
+  filtersApplied: string[];
+  context: string[];
+  blocked: boolean;
+  blockReason?: string;
+}
+
+// ── REGIME DETECTION (uses 5-day rolling, not single day) ──
+
 export async function detectRegime(): Promise<RegimeAnalysis> {
-  const quote = await getQuote("SPY").catch(() => null);
-  const financials = await getBasicFinancials("SPY").catch(() => null);
+  // Get last 5 trading days of SPY data from trading_knowledge
+  const fiveDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+  const { data: recentScans } = await supabase
+    .from("trading_knowledge")
+    .select("data")
+    .eq("symbol", "SPY")
+    .eq("category", "market_scan")
+    .gte("date", fiveDaysAgo)
+    .order("date", { ascending: false })
+    .limit(5);
 
-  const dayRange = quote ? ((quote.h - quote.l) / quote.pc * 100) : 1;
-  const dayChange = quote?.dp || 0;
-  const beta = financials?.metric?.beta || 1;
-
-  // Simple regime classification
-  const isHighVol = dayRange > 1.5; // >1.5% daily range = high volatility
-  const isTrending = Math.abs(dayChange) > 0.5; // >0.5% move = trending
-
-  let regime: MarketRegime;
-  let description: string;
-  let recommendation: string;
-
-  if (isTrending && isHighVol) {
-    regime = "trending_high_vol";
-    description = "Mercado en tendencia con alta volatilidad";
-    recommendation = "Reducir tamaño de posición. Stops más amplios. Solo operar a favor de la tendencia.";
-  } else if (isTrending && !isHighVol) {
-    regime = "trending_low_vol";
-    description = "Mercado en tendencia tranquila";
-    recommendation = "Mejor entorno para trading. Seguir la tendencia. Stops normales.";
-  } else if (!isTrending && isHighVol) {
-    regime = "ranging_high_vol";
-    description = "Mercado sin dirección con alta volatilidad";
-    recommendation = "PELIGRO — peor régimen para trading. Reducir exposición o no operar.";
-  } else {
-    regime = "ranging_low_vol";
-    description = "Mercado lateral y tranquilo";
-    recommendation = "Buscar mean reversion. Operar en rangos. Tamaño normal.";
+  if (!recentScans || recentScans.length === 0) {
+    // Fallback to single-day quote if no history
+    const quote = await getQuote("SPY").catch(() => null);
+    const dayRange = quote ? ((quote.h - quote.l) / quote.pc * 100) : 1;
+    const dayChange = Math.abs(quote?.dp || 0);
+    return classifyRegime(dayRange, dayChange);
   }
 
+  // Calculate 5-day average range and average absolute change
+  let totalRange = 0;
+  let totalAbsChange = 0;
+  let count = 0;
+
+  for (const scan of recentScans) {
+    const d = scan.data as Record<string, number>;
+    if (d.high && d.low && d.price) {
+      totalRange += ((d.high - d.low) / d.price) * 100;
+      totalAbsChange += Math.abs(d.change_pct || 0);
+      count++;
+    }
+  }
+
+  const avgRange = count > 0 ? totalRange / count : 1;
+  const avgAbsChange = count > 0 ? totalAbsChange / count : 0.5;
+
+  return classifyRegime(avgRange, avgAbsChange);
+}
+
+function classifyRegime(avgRange: number, avgAbsChange: number): RegimeAnalysis {
+  const isHighVol = avgRange > 1.5;
+  const isTrending = avgAbsChange > 0.5;
+
+  if (isTrending && isHighVol) {
+    return {
+      regime: "trending_high_vol",
+      description: "Mercado en tendencia con alta volatilidad (5 días)",
+      recommendation: "Reducir tamaño. Stops amplios. Solo a favor de tendencia.",
+    };
+  }
+  if (isTrending && !isHighVol) {
+    return {
+      regime: "trending_low_vol",
+      description: "Mercado en tendencia tranquila (5 días)",
+      recommendation: "Mejor entorno. Seguir tendencia. Stops normales.",
+    };
+  }
+  if (!isTrending && isHighVol) {
+    return {
+      regime: "ranging_high_vol",
+      description: "Sin dirección con alta volatilidad (5 días)",
+      recommendation: "PELIGRO. Reducir exposición o no operar.",
+    };
+  }
   return {
-    regime,
-    description,
-    recommendation,
-    volatility_percentile: Math.min(100, dayRange * 40),
-    trend_strength: Math.min(100, Math.abs(dayChange) * 50),
+    regime: "ranging_low_vol",
+    description: "Mercado lateral y tranquilo (5 días)",
+    recommendation: "Mean reversion. Operar en rangos.",
   };
 }
 
-// ── SENTIMENT SCORING ──
-
-export interface SentimentScore {
-  symbol: string;
-  score: number; // -5 to +5
-  confidence: number; // 0-100
-  headlines_analyzed: number;
-  key_theme: string;
-}
+// ── APPLY ALL FILTERS TO A SIGNAL ──
 
 /**
- * Score sentiment for a symbol using Finnhub news + GPT-4o-mini.
- * Batches headlines for cost efficiency (~$0.0002 per call).
+ * Apply all intelligence filters to a potential signal.
+ * Returns confidence adjustment + list of filters applied.
+ *
+ * ALL WEIGHTS START AT +5/-5 (equal).
+ * After 30 days, real data from filters_applied determines which
+ * weights to increase/decrease. No invented numbers.
+ *
+ * Temporal note: Signals resolve at 24h.
+ *   - Sentiment: predicts 30min (VERY weak at 24h)
+ *   - Insider: predicts 1-6 months (background bias only at 24h)
+ *   - Regime: market context, not directional prediction
+ *   - Seasonality: monthly bias, weak at daily level
+ * All filters are SOFT — adjust confidence, never hard block.
+ * Data will tell us in 30 days which ones actually help.
  */
-export async function scoreSentiment(symbol: string): Promise<SentimentScore> {
-  const now = new Date();
-  const weekAgo = new Date(now.getTime() - 7 * 86400000);
-  const from = weekAgo.toISOString().slice(0, 10);
-  const to = now.toISOString().slice(0, 10);
+export async function applySignalFilters(
+  symbol: string,
+  side: "BUY" | "SELL",
+  baseConfidence: number,
+): Promise<SignalFilters> {
+  const W = 5; // Uniform weight — data will refine this after 30 days
+  let adjustment = 0;
+  const filters: string[] = [];
+  const context: string[] = [];
 
-  const [news, finnhubSentiment] = await Promise.all([
-    getCompanyNews(symbol, from, to).catch(() => []),
-    getNewsSentiment(symbol).catch(() => null),
-  ]);
-
-  // Use Finnhub's built-in sentiment as base
-  const bullish = finnhubSentiment?.sentiment?.bullishPercent || 0.5;
-  const finnhubScore = (bullish - 0.5) * 10; // Convert to -5 to +5
-
-  if (!news || news.length === 0) {
-    return {
-      symbol,
-      score: Math.round(finnhubScore * 10) / 10,
-      confidence: 30,
-      headlines_analyzed: 0,
-      key_theme: "Sin noticias recientes",
-    };
-  }
-
-  // Batch headlines for GPT analysis (max 15 for cost)
-  const headlines = news.slice(0, 15).map(n => n.headline).join("\n");
-
+  // ── FILTER 1: Sentiment (Finnhub only, NO GPT) ──
+  // Temporal match: WEAK (predicts 30min, signals resolve 24h)
+  // Kept for data collection — may be removed after 30 days
   try {
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      max_tokens: 100,
-      temperature: 0,
-      messages: [{
-        role: "user",
-        content: `Score the sentiment of these ${symbol} headlines from -5 (very bearish) to +5 (very bullish). Reply ONLY with JSON: {"score": X, "theme": "one line summary"}\n\n${headlines}`,
-      }],
-    });
+    const sentiment = await getNewsSentiment(symbol);
+    const bullish = sentiment?.sentiment?.bullishPercent || 0.5;
 
-    const text = response.choices[0]?.message?.content || "{}";
-    const parsed = JSON.parse(text.replace(/```json\n?/g, "").replace(/```/g, ""));
-
-    return {
-      symbol,
-      score: Math.max(-5, Math.min(5, parsed.score || 0)),
-      confidence: Math.min(90, news.length * 6),
-      headlines_analyzed: Math.min(15, news.length),
-      key_theme: parsed.theme || "N/A",
-    };
-  } catch {
-    return {
-      symbol,
-      score: Math.round(finnhubScore * 10) / 10,
-      confidence: 30,
-      headlines_analyzed: news.length,
-      key_theme: "Análisis automático Finnhub",
-    };
-  }
-}
-
-// ── SYMBOL PROFILE ──
-
-export interface SymbolProfile {
-  symbol: string;
-  avg_earnings_move_pct: number | null;
-  best_months: number[];
-  worst_months: number[];
-  seasonality_notes: string;
-  smc_win_rate: number | null;
-  smc_best_setup: string | null;
-  total_signals_analyzed: number;
-  correlation_spy: number | null;
-  sector: string;
-  notes: string;
-}
-
-/**
- * Get the intelligence profile for a symbol.
- */
-export async function getSymbolProfile(symbol: string): Promise<SymbolProfile | null> {
-  const { data } = await supabase
-    .from("symbol_profiles")
-    .select("*")
-    .eq("symbol", symbol.toUpperCase())
-    .maybeSingle();
-
-  return data as SymbolProfile | null;
-}
-
-// ── ENHANCED SIGNAL CONTEXT ──
-
-/**
- * Build enriched context string for a symbol's analysis.
- * This gets injected into signal generation for smarter decisions.
- */
-export async function buildSignalContext(symbol: string): Promise<string> {
-  const [profile, regime, sentiment] = await Promise.all([
-    getSymbolProfile(symbol).catch(() => null),
-    detectRegime().catch(() => null),
-    scoreSentiment(symbol).catch(() => null),
-  ]);
-
-  const parts: string[] = [];
-
-  // Regime context
-  if (regime) {
-    parts.push(`RÉGIMEN ACTUAL: ${regime.description}. ${regime.recommendation}`);
-  }
-
-  // Sentiment
-  if (sentiment) {
-    const sentimentLabel = sentiment.score > 2 ? "MUY ALCISTA" : sentiment.score > 0.5 ? "ALCISTA" : sentiment.score < -2 ? "MUY BAJISTA" : sentiment.score < -0.5 ? "BAJISTA" : "NEUTRAL";
-    parts.push(`SENTIMIENTO ${symbol}: ${sentimentLabel} (${sentiment.score}/5, ${sentiment.headlines_analyzed} noticias). ${sentiment.key_theme}`);
-  }
-
-  // Symbol profile
-  if (profile) {
-    const currentMonth = new Date().getMonth() + 1;
-    const isBestMonth = profile.best_months?.includes(currentMonth);
-    const isWorstMonth = profile.worst_months?.includes(currentMonth);
-
-    if (profile.seasonality_notes) {
-      parts.push(`ESTACIONALIDAD: ${profile.seasonality_notes}${isBestMonth ? " → ESTAMOS EN MES FAVORABLE" : ""}${isWorstMonth ? " → ⚠️ ESTAMOS EN MES DESFAVORABLE" : ""}`);
+    if (side === "BUY" && bullish < 0.3) {
+      adjustment -= W;
+      filters.push("sentiment_against");
+      context.push(`Sentiment ${(bullish * 100).toFixed(0)}% bullish contra BUY`);
+    } else if (side === "SELL" && bullish > 0.7) {
+      adjustment -= W;
+      filters.push("sentiment_against");
+      context.push(`Sentiment ${(bullish * 100).toFixed(0)}% bullish contra SELL`);
+    } else if ((side === "BUY" && bullish > 0.6) || (side === "SELL" && bullish < 0.4)) {
+      adjustment += W;
+      filters.push("sentiment_aligned");
+      context.push(`Sentiment alineado con ${side}`);
     }
+  } catch { /* skip */ }
 
-    if (profile.avg_earnings_move_pct) {
-      parts.push(`EARNINGS: Movimiento promedio de ${profile.avg_earnings_move_pct}% en día de earnings`);
+  // ── FILTER 2: Insider Transactions ──
+  // Temporal match: WEAK for 24h (predicts 1-6 months)
+  // But strongest academic evidence — keep as background bias
+  try {
+    const insider = await analyzeInsiderActivity(symbol);
+    if (insider.flag !== "neutral") {
+      const aligned = (insider.flag === "insider_bullish" && side === "BUY") ||
+                       (insider.flag === "insider_bearish" && side === "SELL");
+      adjustment += aligned ? W : -W;
+      filters.push(aligned ? "insider_aligned" : "insider_against");
+      context.push(`Insider: ${insider.buys} buys, ${insider.sells} sells (90d) → ${insider.flag}`);
     }
+  } catch { /* skip */ }
 
-    if (profile.smc_win_rate && profile.total_signals_analyzed > 10) {
-      parts.push(`HISTORIAL DILO: ${profile.smc_win_rate}% win rate en ${profile.total_signals_analyzed} señales SMC. Mejor setup: ${profile.smc_best_setup}`);
+  // ── FILTER 3: Regime (informational context + adjustment) ──
+  try {
+    const regime = await detectRegime();
+    context.push(`Régimen: ${regime.description}`);
+
+    if (regime.regime === "ranging_high_vol") {
+      adjustment -= W;
+      filters.push("regime_dangerous");
+    } else if (regime.regime === "trending_low_vol") {
+      adjustment += W;
+      filters.push("regime_favorable");
     }
+  } catch { /* skip */ }
 
-    if (profile.notes) {
-      parts.push(`INTEL: ${profile.notes}`);
+  // ── FILTER 4: Seasonality from symbol_profiles ──
+  try {
+    const { data: profile } = await supabase
+      .from("symbol_profiles")
+      .select("best_months, worst_months, seasonality_notes, smc_win_rate, smc_best_setup, total_signals_analyzed, notes")
+      .eq("symbol", symbol)
+      .maybeSingle();
+
+    if (profile) {
+      const currentMonth = new Date().getMonth() + 1;
+      if (profile.worst_months?.includes(currentMonth)) {
+        adjustment -= W;
+        filters.push("seasonality_unfavorable");
+        context.push(`Mes desfavorable para ${symbol}`);
+      } else if (profile.best_months?.includes(currentMonth)) {
+        adjustment += W;
+        filters.push("seasonality_favorable");
+        context.push(`Mes favorable para ${symbol}`);
+      }
+
+      if (profile.smc_win_rate && profile.total_signals_analyzed > 10) {
+        context.push(`Historial DILO: ${profile.smc_win_rate}% win rate en ${profile.total_signals_analyzed} señales`);
+      }
+
+      if (profile.notes) {
+        context.push(`Intel: ${profile.notes}`);
+      }
     }
-  }
+  } catch { /* skip */ }
 
-  return parts.length > 0 ? parts.join("\n") : "";
+  return {
+    confidenceAdjustment: adjustment,
+    filtersApplied: filters,
+    context,
+    blocked: false, // Soft filters only — never hard block
+    blockReason: undefined,
+  };
 }

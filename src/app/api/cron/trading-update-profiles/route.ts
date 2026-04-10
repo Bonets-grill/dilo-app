@@ -48,7 +48,8 @@ export async function GET() {
         if (sig.outcome === "win") setupStats[setup].wins++;
       }
       const bestSetup = Object.entries(setupStats)
-        .sort(([, a], [, b]) => (b.wins / b.total) - (a.wins / a.total))
+        .filter(([, s]) => s.total > 0)
+        .sort(([, a], [, b]) => (b.wins / (b.total || 1)) - (a.wins / (a.total || 1)))
         .map(([name]) => name)[0] || null;
 
       // Average R:R on winners
@@ -77,11 +78,30 @@ export async function GET() {
 
       if (beta !== null) updates.beta = beta;
       if (institutional) updates.institutional_sentiment = institutional;
-      if (totalSignals > 0) {
+
+      // Finnhub fundamentals: avg daily range, earnings beat rate
+      const high52 = financials?.metric?.["52WeekHigh"] || 0;
+      const low52 = financials?.metric?.["52WeekLow"] || 0;
+      if (high52 > 0 && low52 > 0) {
+        updates.avg_daily_range_pct = Math.round(((high52 - low52) / ((high52 + low52) / 2)) * 100 * 10) / 10;
+      }
+
+      // Insider activity
+      try {
+        const { analyzeInsiderActivity } = await import("@/lib/finnhub/insider");
+        const insider = await analyzeInsiderActivity(symbol);
+        updates.recent_insider_buys = insider.buys;
+      } catch { /* skip */ }
+
+      // Signal stats by regime (if we have enough signals)
+      if (totalSignals > 5) {
         updates.smc_win_rate = winRate;
         updates.smc_best_setup = bestSetup;
         updates.smc_avg_rr = avgRR;
         updates.total_signals_analyzed = totalSignals;
+
+        // Best timeframe from signal metadata (if available)
+        updates.best_timeframe = "1d"; // Default — we generate on daily
       }
 
       await supabase.from("symbol_profiles").update(updates).eq("symbol", symbol);
