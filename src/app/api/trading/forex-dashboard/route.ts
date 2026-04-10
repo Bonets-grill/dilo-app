@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { getForexAccount, getForexPositions, isForexAvailable } from "@/lib/ig/client";
+import { getForexAccount, getForexPositions, getForexQuote, isForexAvailable } from "@/lib/ig/client";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -17,9 +17,21 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const [account, positionsData, signalsRes, statsRes, learningRes] = await Promise.all([
+    // Fetch live quotes for watchlist
+    const WATCHLIST = ["XAU/USD", "EUR/USD", "GBP/USD", "USD/JPY", "GBP/JPY", "EUR/GBP", "EUR/JPY"];
+    const quotesPromises = WATCHLIST.map(async (instrument) => {
+      try {
+        const q = await getForexQuote(instrument);
+        return { instrument, bid: q.bid, offer: q.offer, change_pct: q.change_pct, low: q.low, high: q.high, market_status: q.market_status };
+      } catch {
+        return { instrument, bid: 0, offer: 0, change_pct: 0, low: 0, high: 0, market_status: "unknown" };
+      }
+    });
+
+    const [account, positionsData, quotesResults, signalsRes, statsRes, learningRes] = await Promise.all([
       getForexAccount().catch(() => null),
       getForexPositions().catch(() => ({ positions: [] })),
+      Promise.all(quotesPromises),
       supabase
         .from("trading_signal_log")
         .select("symbol, side, entry_price, stop_loss, take_profit, confidence, outcome, pnl, pnl_pct, market_type, filters_applied, created_at, resolved_at")
@@ -52,16 +64,27 @@ export async function GET(req: NextRequest) {
     const forexWins = forexSignals.filter((s) => s.outcome === "win").length;
     const goldWins = goldSignals.filter((s) => s.outcome === "win").length;
 
-    // Determine kill zone status
+    // Determine kill zone and session status
     const now = new Date();
     const utcH = now.getUTCHours();
     let killZone: string | null = null;
     if (utcH >= 7 && utcH < 9) killZone = "London";
     else if (utcH >= 12 && utcH < 14) killZone = "New York";
 
+    let session = "closed";
+    if (utcH >= 22 || utcH < 7) session = "Sydney/Tokyo";
+    else if (utcH >= 7 && utcH < 12) session = "London";
+    else if (utcH >= 12 && utcH < 17) session = "New York";
+    else if (utcH >= 17 && utcH < 22) session = "Late NY";
+
+    // Filter only quotes that returned data
+    const quotes = quotesResults.filter(q => q.bid > 0);
+
     return NextResponse.json({
       account: account || { balance: 0, available: 0, profit_loss: 0, deposit: 0 },
       positions: positionsData.positions || [],
+      quotes,
+      session,
       signals,
       stats: {
         totalSignals: resolved.length,
