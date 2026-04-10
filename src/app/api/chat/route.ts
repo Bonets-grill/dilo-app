@@ -13,7 +13,7 @@ const supabase = createClient(
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
-import { EXTENDED_TOOLS, ALL_TRADING_TOOLS, executeExtendedTool } from "@/lib/skills";
+import { EXTENDED_TOOLS, ALL_TRADING_TOOLS, FOREX_TOOLS, executeExtendedTool } from "@/lib/skills";
 
 // Tool definitions for OpenAI function calling (base — trading added dynamically)
 const baseTools: OpenAI.ChatCompletionTool[] = [
@@ -1137,14 +1137,14 @@ REGLAS DE TRADING (CRÍTICAS — INCUMPLIR = ERROR GRAVE):
 - SIEMPRE incluye: "La decisión final es tuya. Todo trading conlleva riesgo."
 ${userFacts}`;
 
-  // Build tools list — only include trading tools if user has Alpaca connected
-  let userTools = baseTools;
+  // Build tools list — trading tools per connection type
+  let userTools = [...baseTools, ...FOREX_TOOLS]; // Forex always available (IG Markets)
   let tradingProfilePrompt = "";
   if (userId) {
     const { hasAlpacaConnection } = await import("@/lib/oauth/alpaca");
     const hasAlpaca = await hasAlpacaConnection(userId);
     if (hasAlpaca) {
-      userTools = [...baseTools, ...ALL_TRADING_TOOLS];
+      userTools = [...baseTools, ...ALL_TRADING_TOOLS, ...FOREX_TOOLS];
 
       // Load personalized trading profile if exists
       const { getTradingProfile, generateTradingPrompt, resetDailyCounters } = await import("@/lib/trading/profile");
