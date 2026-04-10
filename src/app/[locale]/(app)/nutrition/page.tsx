@@ -89,7 +89,7 @@ export default function NutritionPage() {
         <Apple size={48} className="text-[var(--dim)]" />
         <h2 className="text-lg font-semibold">{t("onboardingTitle")}</h2>
         <p className="text-sm text-[var(--dim)]">{t("onboardingDesc")}</p>
-        <Link href="/chat" className="mt-2 px-4 py-2 bg-green-600 rounded-lg text-sm font-medium">
+        <Link href="/chat?q=quiero%20configurar%20mi%20perfil%20nutricional" className="mt-2 px-4 py-2 bg-green-600 rounded-lg text-sm font-medium">
           {t("setup")}
         </Link>
       </div>
@@ -231,15 +231,15 @@ export default function NutritionPage() {
 
       {/* Quick Actions */}
       <div className="px-4 grid grid-cols-3 gap-2 mb-4">
-        <Link href="/chat" className="flex flex-col items-center gap-1 p-3 rounded-xl bg-[var(--card)] border border-[var(--border)]">
+        <Link href="/chat?q=registrar%20comida" className="flex flex-col items-center gap-1 p-3 rounded-xl bg-[var(--card)] border border-[var(--border)]">
           <Plus size={20} className="text-green-400" />
           <span className="text-[10px] text-[var(--dim)]">{t("addFood")}</span>
         </Link>
-        <Link href="/chat" className="flex flex-col items-center gap-1 p-3 rounded-xl bg-[var(--card)] border border-[var(--border)]">
+        <Link href="/chat?q=mi%20plan%20de%20comidas" className="flex flex-col items-center gap-1 p-3 rounded-xl bg-[var(--card)] border border-[var(--border)]">
           <UtensilsCrossed size={20} className="text-amber-400" />
           <span className="text-[10px] text-[var(--dim)]">{t("myPlan")}</span>
         </Link>
-        <Link href="/chat" className="flex flex-col items-center gap-1 p-3 rounded-xl bg-[var(--card)] border border-[var(--border)]">
+        <Link href="/chat?q=dame%20una%20receta%20saludable" className="flex flex-col items-center gap-1 p-3 rounded-xl bg-[var(--card)] border border-[var(--border)]">
           <ChefHat size={20} className="text-purple-400" />
           <span className="text-[10px] text-[var(--dim)]">{t("recipe")}</span>
         </Link>
