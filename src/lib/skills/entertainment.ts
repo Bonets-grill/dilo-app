@@ -86,7 +86,15 @@ export async function executeEntertainmentTool(
         return `No encontré resultados para "${query}".`;
       }
 
-      return formatMediaResults(results, `Resultados: "${query}"`);
+      // Enrich first result with OMDb data (IMDb, Rotten Tomatoes, cast)
+      let omdbExtra = "";
+      try {
+        const { searchOMDb, formatOMDbEnrichment } = await import("@/lib/tmdb/omdb");
+        const omdb = await searchOMDb(results[0].title);
+        if (omdb) omdbExtra = "\n" + formatOMDbEnrichment(omdb);
+      } catch { /* skip if OMDb unavailable */ }
+
+      return formatMediaResults(results, `Resultados: "${query}"`) + omdbExtra;
     }
 
     if (toolName === "entertainment_trending") {
