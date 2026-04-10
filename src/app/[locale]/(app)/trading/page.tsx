@@ -251,7 +251,7 @@ export default function TradingPage() {
               <div className="text-center px-2 border-l border-[var(--border)]">
                 <span className="text-sm font-semibold">{session.tradesToday}</span>
                 <span className="text-[10px] text-[var(--dim)]">/{session.maxTrades}</span>
-                <p className="text-[9px] text-[var(--dim)]">{t("trades")} hoy</p>
+                <p className="text-[9px] text-[var(--dim)]">{t("trades")} {t("todaySuffix")}</p>
               </div>
             </div>
           </div>
@@ -380,7 +380,7 @@ export default function TradingPage() {
               </div>
               <div>
                 <p className="text-sm font-semibold">{learning.totalSignals > 0 && learning.winRate === 0 ? "—" : `${learning.winRate.toFixed(1)}%`}</p>
-                <p className="text-[9px] text-[var(--dim)]">Win Rate</p>
+                <p className="text-[9px] text-[var(--dim)]">{t("winRate")}</p>
               </div>
               <div>
                 <p className="text-sm font-semibold">{learning.marketsAnalyzed}</p>
