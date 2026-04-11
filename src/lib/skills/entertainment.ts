@@ -5,11 +5,11 @@ export const ENTERTAINMENT_TOOLS: OpenAI.ChatCompletionTool[] = [
     type: "function",
     function: {
       name: "entertainment_search",
-      description: "Search for movies or TV shows by name. Use when user asks about a specific movie/show, wants recommendations, or asks 'what to watch'. Returns IMDb ratings, Rotten Tomatoes, cast, plot.",
+      description: "Search for movies or TV shows. Use when user asks about movies, series, what to watch, recommendations. IMPORTANT: the query must be a movie TITLE or a GENRE keyword in English. Convert user's request to a searchable term. Examples: user says 'quiero comedia' → query='comedy'. User says 'película de acción' → query='action'. User says 'algo como Inception' → query='Inception'.",
       parameters: {
         type: "object",
         properties: {
-          query: { type: "string", description: "Movie or TV show name, or genre keyword (e.g. 'Inception', 'best comedy 2024', 'terror')" },
+          query: { type: "string", description: "Movie title OR genre in English: comedy, action, horror, thriller, drama, romance, animation, sci-fi, adventure, crime, mystery, fantasy, war, documentary" },
           type: { type: "string", enum: ["movie", "series"], description: "Filter by movie or series. Omit for both." },
         },
         required: ["query"],
