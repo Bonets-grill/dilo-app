@@ -5,11 +5,12 @@ export const ENTERTAINMENT_TOOLS: OpenAI.ChatCompletionTool[] = [
     type: "function",
     function: {
       name: "entertainment_search",
-      description: "Search for movies or TV shows by name. Use when user asks 'have you seen X', 'info about movie X', 'what is X about', or searches for a specific title.",
+      description: "Search for movies or TV shows by name. Use when user asks about a specific movie/show, wants recommendations, or asks 'what to watch'. Returns IMDb ratings, Rotten Tomatoes, cast, plot.",
       parameters: {
         type: "object",
         properties: {
-          query: { type: "string", description: "Movie or TV show name to search for" },
+          query: { type: "string", description: "Movie or TV show name, or genre keyword (e.g. 'Inception', 'best comedy 2024', 'terror')" },
+          type: { type: "string", enum: ["movie", "series"], description: "Filter by movie or series. Omit for both." },
         },
         required: ["query"],
       },
@@ -18,55 +19,14 @@ export const ENTERTAINMENT_TOOLS: OpenAI.ChatCompletionTool[] = [
   {
     type: "function",
     function: {
-      name: "entertainment_trending",
-      description: "Get trending movies and TV shows this week. Use when user asks 'what to watch', 'popular movies', 'trending shows', 'recommend something', 'qué ver'.",
+      name: "entertainment_detail",
+      description: "Get detailed info about a specific movie or TV show. Use when user asks for details, cast, ratings, awards of a specific title.",
       parameters: {
         type: "object",
         properties: {
-          type: { type: "string", enum: ["movie", "tv", "all"], description: "Filter by movies, tv shows, or all. Default: all" },
+          title: { type: "string", description: "Exact movie or TV show title" },
         },
-        required: [],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "entertainment_now_playing",
-      description: "Get movies currently in theaters / cartelera. Use when user asks 'cartelera', 'what is in cinemas', 'movies in theaters', 'qué hay en el cine'.",
-      parameters: {
-        type: "object",
-        properties: {},
-        required: [],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "entertainment_top_rated",
-      description: "Get top rated movies or TV shows of all time. Use when user asks 'best movies ever', 'mejores series', 'top rated', 'highest rated'.",
-      parameters: {
-        type: "object",
-        properties: {
-          type: { type: "string", enum: ["movie", "tv"], description: "Movies or TV shows. Default: movie" },
-        },
-        required: [],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "entertainment_by_genre",
-      description: "Discover movies or TV shows by genre. Use when user asks 'recommend a comedy', 'best thrillers', 'quiero ver terror', 'películas de acción'.",
-      parameters: {
-        type: "object",
-        properties: {
-          genre: { type: "string", description: "Genre name: Acción, Comedia, Drama, Terror, Thriller, Romance, Ciencia ficción, Animación, Documental, Aventura, Crimen, Misterio, Fantasía" },
-          type: { type: "string", enum: ["movie", "tv"], description: "Movies or TV shows. Default: movie" },
-        },
-        required: ["genre"],
+        required: ["title"],
       },
     },
   },
@@ -78,71 +38,53 @@ export async function executeEntertainmentTool(
 ): Promise<string> {
   try {
     if (toolName === "entertainment_search") {
-      const { searchMedia } = await import("@/lib/tmdb/client");
+      const { searchOMDbMultiple } = await import("@/lib/tmdb/omdb");
       const query = input.query as string;
-      const results = await searchMedia(query);
+      const type = input.type as "movie" | "series" | undefined;
+      const results = await searchOMDbMultiple(query, type);
 
       if (results.length === 0) {
-        return `No encontré resultados para "${query}".`;
+        return `No encontré resultados para "${query}". Prueba con otro título o palabra clave.`;
       }
 
-      // Enrich first result with OMDb data (IMDb, Rotten Tomatoes, cast)
-      let omdbExtra = "";
-      try {
-        const { searchOMDb, formatOMDbEnrichment } = await import("@/lib/tmdb/omdb");
-        const omdb = await searchOMDb(results[0].title);
-        if (omdb) omdbExtra = "\n" + formatOMDbEnrichment(omdb);
-      } catch { /* skip if OMDb unavailable */ }
+      let response = `**Resultados: "${query}"**\n\n`;
+      for (const r of results) {
+        const typeLabel = r.type === "movie" ? "Película" : r.type === "series" ? "Serie" : r.type;
+        response += `**${r.title}** (${r.year}) — ${typeLabel}\n`;
 
-      return formatMediaResults(results, `Resultados: "${query}"`) + omdbExtra;
-    }
+        if (r.imdbRating && r.imdbRating !== "N/A") {
+          response += `IMDb: ${r.imdbRating}/10`;
+          if (r.rottenTomatoes) response += ` · RT: ${r.rottenTomatoes}`;
+          if (r.metacritic) response += ` · MC: ${r.metacritic}`;
+          response += "\n";
+        }
 
-    if (toolName === "entertainment_trending") {
-      const { getTrending } = await import("@/lib/tmdb/client");
-      const type = (input.type as "movie" | "tv" | "all") || "all";
-      const results = await getTrending(type);
-
-      if (results.length === 0) return "No pude obtener tendencias ahora.";
-
-      const label = type === "movie" ? "Películas" : type === "tv" ? "Series" : "Películas y series";
-      return formatMediaResults(results, `${label} en tendencia esta semana`);
-    }
-
-    if (toolName === "entertainment_now_playing") {
-      const { getNowPlaying } = await import("@/lib/tmdb/client");
-      const results = await getNowPlaying();
-
-      if (results.length === 0) return "No pude obtener la cartelera ahora.";
-
-      return formatMediaResults(results, "Cartelera — En cines ahora");
-    }
-
-    if (toolName === "entertainment_top_rated") {
-      const { getTopRated } = await import("@/lib/tmdb/client");
-      const type = (input.type as "movie" | "tv") || "movie";
-      const results = await getTopRated(type);
-
-      if (results.length === 0) return "No pude obtener el ranking.";
-
-      const label = type === "movie" ? "Mejores películas" : "Mejores series";
-      return formatMediaResults(results, `${label} de todos los tiempos`);
-    }
-
-    if (toolName === "entertainment_by_genre") {
-      const { discoverByGenre, findGenreId } = await import("@/lib/tmdb/client");
-      const genre = input.genre as string;
-      const type = (input.type as "movie" | "tv") || "movie";
-
-      const genreMatch = findGenreId(genre);
-      if (!genreMatch) {
-        return `No reconozco el género "${genre}". Prueba con: Acción, Comedia, Drama, Terror, Thriller, Romance, Ciencia ficción, Animación, Documental.`;
+        if (r.genre && r.genre !== "N/A") response += `Género: ${r.genre}\n`;
+        if (r.director && r.director !== "N/A") response += `Director: ${r.director}\n`;
+        if (r.actors && r.actors !== "N/A") response += `Reparto: ${r.actors}\n`;
+        if (r.plot && r.plot !== "N/A") response += `${r.plot.slice(0, 200)}${r.plot.length > 200 ? "..." : ""}\n`;
+        if (r.awards && r.awards !== "N/A" && r.awards !== "N/A.") response += `Premios: ${r.awards}\n`;
+        response += "\n";
       }
 
-      const results = await discoverByGenre(genreMatch.id, type);
-      if (results.length === 0) return `No encontré resultados de ${genre}.`;
+      return response;
+    }
 
-      const label = type === "movie" ? "Películas" : "Series";
-      return formatMediaResults(results, `${label} de ${genre}`);
+    if (toolName === "entertainment_detail") {
+      const { searchOMDb, formatOMDbEnrichment } = await import("@/lib/tmdb/omdb");
+      const title = input.title as string;
+      const result = await searchOMDb(title);
+
+      if (!result) {
+        return `No encontré información sobre "${title}".`;
+      }
+
+      let response = `**${result.title}** (${result.year})\n\n`;
+      if (result.plot && result.plot !== "N/A") response += `${result.plot}\n\n`;
+      response += formatOMDbEnrichment(result);
+      if (result.rated && result.rated !== "N/A") response += `Clasificación: ${result.rated}\n`;
+
+      return response;
     }
 
     return JSON.stringify({ error: `Unknown tool: ${toolName}` });
@@ -150,22 +92,4 @@ export async function executeEntertainmentTool(
     console.error("[Entertainment Tool] Error:", err);
     return JSON.stringify({ error: "Error accessing entertainment data" });
   }
-}
-
-function formatMediaResults(results: { title: string; type: string; overview: string; releaseDate: string; rating: number; voteCount: number; genres: string[] }[], title: string): string {
-  let response = `**${title}**\n\n`;
-
-  for (const r of results) {
-    const typeLabel = r.type === "movie" ? "Película" : "Serie";
-    const year = r.releaseDate?.slice(0, 4) || "?";
-    const stars = r.rating >= 8 ? "***" : r.rating >= 7 ? "**" : r.rating >= 6 ? "*" : "";
-    response += `**${r.title}** (${year}) — ${typeLabel} ${stars}\n`;
-    response += `${r.rating}/10 (${r.voteCount} votos) · ${r.genres.join(", ")}\n`;
-    if (r.overview) {
-      response += `${r.overview.slice(0, 150)}${r.overview.length > 150 ? "..." : ""}\n`;
-    }
-    response += `\n`;
-  }
-
-  return response;
 }
