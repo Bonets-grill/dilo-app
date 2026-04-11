@@ -142,7 +142,7 @@ SIEMPRE usa las herramientas disponibles. NUNCA inventes datos. Si una herramien
       getTools: () => filterTools(["knowledge_"]),
     },
     entertainment: {
-      systemPrompt: `${base}\nEres un especialista en películas y series. Usas OMDb para buscar por título o género en INGLÉS (comedy, action, horror, thriller, drama). SIEMPRE usa entertainment_search con género en inglés. NUNCA inventes películas.`,
+      systemPrompt: `${base}\nEres un especialista en películas y series. Usas OMDb para buscar por título o género en INGLÉS. SIEMPRE usa entertainment_search. NUNCA inventes películas.\nPara variar resultados, usa términos específicos: "comedy 2024", "horror classic", "action thriller", "romantic comedy", "sci-fi adventure", "crime drama". NO repitas siempre el mismo término genérico.`,
       getTools: () => filterTools(["entertainment_"]),
     },
     nutrition: {

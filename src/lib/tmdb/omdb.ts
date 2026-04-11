@@ -38,8 +38,9 @@ export async function searchOMDbMultiple(query: string, type?: "movie" | "series
 
   try {
     const typeParam = type ? `&type=${type}` : "";
+    const page = Math.floor(Math.random() * 3) + 1; // Random page 1-3 for variety
     const res = await fetch(
-      `https://www.omdbapi.com/?s=${encodeURIComponent(query)}&apikey=${apiKey}${typeParam}`,
+      `https://www.omdbapi.com/?s=${encodeURIComponent(query)}&apikey=${apiKey}${typeParam}&page=${page}`,
       { signal: AbortSignal.timeout(10000) }
     );
     if (!res.ok) return [];
