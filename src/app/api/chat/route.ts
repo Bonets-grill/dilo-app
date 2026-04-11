@@ -14,7 +14,7 @@ const supabase = createClient(
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
 import { EXTENDED_TOOLS, ALL_TRADING_TOOLS, FOREX_TOOLS, TRADING_MEMORY_TOOLS, KNOWLEDGE_TOOLS, ENTERTAINMENT_TOOLS, TRADING_EMOTIONAL_TOOLS, executeExtendedTool } from "@/lib/skills";
-import { classifyIntent, getToolsForCategory } from "@/lib/agent/classifier";
+import { planAgents, getAgentDefinition, executeAgent, synthesize } from "@/lib/agent/orchestrator";
 
 // Tool definitions for OpenAI function calling (base — trading added dynamically)
 const baseTools: OpenAI.ChatCompletionTool[] = [
@@ -1241,64 +1241,43 @@ ${userFacts}${journalKnowledge}`;
           })),
         ];
 
-        // 2-Step Agent: classify intent first, then only send relevant tools
+        // ── MULTI-AGENT ORCHESTRATOR ──
+        // 1. Plan which agents to spawn
         const lastUserMsg = messages[messages.length - 1]?.content || "";
-        const intentCategory = await classifyIntent(lastUserMsg);
-        const filteredTools = getToolsForCategory(intentCategory, userTools);
+        const agentSpecs = await planAgents(lastUserMsg);
 
-        // Tool loop (max 5 iterations)
-        for (let i = 0; i < 5; i++) {
-          const response = await openai.chat.completions.create({
-            model: "gpt-4o-mini",
-            max_tokens: 1024,
-            messages: chatMessages,
-            tools: filteredTools,
-            stream: false,
-          });
+        // 2. Execute each agent independently
+        const executeToolFn = async (name: string, input: Record<string, unknown>, uid: string) => {
+          const extResult = await executeExtendedTool(name, input, uid);
+          if (extResult !== null) return extResult;
+          return await executeTool(name, input, uid);
+        };
 
-          const choice = response.choices[0];
-          const msg = choice.message;
+        const agentResults = await Promise.all(
+          agentSpecs.map(spec => {
+            const definition = getAgentDefinition(spec.role, userName, lang, userTools);
+            return executeAgent(spec, definition, chatMessages.slice(-6), executeToolFn, userId || "anonymous");
+          })
+        );
 
-          // If there are tool calls, execute them
-          if (msg.tool_calls && msg.tool_calls.length > 0) {
-            chatMessages.push(msg);
-
-            for (const tc of msg.tool_calls) {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const fn = (tc as any).function;
-              const args = JSON.parse(fn.arguments);
-              // Try extended skills first, fallback to built-in tools
-              const extResult = await executeExtendedTool(fn.name, args, userId || "anonymous");
-              const result = extResult ?? await executeTool(fn.name, args, userId || "anonymous");
-              chatMessages.push({ role: "tool", tool_call_id: tc.id, content: result + `\n\n[IMPORTANT: Respond to the user in ${langName}. Do NOT respond in English unless the user's language is English.]` });
-
-              // Track WhatsApp preview for confirm/cancel buttons
-              if (fn.name === "send_whatsapp") {
-                try {
-                  const parsed = JSON.parse(result);
-                  if (parsed.preview) {
-                    pendingSendMarker = { to: parsed.to, message: parsed.message };
-                  }
-                } catch { /* ignore */ }
+        // Track WhatsApp previews from agent results
+        for (const ar of agentResults) {
+          if (ar.toolsCalled.includes("send_whatsapp") && ar.result.includes("preview")) {
+            try {
+              const parsed = JSON.parse(ar.result);
+              if (parsed.preview) {
+                pendingSendMarker = { to: parsed.to, message: parsed.message };
               }
-            }
-
-            // If there's also text content, stream it
-            if (msg.content) {
-              fullResponse += msg.content;
-              controller.enqueue(encoder.encode(msg.content));
-            }
-
-            continue; // Loop to get follow-up response
+            } catch { /* ignore */ }
           }
-
-          // No tool calls — stream the text response
-          if (msg.content) {
-            fullResponse += msg.content;
-            controller.enqueue(encoder.encode(msg.content));
-          }
-          break;
         }
+
+        // 3. Synthesize results into one response
+        const finalResponse = await synthesize(lastUserMsg, agentResults, userName, lang);
+
+        // 4. Stream the final response
+        fullResponse += finalResponse;
+        controller.enqueue(encoder.encode(finalResponse));
 
         // Append structured marker so client can show confirm/cancel buttons
         if (pendingSendMarker) {
