@@ -13,7 +13,7 @@ const supabase = createClient(
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
-import { EXTENDED_TOOLS, ALL_TRADING_TOOLS, FOREX_TOOLS, TRADING_MEMORY_TOOLS, KNOWLEDGE_TOOLS, ENTERTAINMENT_TOOLS, executeExtendedTool } from "@/lib/skills";
+import { EXTENDED_TOOLS, ALL_TRADING_TOOLS, FOREX_TOOLS, TRADING_MEMORY_TOOLS, KNOWLEDGE_TOOLS, ENTERTAINMENT_TOOLS, TRADING_EMOTIONAL_TOOLS, executeExtendedTool } from "@/lib/skills";
 import { classifyIntent, getToolsForCategory } from "@/lib/agent/classifier";
 
 // Tool definitions for OpenAI function calling (base — trading added dynamically)
@@ -1207,7 +1207,7 @@ REGLAS DE ENTRETENIMIENTO:
 ${userFacts}${journalKnowledge}`;
 
   // Build tools list — trading tools per connection type
-  let userTools = [...baseTools, ...FOREX_TOOLS, ...TRADING_MEMORY_TOOLS, ...KNOWLEDGE_TOOLS, ...ENTERTAINMENT_TOOLS]; // Forex + memory + knowledge + entertainment always available
+  let userTools = [...baseTools, ...FOREX_TOOLS, ...TRADING_MEMORY_TOOLS, ...KNOWLEDGE_TOOLS, ...ENTERTAINMENT_TOOLS, ...TRADING_EMOTIONAL_TOOLS]; // All tools always available
   let tradingProfilePrompt = "";
   if (userId) {
     const { hasAlpacaConnection } = await import("@/lib/oauth/alpaca");

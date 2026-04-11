@@ -12,6 +12,7 @@ import { WELLNESS_TOOLS, executeWellnessTool } from "./wellness";
 import { TRADING_MEMORY_TOOLS, executeTradingMemoryTool } from "./trading-memory";
 import { KNOWLEDGE_TOOLS, executeKnowledgeTool } from "./knowledge";
 import { ENTERTAINMENT_TOOLS, executeEntertainmentTool } from "./entertainment";
+import { TRADING_EMOTIONAL_TOOLS, executeTradingEmotionalTool } from "./trading-emotional";
 
 // Base extended tools (always available)
 export const EXTENDED_TOOLS: OpenAI.ChatCompletionTool[] = [
@@ -36,6 +37,9 @@ export { KNOWLEDGE_TOOLS };
 
 // Entertainment tools (always available)
 export { ENTERTAINMENT_TOOLS };
+
+// Trading emotional tools (always available with trading)
+export { TRADING_EMOTIONAL_TOOLS };
 
 // Stock trading tools (Alpaca connected)
 export const ALL_TRADING_TOOLS: OpenAI.ChatCompletionTool[] = [
@@ -153,6 +157,11 @@ export async function executeExtendedTool(
   // Entertainment tools (always available)
   if (toolName.startsWith("entertainment_")) {
     return executeEntertainmentTool(toolName, input);
+  }
+
+  // Trading emotional tools
+  if (toolName === "trading_emotional_status" || toolName === "trading_weekly_report" || toolName === "trading_correlations" || toolName === "trading_kill_zone_status") {
+    return executeTradingEmotionalTool(toolName, input, userId);
   }
 
   // Not an extended tool — return null so the main executor handles it

@@ -77,7 +77,7 @@ export function getToolsForCategory(
 
   const CATEGORY_PREFIXES: Record<IntentCategory, string[]> = {
     entertainment: ["entertainment_"],
-    trading: ["trading_", "market_", "forex_"],
+    trading: ["trading_", "market_", "forex_", "trading_emotional_status", "trading_weekly_report", "trading_correlations", "trading_kill_zone_status"],
     knowledge: ["knowledge_"],
     nutrition: ["nutrition_"],
     wellness: ["wellness_"],
