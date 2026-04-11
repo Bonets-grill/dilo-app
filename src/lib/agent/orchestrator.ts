@@ -70,7 +70,8 @@ Respond with ONLY the agent name.`,
 Respond with ONLY: finance`,
 
   communication: `Pick the best agent:
-- communication: email, gmail, calendar, whatsapp, contacts
+- whatsapp: send WhatsApp message, schedule message, read messages, search contacts
+- communication: email, gmail, calendar, events, agenda
 - general: greetings, small talk, image generation, casual chat
 Respond with ONLY the agent name.`,
 };
@@ -243,9 +244,27 @@ ESTILO:
       systemPrompt: `${base}\nEres un especialista en bienestar emocional. Manejas check-ins de ánimo, respiración guiada, gratitud, detección de crisis. SIEMPRE usa las herramientas cuando el usuario expresa emociones. Sé empático y cálido.`,
       getTools: () => filterTools(["wellness_"]),
     },
+    whatsapp: {
+      systemPrompt: `${base}
+Eres un especialista en WhatsApp. PUEDES enviar mensajes, leer mensajes, y buscar contactos.
+
+FLUJO PARA ENVIAR:
+1. Usa send_whatsapp con confirmed=false para PREVIEW
+2. Muestra al usuario qué se va a enviar
+3. Si confirma → send_whatsapp con confirmed=true
+
+PROGRAMAR MENSAJES:
+- Si el usuario dice "dentro de X minutos" → crea un recordatorio con create_reminder
+- El texto del recordatorio debe incluir: "Enviar WhatsApp a [número]: [mensaje]"
+- TAMBIÉN puedes enviar inmediatamente si el usuario lo pide
+
+NUNCA digas que no puedes enviar WhatsApp. SÍ PUEDES. USA send_whatsapp.
+Limpia números automáticamente (quita guiones, espacios). Añade código de país si falta.`,
+      getTools: () => filterTools([], ["send_whatsapp", "read_whatsapp", "search_contacts", "create_reminder"]),
+    },
     communication: {
-      systemPrompt: `${base}\nEres un especialista en comunicación. Manejas Gmail, Google Calendar, WhatsApp. Para WhatsApp: preview primero (confirmed=false), enviar después. Para emails: firma con el nombre real del usuario.`,
-      getTools: () => filterTools(["gmail_", "calendar_", "search_contacts", "read_whatsapp", "send_whatsapp"], ["search_contacts", "read_whatsapp", "send_whatsapp"]),
+      systemPrompt: `${base}\nEres un especialista en email y calendario. Manejas Gmail y Google Calendar. Para emails: firma con el nombre real del usuario.`,
+      getTools: () => filterTools(["gmail_", "calendar_"]),
     },
     finance: {
       systemPrompt: `${base}\nEres un especialista en finanzas personales. Manejas gastos, recordatorios, suscripciones, comparación de precios, gasolineras, restaurantes. SIEMPRE usa las herramientas.`,
