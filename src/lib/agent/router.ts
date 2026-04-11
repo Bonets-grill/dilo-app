@@ -126,146 +126,17 @@ export function detectIntent(text: string): RouteResult {
     return { type: "whatsapp_read" };
   }
 
-  // ELECTRICIDAD: "precio de la luz", "cuándo poner lavadora", "tarifa eléctrica"
-  if (/(?:luz|electric|tarifa.*luz|pvpc|precio.*kwh|lavadora.*hora|hora.*barata.*luz|consumo.*electr)/i.test(lower)) {
-    return { type: "electricidad" };
-  }
+  // ── ALL OTHER QUERIES → 2-step LLM classifier handles them ──
+  // Removed: electricidad, farmacia, seguros, telefonia, ayudas, cupones,
+  // conectar_google, suscripciones, alerta_precio, trading_connect,
+  // trading, market_scan, market_analyze, trading_calendar, trading_portfolio,
+  // comparar_producto, restaurantes, gasolineras, shopping, web_search
+  //
+  // Why: regex patterns were too aggressive and caught wrong things
+  // (e.g., "película" → trading, "clima" → stock ticker)
+  // The 2-step classifier in classifier.ts handles all of these correctly.
 
-  // FARMACIA: "precio ibuprofeno", "medicamento barato", "farmacia"
-  if (/(?:medicament|farmacia|pastilla|ibuprofeno|paracetamol|genérico|precio.*medic)/i.test(lower)
-    && /(?:precio|barat|compar|donde|cuanto|alternativa|generic)/i.test(lower)) {
-    return { type: "farmacia", data: { query: text } };
-  }
-
-  // SEGUROS: "comparar seguro", "seguro barato", "renovar seguro"
-  if (/(?:seguro|poliza|cobertura)/i.test(lower) && /(?:barat|compar|mejor|renov|alternativ)/i.test(lower)) {
-    const type = /coche|auto|vehiculo/i.test(lower) ? "coche" : /hogar|casa|vivienda/i.test(lower) ? "hogar" : /medic|salud|dental/i.test(lower) ? "médico" : "general";
-    return { type: "seguros", data: { insuranceType: type } };
-  }
-
-  // TELEFONIA: "comparar tarifa móvil", "internet barato"
-  if (/(?:tarifa|movil|fibra|internet|telefon|operador|digi|movistar|vodafone|orange)/i.test(lower)
-    && /(?:barat|compar|mejor|cambiar|alternativ)/i.test(lower)) {
-    return { type: "telefonia" };
-  }
-
-  // AYUDAS PUBLICAS: "ayudas", "subvenciones", "bono social"
-  if (/(?:ayuda.*public|subvencion|bono\s+social|deduccion|beca|prestacion)/i.test(lower)) {
-    return { type: "ayudas_publicas", data: { query: text } };
-  }
-
-  // CUPONES / DELIVERY: "cupón just eat", "descuento restaurante"
-  if (/(?:cupon|descuento|oferta|deal).*(?:restaurante|delivery|just\s*eat|glovo|uber\s*eats|thefork)/i.test(lower)) {
-    return { type: "cupones_delivery" };
-  }
-
-  // CONECTAR GOOGLE: "conectar mi gmail", "conectar google", "vincular email"
-  // Also catches email/calendar requests: "lee mis emails", "mis correos", "envía un email", "mi agenda"
-  if (/(?:conectar?\s+(?:mi\s+)?(?:gmail|google|email|calendario|calendar)|vincular?\s+(?:mi\s+)?(?:gmail|google|email))/i.test(lower)
-    || /(?:lee[r ]?\s*(?:mis\s+)?(?:emails?|correos?|e-?mails?)|mis\s+(?:emails?|correos?|e-?mails?)|envia\s+(?:un\s+)?(?:email|correo|e-?mail)|mi\s+agenda|mis\s+eventos|que\s+tengo\s+(?:en\s+)?(?:el\s+)?(?:calendario|agenda))/i.test(lower)) {
-    return { type: "conectar_google" };
-  }
-
-  // SUSCRIPCIONES: "mis suscripciones", "pago mensual", "cuánto pago al mes"
-  if (/(?:suscripcion|cargo\s+recurrente|pago\s+mensual|que\s+pago|cuanto\s+pago|detectar?\s+suscripcion|pago\s+netflix|pago\s+spotify|pago\s+gym)/i.test(lower)) {
-    return { type: "suscripciones", data: { query: text } };
-  }
-
-  // CUPONES: "cupón para Zara", "código descuento Amazon", "ofertas"
-  if (/(?:cupon|código\s+descuento|codigo\s+descuento|descuento\s+para|oferta\s+en|promo\s+code|discount\s+code)/i.test(lower)) {
-    return { type: "cupones", data: { query: text } };
-  }
-
-  // ALERTA PRECIO: "avísame cuando baje", "rastrear precio", "monitorizar precio"
-  if (/(?:avis[ae]me\s+cuando\s+baj|rastrear?\s+precio|monitoriz|alert[ae]\s+(?:de\s+)?precio|seguir?\s+(?:el\s+)?precio|watch\s+price)/i.test(lower)) {
-    return { type: "alerta_precio", data: { query: text } };
-  }
-
-  // TRADING CONNECT: "conectar broker", "conectar alpaca", "vincular broker"
-  if (/(?:conectar?\s+(?:mi\s+)?(?:broker|alpaca|trading|cuenta\s+de\s+trading)|vincular?\s+(?:mi\s+)?(?:broker|alpaca))/i.test(lower)) {
-    return { type: "trading_connect" };
-  }
-
-  // TRADING MODE: "activar modo trading", "configurar trading", "quiero hacer trading"
-  if (/(?:activar?\s+(?:modo\s+)?trading|configurar?\s+(?:mi\s+)?trading|quiero\s+(?:hacer\s+)?trading|modo\s+(?:de\s+)?(?:inversion|trading|bolsa)|operar\s+en\s+bolsa)/i.test(lower)) {
-    return { type: "trading" };
-  }
-
-  // MARKET SCAN: "oportunidades", "qué compro", "analiza el mercado", "señales", "escanea mercado"
-  if (/(?:oportunidad|que\s+compro|que\s+opero|senales?\s+(?:de\s+)?(?:trading|mercado|entrada)|escanea|analiza\s+(?:el\s+)?mercado|mercado\s+hoy|como\s+esta\s+(?:el\s+)?mercado|lleva(?:me)?\s+(?:el\s+|todo\s+el\s+)?trading|busca.*(?:oportunidad|trade|operacion)|empiezo?\s+.*(?:trading|operar|mercado))/i.test(lower)) {
-    return { type: "market_scan" };
-  }
-
-  // MARKET ANALYZE: "analiza AAPL", "qué tal Tesla" — ONLY explicit stock tickers
-  // Removed "como va/esta" pattern — too aggressive, catches "cómo está el clima"
-  const analyzeMatch = lower.match(/(?:analiza|analisis)\s+(?:el\s+|la\s+|las?\s+)?(?:accion(?:es)?\s+(?:de\s+)?)?([\w/.]+)/i);
-  if (analyzeMatch) {
-    const sym = analyzeMatch[1];
-    if (/^(?:[A-Z]{2,5})$/i.test(sym) && /^(?:AAPL|NVDA|TSLA|AMZN|MSFT|META|GOOGL|SPY|QQQ|NFLX|AMD|INTC|DIS|BA|JPM|GS|V|MA|WMT|COST|XOM|CVX)$/i.test(sym)) {
-      return { type: "market_analyze", data: { symbol: sym.toUpperCase() } };
-    }
-  }
-
-  // TRADING CALENDAR: "mi calendario", "historial de trading", "resultados del mes"
-  if (/(?:mi\s+calendario|calendario\s+(?:de\s+)?trading|historial\s+(?:de\s+)?trading|resultados?\s+(?:del?\s+)?mes|dias\s+(?:de\s+)?(?:ganancia|perdida)|como\s+(?:me\s+)?(?:ha\s+)?ido\s+(?:este\s+)?mes)/i.test(lower)) {
-    return { type: "trading_calendar" };
-  }
-
-  // TRADING PORTFOLIO — ONLY very explicit requests, no ambiguous patterns
-  if (/(?:mi\s+portfolio|mis\s+posiciones|mis\s+acciones|my\s+portfolio|my\s+positions)/i.test(lower)
-    || /(?:cuanto\s+(?:he\s+)?(?:ganado|perdido)\s+(?:en\s+)?(?:trading|bolsa))/i.test(lower)
-    || /(?:resumen\s+(?:de\s+)?(?:mi\s+)?(?:trading|portfolio))/i.test(lower)) {
-    return { type: "trading_portfolio" };
-  }
-
-  // TRADING (falls through to LLM with trading tools): rendimiento, reglas, compra/vende
-  if (/(?:rendimiento|performance|win\s+rate|profit\s+factor|estadisticas?\s+(?:de\s+)?trading)/i.test(lower)
-    || /(?:sincronizar?\s+(?:mi\s+)?(?:journal|diario|trades)|importar?\s+trades)/i.test(lower)
-    || /(?:analisis\s+de\s+riesgo|riesgo\s+(?:de\s+)?(?:mi\s+)?portfolio|diversificacion)/i.test(lower)
-    || /(?:reglas?\s+de\s+(?:riesgo|trading)|limite\s+(?:de\s+)?(?:perdida|trades)|max(?:imo)?\s+(?:trades|perdida))/i.test(lower)
-    || /(?:compra|vende|comprar|vender)\s+\d*\s*(?:acciones?\s+(?:de\s+)?)?[A-Z]{1,5}\b/i.test(lower)
-    || /(?:compra|vende|comprar|vender)\s+(?:acciones?\s+(?:de\s+)?)?(?:apple|tesla|amazon|google|microsoft|nvidia|meta|netflix)/i.test(lower)) {
-    return { type: "trading" };
-  }
-
-  // COMPARAR PRODUCTO: "compara precio MacBook", "donde comprar más barato"
-  if (/(?:compar.*precio|donde.*comprar.*barat|mas\s+barato|mejor\s+precio)/i.test(lower)
-    && !/(?:vuelo|hotel|restaurante|gasolina|super)/i.test(lower)) {
-    return { type: "comparar_producto", data: { query: text } };
-  }
-
-  // RESTAURANTES: "restaurante cerca", "dónde comer", "mejores restaurantes"
-  if (/(?:restaurante|comer|cenar|almorzar|brunch|comida|donde\s+com)/i.test(lower)
-    && /(?:buen|mejor|cerca|recomiend|donde|bueno|barato|top|popular|rating)/i.test(lower)) {
-    // Extract cuisine type if mentioned
-    const cuisineMatch = lower.match(/(?:restaurante|comida)\s+(?:de\s+)?(\w+)/i);
-    const cuisine = cuisineMatch?.[1] && !["cerca","bueno","barato","mejor"].includes(cuisineMatch[1]) ? cuisineMatch[1] : undefined;
-    return { type: "restaurantes", data: { cuisine } };
-  }
-
-  // GASOLINERAS: "gasolina barata", "dónde repostar", "precio gasolina"
-  if (/(?:gasolin|gasoleo|diesel|repostar|combustible|gasolinera)/i.test(lower)
-    && /(?:barat|precio|mejor|cerca|donde|barata|económic|cheap)/i.test(lower)) {
-    const isDiesel = /(?:diesel|gasoleo|gasóleo)/i.test(lower);
-    return { type: "gasolineras", data: { fuelType: isDiesel ? "gasoleoA" : "gasolina95" } };
-  }
-
-  // SHOPPING LIST: "necesito comprar leche, pan, arroz", "lista de compras", "compara precios"
-  if (/(?:lista\s+de\s+compra|necesito\s+comprar|compara\s+precios?\s+(?:de|en)\s+super|compra\s+(?:en|del)\s+super|precio.*(?:leche|pan|arroz|pasta|pollo|huevo|aceite|fruta|verdura|carne))/i.test(lower)
-    || (/(?:comprar|compra)/i.test(lower) && /(?:leche|pan|arroz|pasta|pollo|huevo|aceite|atun|cafe|azucar|sal|jamon|queso|yogur|cerveza|agua|tomate|cebolla|patata|platano|manzana)/i.test(lower))) {
-    return { type: "shopping_compare", data: { query: text } };
-  }
-
-  // WEB SEARCH: "busca en internet/google", "qué precio tiene", "vuelos a", "noticias de"
-  if (/(?:busca|buscar|busque|busqueda|search|googlea|investiga)\s/i.test(lower)
-    || /(?:vuelos?\s+(?:a|de|desde|para|barato)|flight)/i.test(lower)
-    || /(?:precio|coste|cuesta|cuanto\s+vale|cuanto\s+cuesta|how\s+much)/i.test(lower) && /(?:comprar|producto|servicio|vuelo|hotel|coche)/i.test(lower)
-    || /(?:noticias|news|que\s+paso\s+con|que\s+ha\s+pasado)/i.test(lower)
-    ) {
-    return { type: "web_search", data: { query: text } };
-  }
-
-  // DEFAULT: needs LLM
+  // DEFAULT: goes to 2-step LLM classifier
   return { type: "chat" };
 }
 
