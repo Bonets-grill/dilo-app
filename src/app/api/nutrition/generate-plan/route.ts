@@ -51,19 +51,24 @@ export async function POST(req: NextRequest) {
     // Deactivate old plans
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase.from("meal_plans") as any)
-      .update({ is_active: false })
+      .update({ active: false })
       .eq("user_id", userId);
+
+    // Calculate week end (Sunday)
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    const weekEndStr = weekEnd.toISOString().slice(0, 10);
 
     // Save new plan
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase.from("meal_plans") as any).insert({
       user_id: userId,
       week_start: weekStartStr,
+      week_end: weekEndStr,
       plan: { days: plan.days },
-      avg_daily_calories: plan.avg_daily_calories,
-      avg_daily_protein_g: plan.days.reduce((s, d) => s + d.total_protein_g, 0) / plan.days.length,
+      total_calories_avg: plan.avg_daily_calories,
       shopping_list: plan.shopping_list,
-      is_active: true,
+      active: true,
     });
 
     return NextResponse.json({
