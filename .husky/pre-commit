@@ -1,0 +1,34 @@
+#!/bin/sh
+
+# Check if any locked module is being committed
+if [ -f MODULE_LOCKS.json ]; then
+  LOCKED_FILES=$(node -e "
+    const locks = require('./MODULE_LOCKS.json');
+    const files = Object.keys(locks).filter(f => f !== '__meta');
+    console.log(files.join('\n'));
+  " 2>/dev/null)
+
+  STAGED=$(git diff --cached --name-only)
+  BLOCKED=""
+
+  for file in $STAGED; do
+    if echo "$LOCKED_FILES" | grep -q "^${file}$"; then
+      BLOCKED="$BLOCKED\n  ❌ $file"
+    fi
+  done
+
+  if [ -n "$BLOCKED" ]; then
+    echo ""
+    echo "🔒 COMMIT BLOCKED — These files are LOCKED:"
+    echo "$BLOCKED"
+    echo ""
+    echo "To unlock, run:  UNLOCK=1 git commit ..."
+
+    if [ "$UNLOCK" = "1" ]; then
+      echo ""
+      echo "🔓 UNLOCK override detected. Proceeding..."
+    else
+      exit 1
+    fi
+  fi
+fi

@@ -1,0 +1,387 @@
+{
+  "src/lib/agent/orchestrator.ts": {
+    "hash": "05384811483a5c63447875ee4bba56e0d6fbf15b415f608b735300f32115a0b8",
+    "sig": "b55dfa8011e2209cbc92f7a472432a883a40ccda5f90020209b3367c25dbbd5c",
+    "locked_at": "2026-04-11T15:28:02.617Z"
+  },
+  "src/lib/agent/classifier.ts": {
+    "hash": "2c2a91f4a3a22692c8b79c4bca2952ab14ba1ff62dfb9f821cf602ca6b50362e",
+    "sig": "b795323889b3160a7fff9904a67db9bb0978835fc786021d98208b661b38cec4",
+    "locked_at": "2026-04-11T15:28:02.623Z"
+  },
+  "src/lib/agent/router.ts": {
+    "hash": "fd91d6ef503ce75b38a4e980b36fe4702dd5cd0d0fca33037d84e51457ce0ba4",
+    "sig": "333c81466914d85d35d9048052c4a69b9276081f89cbf6ccf89604eb58972a66",
+    "locked_at": "2026-04-11T15:28:02.624Z"
+  },
+  "src/lib/agent/facts.ts": {
+    "hash": "acba57e78519224fdd1f1a84fb822997c227b554f96596de4937cbbf5ce33d04",
+    "sig": "9354c07181e90463890f8dcbec6dd27e352529343f55ec4064843f75a5d5c1cc",
+    "locked_at": "2026-04-11T15:28:02.624Z"
+  },
+  "src/lib/trading/memory.ts": {
+    "hash": "a79597b557c1d826b7d269925ba54127c7243b2e25ef395d8ae66df1d414e901",
+    "sig": "7da8cfdf3b20c4b1738564a4cb8bd287bca1cd04d68a48253b0e3b815659aab7",
+    "locked_at": "2026-04-11T15:28:02.624Z"
+  },
+  "src/lib/trading/metrics.ts": {
+    "hash": "f470f4fbf09aa15c16418bcc57c1312696c7cf32ca6dd597b4ed46dd9f5d60a6",
+    "sig": "06dbf5b3b3c524e3db6126e87489e8fc8283917450aad51b2ebb3369963e8cf0",
+    "locked_at": "2026-04-11T15:28:02.625Z"
+  },
+  "src/lib/trading/emotional-detector.ts": {
+    "hash": "1ef8cc85512c4ad7d5f4cc55dbd98e7e0a554903a58e8ff70ef4c85ba8c2ad90",
+    "sig": "ee2324fbf5052c013505fccb45fd3110ae819f384cd0c514db6004dee2099bf2",
+    "locked_at": "2026-04-11T15:28:02.625Z"
+  },
+  "src/lib/trading/kill-zones.ts": {
+    "hash": "695961ee8018b507214e197c063ef13986eced513a1a073a55ac751294504884",
+    "sig": "ef015dbf08ce96c0e27aa30cf37ab8ec00004b165ba5e899e4a65cc77324841f",
+    "locked_at": "2026-04-11T15:28:02.625Z"
+  },
+  "src/lib/trading/baseline.ts": {
+    "hash": "4d403cf67aa2a49ff80f769c5bbabebb369933523658d7f5b7ce3347c28b76c8",
+    "sig": "71f6a162f9d269549d908ec0f01a2f225c4a1be4c556540468951f86dacf7480",
+    "locked_at": "2026-04-11T15:28:02.626Z"
+  },
+  "src/lib/trading/circuit-breaker.ts": {
+    "hash": "662e193124da6c303f16f55e5cc50f7c4550048ef1eef3e1dd05895485fc1e10",
+    "sig": "a609da2730695f1bcc046270a152adbe6713de5cc388755c34ca4d42d3c88fdc",
+    "locked_at": "2026-04-11T15:28:02.626Z"
+  },
+  "src/lib/trading/analytics.ts": {
+    "hash": "0a4fd3474ab5ada5636d977c71287853a13c6ada9ffd6a879bffff30b106cc93",
+    "sig": "195ef152f94ae63e90a305e6c4819742e2fa891c5ad12dfc9a4a7ab6a3d7216c",
+    "locked_at": "2026-04-11T15:28:02.626Z"
+  },
+  "src/lib/trading/enhanced-prompt.ts": {
+    "hash": "cebc48a249c5480f3900cadabec6fc071544d6ee81376c37c57a3365b61cb7e5",
+    "sig": "527c09ce2bfcd6ee9311a7173b2ae44aabbbc773fe7eadb2ab82ec1faad9a826",
+    "locked_at": "2026-04-11T15:28:02.627Z"
+  },
+  "src/lib/trading/intelligence.ts": {
+    "hash": "3bda18cbb5e7dd191a6f9fa90bd606836ff4511959047def3e5930d06d57db76",
+    "sig": "02e837291fb5290705cf67d67e463307c2baa2cbcc7da628df5af212426b57ff",
+    "locked_at": "2026-04-11T15:28:02.627Z"
+  },
+  "src/lib/trading/engine-client.ts": {
+    "hash": "3c270f187cd7952f9c8af6611d9630a50e80635bd2d911ca146cf81e51335797",
+    "sig": "08e1c3071fde49de344b2300291b209f2181c8dd4f7962c837340ffe2e5c4c19",
+    "locked_at": "2026-04-11T15:28:02.627Z"
+  },
+  "src/lib/trading/profile.ts": {
+    "hash": "6446002a55c80a26c60ccff3fc6fe6b4d66ff655453737e37a2b5c3e37148164",
+    "sig": "6bf03f97aaa004797127bae9571cbc39bb8da0d185605b2a22c5dd7f62874efe",
+    "locked_at": "2026-04-11T15:28:02.627Z"
+  },
+  "src/lib/skills/index.ts": {
+    "hash": "912bc78b1e89bd42ad034378bc9469ab23297236e6d511f42854c9dac0a0a6fc",
+    "sig": "369f41273618fccf479f79219261c143cbc8ec081459e67730807fe2f004ce68",
+    "locked_at": "2026-04-11T15:28:02.628Z"
+  },
+  "src/lib/skills/trading.ts": {
+    "hash": "5fc6822a02d042b1dccbe827017586485a2dd14928b9785fb78235f287cf8ca1",
+    "sig": "f28502d01beb32bfcb25c735a17250bdb07f7281d6c89a654524fb3200e55173",
+    "locked_at": "2026-04-11T15:28:02.628Z"
+  },
+  "src/lib/skills/trading-memory.ts": {
+    "hash": "8aec0ae5741e462751026b43a9661e4a0cd99286b877afa6c90af6e6ae0f1791",
+    "sig": "4fc84c1a137d6145376ce9384c5d87ff1c65a2e6607242d805081b03f82d9108",
+    "locked_at": "2026-04-11T15:28:02.628Z"
+  },
+  "src/lib/skills/trading-emotional.ts": {
+    "hash": "039315f9a6fb81df33b5763f18b0e772eb76e40e9d0fbe1a2838430c19b64241",
+    "sig": "20d2f1447c0769a95c70fed4daefb3818458e316000d7f050a9574ee9cfda6d2",
+    "locked_at": "2026-04-11T15:28:02.629Z"
+  },
+  "src/lib/skills/trading-signals.ts": {
+    "hash": "bbf1f742878886144cca4cd08fdc4065a3eec60ac7f4419a86201c6d09f75538",
+    "sig": "8b09dad893a2a7e90ed19710de1469985bbe26a97f5db87af499a1710d8f0f3b",
+    "locked_at": "2026-04-11T15:28:02.629Z"
+  },
+  "src/lib/skills/trading-calendar.ts": {
+    "hash": "dd5e5ac4bc0a75248244390ac3925c559ec1e3759f0cb66ed0198935a4b39da0",
+    "sig": "06bd2211986e02ecd02cc6fc88745e20d10186c4feb5bb05f285a2237fb55974",
+    "locked_at": "2026-04-11T15:28:02.630Z"
+  },
+  "src/lib/skills/trading-forex.ts": {
+    "hash": "8158ac62f26eaacf53b196d8fcae42f2848a70a7c76b45cf88652e921ffec97b",
+    "sig": "5206de324f8cef64b1e90926527363340e1e537db104d668146b9a97c95a1bdd",
+    "locked_at": "2026-04-11T15:28:02.630Z"
+  },
+  "src/lib/skills/market-analysis.ts": {
+    "hash": "95a949d8bcf72dc9d72e35838d2462943dc03e167d9fb35a726d2aa251b4f7b2",
+    "sig": "2c6cfe47e41e56a4ce08df51be5161affd787170877537314846cae167bab111",
+    "locked_at": "2026-04-11T15:28:02.630Z"
+  },
+  "src/lib/skills/knowledge.ts": {
+    "hash": "90774e19a6cc37b5eb8578e72a8920a59ea18aa6d7179064f5159188656fdc2d",
+    "sig": "e862f1a50feedc7160d877e5dd8c540cfd9b8909dd104d1e6c6f3761069a4459",
+    "locked_at": "2026-04-11T15:28:02.630Z"
+  },
+  "src/lib/skills/entertainment.ts": {
+    "hash": "e8fdcca9812fb01defa79398f7207a165d7733de69d261104e414fb1ab2d918a",
+    "sig": "548f76e9a1ef7995f56800f7d56d1a50b111fb4a25b5b785df5c8c291839205b",
+    "locked_at": "2026-04-11T15:28:02.631Z"
+  },
+  "src/lib/skills/nutrition.ts": {
+    "hash": "33e84754a82b4b48facfce1a005a2c2e2b86f277cfcabd78a5124a4c45ddec7c",
+    "sig": "eca938187595ff9b3d304c2b95ffc0b06d626e050817ea01530d43479f139f17",
+    "locked_at": "2026-04-11T15:28:02.631Z"
+  },
+  "src/lib/skills/wellness.ts": {
+    "hash": "047e5d91b2aee689971da6e983229833c17e7f23058e2870fa85b106b9aef893",
+    "sig": "288412a5873d2a5050bc97658f189a84dacbaf9a74db0135cc90dcea45e4981a",
+    "locked_at": "2026-04-11T15:28:02.631Z"
+  },
+  "src/lib/skills/gmail.ts": {
+    "hash": "ff4372b9be62bfba086e0e53e08bee96f7f29a5a4079213bee328353597711e6",
+    "sig": "4fe978bab0634446a8e2f97997329fd8d8e56a1c46e0d004e32cb4401c35c289",
+    "locked_at": "2026-04-11T15:28:02.631Z"
+  },
+  "src/lib/skills/google-calendar.ts": {
+    "hash": "e353aa83e472773f1563119d1ff6b0acd09d96e687e4bb9b3ce29c0f70b6b0d1",
+    "sig": "cf106849238cb8fb31cb7c3c5af55a1a6c4d6738053b81862e478b3b09b0f853",
+    "locked_at": "2026-04-11T15:28:02.631Z"
+  },
+  "src/lib/skills/web-search.ts": {
+    "hash": "5cee693f79c1e1a822ff92e8a8ada355c853b58d138d77fa59e2e7240db86e13",
+    "sig": "0da332a19b4a2e7ec70f15be662948985d988aae94fd2dc422d4382a142db5dc",
+    "locked_at": "2026-04-11T15:28:02.631Z"
+  },
+  "src/lib/nutrition/engine.ts": {
+    "hash": "2854aa310d24beb706f6d907391715d48a1cef3edea90a9ba86609af340428bb",
+    "sig": "1658299681955faf7fe149a26ff82a4f81026f1f4c03a871fb9f8d2b9305fff6",
+    "locked_at": "2026-04-11T15:28:02.632Z"
+  },
+  "src/lib/nutrition/meal-planner.ts": {
+    "hash": "2c4870e6eb2719f7dddd7868d4fa716797126c8943bc19547adc9a89167ed539",
+    "sig": "0c3c48e10e4f42f20967473e5cc3bf824e1065bb88e2bdc48eb18e5e3c53858c",
+    "locked_at": "2026-04-11T15:28:02.632Z"
+  },
+  "src/lib/nutrition/food-database.ts": {
+    "hash": "d7c93ce10b9f86892c8ed4e5a946449f92a9dbf0cce83c5d1295eac94755a26f",
+    "sig": "5db55b77a3b9310998c589f238142bd819c3f6d5a82d0d5e0be249a62cbe79ba",
+    "locked_at": "2026-04-11T15:28:02.632Z"
+  },
+  "src/app/api/nutrition/dashboard/route.ts": {
+    "hash": "270a78bf6bc6aa673f15ed9a7c9c3fe590f93ba73f94709ac6bacd3629bcbdb2",
+    "sig": "4381d5d96b710ab934b70192ac4636dd2f11691d9a204e4ac2b65f93cc827333",
+    "locked_at": "2026-04-11T15:28:02.632Z"
+  },
+  "src/app/api/nutrition/generate-plan/route.ts": {
+    "hash": "42260e9806a106e36300f9aaf65e93eb012c9b5292ec1a2e69e3c07dadcb663c",
+    "sig": "b6642b7d4ddfeb15932c9f36fbacdbc63c19c6d5ab8d05f66ac3c6208e72246a",
+    "locked_at": "2026-04-11T15:28:02.632Z"
+  },
+  "src/app/api/trading/dashboard/route.ts": {
+    "hash": "7eaf09f9011a696098bdcd722431952353b73e43ef878e6063b7d7f1c26572e5",
+    "sig": "0f03309884e9059594ce6248846b3d5f876c59837897abda5a1e370697cf8a7f",
+    "locked_at": "2026-04-11T15:28:02.632Z"
+  },
+  "src/app/api/trading/learning/route.ts": {
+    "hash": "5e38fe203be7cfaad4e8e6e07868bbc10419fa20d431f202e10d9f2bceb3c419",
+    "sig": "68c77986a4409feebfe864e0849a0ad71460ab13079438a8d52f545990e8b54d",
+    "locked_at": "2026-04-11T15:28:02.633Z"
+  },
+  "src/app/api/trading/keys/route.ts": {
+    "hash": "072ee388310eaf771a5c6dab9a40a2056f85c7f5fe5632e62e71c765c45aa8fb",
+    "sig": "d231f3f62ea058a0aef36d5abb5a6ff92eaca9a2ec6b0eed7c71df31d072022b",
+    "locked_at": "2026-04-11T15:28:02.633Z"
+  },
+  "src/app/api/trading/emotional-state/route.ts": {
+    "hash": "9966b5e19bb9e7a041d9208326ea97444d83d660252058775f15da6971685891",
+    "sig": "7bc2ff9d3371c82336e7b3e66081351924f6cb5f5d3a301e43773a6d1836770c",
+    "locked_at": "2026-04-11T15:28:02.633Z"
+  },
+  "src/app/api/trading/pre-trade-check/route.ts": {
+    "hash": "561e1616ec4029a6496d3022b3360aa4db2ad7758987b8d6a4eabdf5f121ab79",
+    "sig": "0aa5b062d4037989c4ab3147f195fc8f7083c116fa592624fb4b6d5b8daa17a2",
+    "locked_at": "2026-04-11T15:28:02.634Z"
+  },
+  "src/app/api/trading/analytics/route.ts": {
+    "hash": "2db13e2c6c59fef13f2af6e7f0335c6ddffcfd0aa5524a7190631707b054038b",
+    "sig": "10a2e754492749c5d5b5380fe56981d431c2f9ad7972e9dd3d84c318d4ad8a05",
+    "locked_at": "2026-04-11T15:28:02.634Z"
+  },
+  "src/app/api/trading/enhanced-dashboard/route.ts": {
+    "hash": "10918d49b44534c8b2ba7fb7567b1bfb7d2817cd41b8e7464279bbe30d164da6",
+    "sig": "69c2e51288c47b20bf728d90db7f0836981beda9cddc67de29b71dd13c60221e",
+    "locked_at": "2026-04-11T15:28:02.634Z"
+  },
+  "src/app/api/cron/trading-learn/route.ts": {
+    "hash": "260a8620e20f67294b915b7ca68cf95fe93dbce546ce6445b648480e87eccd34",
+    "sig": "55fe7d2702f0a4c73345ccdd2acc5f36d6a1b9bf5b20e5eeb80215e786690297",
+    "locked_at": "2026-04-11T15:28:02.634Z"
+  },
+  "src/app/api/cron/trading-learn-forex/route.ts": {
+    "hash": "d3da461a43bfa91348907ffbccb4b0dc7b7060f1c2ac60a86f631df10967045d",
+    "sig": "03633e31e02ba62ba9e9651d85ed62a46f29acc14adda3d6f0e783b7f81dc6f4",
+    "locked_at": "2026-04-11T15:28:02.635Z"
+  },
+  "src/app/api/cron/trading-snapshot/route.ts": {
+    "hash": "64319c815adc629192922b9342a339d5dff8f79e148ed2e81c5ecfb91d3e4d34",
+    "sig": "59dd6731473e91b76fae95cc812f90cb51ded2675c30e37bac6760113e30794d",
+    "locked_at": "2026-04-11T15:28:02.635Z"
+  },
+  "src/app/api/cron/trading-resolve/route.ts": {
+    "hash": "e30398d268f3859360e8a0c5e00eea56953603301cd3ef7e4383862890b6876f",
+    "sig": "702def36e67b50b1f7ba218dd712115528d894edfaeb613edade989fb42c0745",
+    "locked_at": "2026-04-11T15:28:02.635Z"
+  },
+  "src/app/api/cron/trading-analytics/route.ts": {
+    "hash": "cea5553c41979ecc4dd3ac1d45d2a7c146a0f499bc4b9feccaa0697597eefd9b",
+    "sig": "f4c0233e72ec22ea35fc937a2a44dbc7594b449eaefaba7b4fb0700bb07943a9",
+    "locked_at": "2026-04-11T15:28:02.635Z"
+  },
+  "src/app/api/cron/trading-emotional-check/route.ts": {
+    "hash": "7b3c4ceae24f00e73e0703e789443a94eba64069b6064b5bdb7a9659ed04e36b",
+    "sig": "31f8d324386298d204b73d795d98803d3f47f3b73c640d93e84870503a38f4cb",
+    "locked_at": "2026-04-11T15:28:02.635Z"
+  },
+  "src/app/api/cron/trading-discover-patterns/route.ts": {
+    "hash": "ab6dd44d688cfc80d7232193ea3112a039d3d978cef7678cbcfc9a3f79d7d905",
+    "sig": "03de4e79ac8dee627bc26a778fa9239ae37656123808f8ae6cc2c3d58f26555d",
+    "locked_at": "2026-04-11T15:28:02.636Z"
+  },
+  "src/app/api/cron/trading-update-profiles/route.ts": {
+    "hash": "4e49a9bd7a9594d5e382b92c67514db09f454abe25583b0de8c831af0bb5dcf9",
+    "sig": "8cc8fb9d64d4a222d5854d7fed27aae525351bfb27312d057537f41b650a3e1b",
+    "locked_at": "2026-04-11T15:28:02.636Z"
+  },
+  "src/app/api/cron/monitor/route.ts": {
+    "hash": "944960b397f56051aec84a949ed28d8df14399dae5c38456227ce0d5ed495c91",
+    "sig": "54aeda6bbd75b8382766c8a75ad5477369ef83313327add314aff5ea5fba7e97",
+    "locked_at": "2026-04-11T15:28:02.636Z"
+  },
+  "src/app/api/cron/briefing/route.ts": {
+    "hash": "ed407b3474ed79e0f97b3486329797547c3247a908fa60bfd83544efa3b5222b",
+    "sig": "faae65219fd95367d7cb85be2fd3f47aaf99eb8676f6202fea85cd45f5151c18",
+    "locked_at": "2026-04-11T15:28:02.636Z"
+  },
+  "src/app/api/cron/insights/route.ts": {
+    "hash": "46ac390a2987e0728606d6eb3b53469228f68e60691a3fad101e7b254dc17335",
+    "sig": "4edfa00f56e36a54b8dbceda5bbf8ff08020a30609a436c55a13a685d491c12e",
+    "locked_at": "2026-04-11T15:28:02.636Z"
+  },
+  "src/app/api/cron/proactive/route.ts": {
+    "hash": "c31b8471350c348053af8ca47837b6bc68627129ac0782824044c8347aa4f5b1",
+    "sig": "97542f91d00333eca68bda32fea43df00da775c76e9bddec9939f9814f1272fc",
+    "locked_at": "2026-04-11T15:28:02.637Z"
+  },
+  "src/app/api/cron/nutrition-weekly/route.ts": {
+    "hash": "914bc394032223586e6c94352d949aa1b8ae23cf54f61ab75945ea5e0ec1099a",
+    "sig": "6878750bdc7eb5064cec18d5fd996692a6088d8529a9b25bb74fe9cc238a9b5b",
+    "locked_at": "2026-04-11T15:28:02.637Z"
+  },
+  "src/app/api/cron/wellness-checkin/route.ts": {
+    "hash": "14080d4cb39c8c80472f5ce4f1e4e9648fba276f359cd2eb9a63a6b6be2f2726",
+    "sig": "3aeec75ff307084a2e4e43abf6b16c43bc3490f43eff86aa22c9f3d16c007cef",
+    "locked_at": "2026-04-11T15:28:02.637Z"
+  },
+  "src/app/api/chat/route.ts": {
+    "hash": "c175bb7393ca330c6398118138142aeb0f1e7a978a6af045e1f29fbaf6f15eaf",
+    "sig": "1ed85783401d0c8b04490808ce0640e32ae7e8df83a5ddb148ff16eebff81b50",
+    "locked_at": "2026-04-11T15:28:02.638Z"
+  },
+  "src/app/api/transcribe/route.ts": {
+    "hash": "349443469f915150a7404ac667705cf258b039c251db02127ed1c031f5619b68",
+    "sig": "88a084e9d996db84bc2df74a4fc00c9754844bbb03d9a01c186f804c7c3a2990",
+    "locked_at": "2026-04-11T15:28:02.638Z"
+  },
+  "src/app/api/evolution/route.ts": {
+    "hash": "b3a3ad1a7c833f0ba59d6bac68908f83555b8f03082b3ab5b58c3a6eab8a0756",
+    "sig": "fcf1dde87b97e57c0f0000cbe2a330f5781edd4ed500ba51d23013a5f65ee1b8",
+    "locked_at": "2026-04-11T15:28:02.638Z"
+  },
+  "src/app/api/auth/pin/route.ts": {
+    "hash": "ac9ef9141326cfff5714af98d100a54fa22e5029689125b0bc50e1f1ecc162bb",
+    "sig": "50aed0b30a38cee4fba845660b31b67728e6654074a34dbdd22e0715461208ac",
+    "locked_at": "2026-04-11T15:28:02.638Z"
+  },
+  "src/app/api/auth/pin-session/route.ts": {
+    "hash": "630c7a1848ea6d5d2ee6e31f78ee5dcd354aaf782b77a92297bae7f963aaac3a",
+    "sig": "bc4792faab6af7a9cae3578e514b6e5136857f45969d148a4cbe364768c3ebaa",
+    "locked_at": "2026-04-11T15:28:02.638Z"
+  },
+  "src/app/api/dm/route.ts": {
+    "hash": "0a3cea00f524df07436c283cdc4ffc7af7a3e5b5a41aa95d5820326416880354",
+    "sig": "abcb85491c9881bbce6eb4d0b0313424de9c6316e380afb58998e99d4f8c9bdd",
+    "locked_at": "2026-04-11T15:28:02.638Z"
+  },
+  "src/app/api/connections/route.ts": {
+    "hash": "0aeb8a272f6cb027738fc873dd804fc0c2ef0dee4c25fa793454b16fae9d4096",
+    "sig": "ed1a55e2e2a3764515a93261af0e2568f19460641f937a5191d77e8f0449018e",
+    "locked_at": "2026-04-11T15:28:02.638Z"
+  },
+  "src/app/api/referral/route.ts": {
+    "hash": "f731451bb554115ce6f57646b3eb69a8941971e26d55cd85582450c3b8b63540",
+    "sig": "5302ad8131f00777d74b31c2e02bed75a6b16727d447ea85bc39b0d25d36a1a0",
+    "locked_at": "2026-04-11T15:28:02.638Z"
+  },
+  "src/lib/alpaca/client.ts": {
+    "hash": "10ba74df13362a04bf33efc67b0d5042f3ef065c8773003b434cb1362c7a21c7",
+    "sig": "2e928a5885adb3ee48be7124949657a23495f3e522d33964795fa0c459f66767",
+    "locked_at": "2026-04-11T15:28:02.639Z"
+  },
+  "src/lib/finnhub/client.ts": {
+    "hash": "de48c36c3544838f5f84181f92f184565b80af91f855c234f907093c45f1d638",
+    "sig": "03d18fadeec246a62b5c76dbff4abe1077f930465607d203513d62ceca23e3f1",
+    "locked_at": "2026-04-11T15:28:02.639Z"
+  },
+  "src/lib/ig/client.ts": {
+    "hash": "640ff61452f5d652647f957b595a45bd5187b7a0d62dec469208388df2e80159",
+    "sig": "79fd6ed13eaf0a17953f186d1a77a9effc8b02abb3eabd736edc4ade205c0942",
+    "locked_at": "2026-04-11T15:28:02.639Z"
+  },
+  "src/lib/wikipedia/client.ts": {
+    "hash": "f92a9a7f4ee8b6a67a9e84fa5039f808e20603bc6211dceb439ec180a5f7b660",
+    "sig": "cc34a9975909ee28781b7b1106a3bfb5a7b154c03185f832a49dd88e53b34420",
+    "locked_at": "2026-04-11T15:28:02.639Z"
+  },
+  "src/lib/wolfram/client.ts": {
+    "hash": "a2daab203a33ba5e0b12a9bd38ee6029251c33d63a6c7337976fb3e9d385fb64",
+    "sig": "b6fc419a91d07944e97c81ce7f46ef2ff685007aba02dd9f1bab3b4626260e4b",
+    "locked_at": "2026-04-11T15:28:02.639Z"
+  },
+  "src/lib/weather/client.ts": {
+    "hash": "1a08e4d39f64486a668fd8cd76ed76149a5c7ad01391623dee01f6f6511efeec",
+    "sig": "a738792e95a914ae1fb5c64f350652d5230ffaf30052b7d2e7c6a8e18752e478",
+    "locked_at": "2026-04-11T15:28:02.639Z"
+  },
+  "src/lib/news/client.ts": {
+    "hash": "d1c3c94c00ae41fc82d12759e498cf8b56fe876b73c3694b6c8ea26c2c61c652",
+    "sig": "eb8bc610cb5a5dd51e04f24c02ce24f903b421b8ab14dfa0232bed53dfea5931",
+    "locked_at": "2026-04-11T15:28:02.640Z"
+  },
+  "src/lib/currency/client.ts": {
+    "hash": "7be4ff4e104ff212464b3771f7628f58473c5e4a9ca9edb17006009f79185cc5",
+    "sig": "826089c83704c9dec9beebc84b38caa223a9201b5f2eec5abe418e66dc503afc",
+    "locked_at": "2026-04-11T15:28:02.640Z"
+  },
+  "src/lib/tmdb/omdb.ts": {
+    "hash": "506791bd7145ad2978a451807e2bc69a857fed3bf98369d31cd18421fa8999c2",
+    "sig": "9e6f314a38a0ccdd12bbd3055cad07d3207cb6275539cc52455e81f3485d96d6",
+    "locked_at": "2026-04-11T15:28:02.640Z"
+  },
+  "src/components/ui/BottomNav.tsx": {
+    "hash": "d15599ca1f791a764dbfbf3e03e084accd8490d502994410b9a3a3b1f8412fe2",
+    "sig": "af0b988aadfc5ccec83a75482837a1fe8ecbca81d4afa5cd3238ea0960da6db7",
+    "locked_at": "2026-04-11T15:28:02.641Z"
+  },
+  "src/components/ui/ShareMenu.tsx": {
+    "hash": "a097021b9591a9ba909a88a8acc18297627dd000805d2d8106cd543c15e25258",
+    "sig": "7facf13f7f6d87c448f8ce5d04e5f539faec7a01372db5fabe5799c29a29a1ff",
+    "locked_at": "2026-04-11T15:28:02.641Z"
+  },
+  "vercel.json": {
+    "hash": "485392002f492d1eafac7a7b028027aaf7f51340414a8691ad1d7d1e845de91e",
+    "sig": "225800a47e5428cd3ac337e2a3e5648459611de1dfce0ee3bfe7cb1b5f02e36c",
+    "locked_at": "2026-04-11T15:28:02.641Z"
+  },
+  "__meta": {
+    "password_check": "ef25e7ed6a66caff4e5c25d7725e062a237fa9c2a34f7e1c775396528e1e42c7",
+    "total_files": 76,
+    "generated_at": "2026-04-11T15:28:02.641Z"
+  }
+}
