@@ -220,10 +220,10 @@ export function detectIntent(text: string): RouteResult {
     || /(?:how\s+(?:was|is|did)).*(?:trading|day|portfolio)/i.test(lower)
     || /(?:como\s+(?:fue|ha\s+ido|estuvo)).*(?:dia|jornada|sesion|trading)/i.test(lower)
     || /(?:give\s+me).*(?:summary|resumen).*(?:trading|day)/i.test(lower)
-    || /(?:trading|trade|portfolio|p.?l|profit|loss|posicion|position|gewinn|verlust|perte|gain|perdita|guadagno).*(?:today|hoy|heute|aujourd|oggi|day|dia|tag|jour|giorno|resume|summary|resumen|zusammenfassung)/i.test(lower)
-    || /(?:today|hoy|heute|aujourd|oggi).*(?:trading|trade|portfolio|p.?l)/i.test(lower)
+    || /(?:trading|trade|portfolio|p[&/.]l\b|pnl\b|profit|loss|\bposicion|position|gewinn|verlust|perte|\bgain\b|perdita|guadagno).*(?:today|\bhoy\b|heute|aujourd|oggi|\bday\b|\bdia\b|tag|jour|giorno|resume|summary|resumen|zusammenfassung)/i.test(lower)
+    || /(?:today|\bhoy\b|heute|aujourd|oggi).*(?:trading|trade|portfolio|p[&/.]l\b|pnl\b)/i.test(lower)
     || /(?:journee|giornata|jornada|sesion|session).*(?:trading|trade|bourse|borsa|handel)/i.test(lower)
-    || /(?:trading|trade|handel|bourse|borsa).*(?:tag|journee|giornata|jornada|dia|day)/i.test(lower)) {
+    || /(?:trading|trade|handel|bourse|borsa).*(?:tag|journee|giornata|jornada|\bdia\b|\bday\b)/i.test(lower)) {
     return { type: "trading_portfolio" };
   }
 
