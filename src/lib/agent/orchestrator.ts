@@ -28,69 +28,92 @@ export interface AgentResult {
 
 // ── STEP 1: Orchestrator decides which agents to spawn ──
 
-const ORCHESTRATOR_PROMPT = `You are an orchestrator. Given the user's message, decide which specialist agents to spawn.
+// ── LEVEL 1: Domain Router (5 domains only) ──
+const DOMAIN_ROUTER_PROMPT = `Classify the user's message into exactly ONE domain. Look at conversation history for context.
 
-Available agents:
-- trader_portfolio: my portfolio, positions, P&L, performance, risk analysis, trading rules, trading profile
-- trader_signals: generate signal, check sweeps, trading memory, trading insights, kill zone status
-- trader_orders: buy/sell orders, trade journal, trading calendar
-- trader_market: analyze stock (AAPL, TSLA), scan opportunities, compare stocks, earnings calendar
-- trader_emotions: emotional state, tilt, FOMO, revenge, weekly report, correlations
-- forex: forex pairs (EUR/USD, GBP/JPY, XAU/USD), gold, forex analysis, IG Markets
-- knowledge: wikipedia, calculations, weather, currency conversion, general knowledge questions
-- entertainment: movies, TV shows, what to watch, recommendations, actors
-- nutri_tracker: log food (voice/text: "desayuné 2 huevos con tostada"), log water, log weight, daily progress, photo food log
-- nutri_planner: nutrition profile setup, meal plans, recipes, shopping list, adjust calories
-- nutri_coach: nutrition motivation, habits, patterns, weekly analysis, emotional eating, accountability
-- wellness: emotions, stress, anxiety, mood, meditation, breathing, mental health
-- communication: email, gmail, calendar, whatsapp messages, contacts, reminders
-- finance: expenses, spending, budget, subscriptions, price comparison, gas stations, restaurants, shopping
+Domains:
+- trading: stocks, portfolio, P&L, positions, signals, buy/sell, market analysis, forex, gold, EUR/USD, AAPL, TSLA, broker, trading emotions
+- health: nutrition, diet, calories, food logging, meal plan, weight, water, stress, anxiety, mood, meditation, breathing, wellness, exercise
+- knowledge: weather, Wikipedia, calculations, currency conversion, movies, TV shows, news, headlines, general knowledge questions
+- finances: expenses, spending, budget, reminders, subscriptions, price comparison, shopping, gas stations, restaurants
+- communication: email, gmail, calendar, whatsapp, send message, contacts, image generation, greetings, small talk
+
+If user says "más", "otro", "sí", "continúa" → use SAME domain as previous message.
+Respond with ONLY the domain name, nothing else.`;
+
+// ── LEVEL 2: Sub-agent Router (per domain) ──
+const SUB_ROUTERS: Record<string, string> = {
+  trading: `Pick the best agent for this trading request:
+- trader_portfolio: portfolio, positions, P&L, performance, risk, rules, profile
+- trader_signals: generate signal, check sweeps, memory, insights, kill zone
+- trader_orders: buy/sell orders, journal, calendar
+- trader_market: analyze stock, scan opportunities, compare, earnings
+- trader_emotions: emotional state, tilt, FOMO, revenge, weekly report
+- forex: forex pairs, EUR/USD, GBP/JPY, XAU/USD, gold, IG Markets
+Respond with ONLY the agent name.`,
+
+  health: `Pick the best agent:
+- nutri_tracker: log food/water/weight, daily progress
+- nutri_planner: meal plans, recipes, shopping list, nutrition setup
+- nutri_coach: motivation, habits, emotional eating, accountability
+- wellness: stress, anxiety, mood, meditation, breathing, mental health
+Respond with ONLY the agent name.`,
+
+  knowledge: `Pick the best agent:
+- knowledge: weather, Wikipedia, calculations, currency conversion
+- entertainment: movies, TV shows, recommendations, actors
 - news: headlines, current events, noticias
-- general: greetings, small talk, image generation, anything that doesn't fit above
+Respond with ONLY the agent name.`,
 
-Rules:
-- Return a JSON array of agents needed. Each has "role" and "task".
-- task = what specifically this agent should do (rewrite the user's request for this specialist)
-- Most messages need only 1 agent. Use 2+ only if the message clearly spans multiple domains.
-- "Hola" or casual chat = [{"role":"general","task":"respond to greeting"}]
-- If unsure, use "general"
-- CRITICAL: Look at conversation history! If user says "más", "otro", "sí", "continúa", "more" → use the SAME agent type as the previous exchange. Context matters!
+  finances: `Pick the best agent:
+- finance: expenses, spending, budget, reminders, shopping, price comparison
+Respond with ONLY: finance`,
 
-Example: User says "¿Qué tiempo hace en Madrid y recomiéndame una película?"
-Response: [{"role":"knowledge","task":"Get current weather in Madrid"},{"role":"entertainment","task":"Recommend a movie"}]
-
-Example: User says "Gasté 45 en comida"
-Response: [{"role":"finance","task":"Track expense: 45 in food"}]
-
-Respond with ONLY the JSON array, nothing else.`;
+  communication: `Pick the best agent:
+- communication: email, gmail, calendar, whatsapp, contacts
+- general: greetings, small talk, image generation, casual chat
+Respond with ONLY the agent name.`,
+};
 
 export async function planAgents(userMessage: string, recentMessages?: { role: string; content: string }[]): Promise<AgentSpec[]> {
   try {
-    // Include recent conversation context so orchestrator understands "más", "otro", "sí", etc.
+    // Build context from recent messages
     const contextMessages: OpenAI.ChatCompletionMessageParam[] = [];
     if (recentMessages && recentMessages.length > 0) {
-      const last4 = recentMessages.slice(-4);
-      for (const m of last4) {
+      for (const m of recentMessages.slice(-4)) {
         contextMessages.push({ role: m.role as "user" | "assistant", content: m.content.slice(0, 150) });
       }
     }
 
-    const response = await openai.chat.completions.create({
+    // ── LEVEL 1: Pick domain (5 options — fast, accurate) ──
+    const domainRes = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      max_tokens: 200,
+      max_tokens: 20,
       temperature: 0,
       messages: [
-        { role: "system", content: ORCHESTRATOR_PROMPT },
+        { role: "system", content: DOMAIN_ROUTER_PROMPT },
         ...contextMessages,
         { role: "user", content: userMessage },
       ],
     });
+    const domain = (domainRes.choices[0]?.message?.content || "communication").trim().toLowerCase();
+    const validDomains = ["trading", "health", "knowledge", "finances", "communication"];
+    const safeDomain = validDomains.includes(domain) ? domain : "communication";
 
-    const text = response.choices[0]?.message?.content || "[]";
-    // Clean markdown if present
-    const cleaned = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-    const agents = JSON.parse(cleaned) as AgentSpec[];
-    return agents.length > 0 ? agents : [{ role: "general", task: userMessage }];
+    // ── LEVEL 2: Pick specific agent within domain ──
+    const subRouterPrompt = SUB_ROUTERS[safeDomain];
+    const agentRes = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      max_tokens: 30,
+      temperature: 0,
+      messages: [
+        { role: "system", content: subRouterPrompt },
+        { role: "user", content: userMessage },
+      ],
+    });
+    const agentRole = (agentRes.choices[0]?.message?.content || "general").trim().toLowerCase().replace(/[^a-z_]/g, "");
+
+    return [{ role: agentRole, task: userMessage }];
   } catch {
     return [{ role: "general", task: userMessage }];
   }
