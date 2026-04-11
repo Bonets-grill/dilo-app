@@ -1256,7 +1256,7 @@ ${userFacts}${journalKnowledge}`;
         const agentResults = await Promise.all(
           agentSpecs.map(spec => {
             const definition = getAgentDefinition(spec.role, userName, lang, userTools);
-            return executeAgent(spec, definition, chatMessages.slice(-6), executeToolFn, userId || "anonymous");
+            return executeAgent(spec, definition, chatMessages.slice(-10), executeToolFn, userId || "anonymous");
           })
         );
 
@@ -1275,7 +1275,18 @@ ${userFacts}${journalKnowledge}`;
         // 3. Synthesize results into one response
         const finalResponse = await synthesize(lastUserMsg, agentResults, userName, lang);
 
-        // 4. Stream the final response
+        // 4. Store tool actions in conversation for persistence
+        // Next message in this conversation will see what tools were called
+        if (agentResults.some(r => r.toolsCalled.length > 0)) {
+          const toolSummary = agentResults
+            .filter(r => r.toolsCalled.length > 0)
+            .map(r => `[${r.role}] Tools: ${r.toolsCalled.join(", ")}. Result: ${r.result.slice(0, 300)}`)
+            .join("\n");
+          // Append tool context to the assistant response so it persists in conversation history
+          chatMessages.push({ role: "assistant", content: finalResponse + `\n<!--TOOL_CONTEXT\n${toolSummary}\n-->` });
+        }
+
+        // 5. Stream the final response
         fullResponse += finalResponse;
         controller.enqueue(encoder.encode(finalResponse));
 
