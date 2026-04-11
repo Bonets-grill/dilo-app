@@ -133,15 +133,32 @@ export async function GET() {
             dataPoints += 10;
 
             // Auto-generate signal if SMC found a high-confidence setup
+            // DEDUP: skip if we already generated a signal for this symbol today
+            const { data: existingSignal } = await supabase
+              .from("trading_signal_log")
+              .select("id")
+              .eq("symbol", sym)
+              .gte("created_at", `${today}T00:00:00Z`)
+              .limit(1);
+
             const signal = smc.signal as { side?: string; entry_price?: number; stop_loss?: number; take_profit?: number; confidence?: number; setup_type?: string; reasoning?: string[] } | null;
-            if (signal && signal.entry_price && signal.stop_loss && signal.take_profit && (signal.confidence || 0) >= 60) {
+            if (signal && signal.entry_price && signal.stop_loss && signal.take_profit && (signal.confidence || 0) >= 60 && (!existingSignal || existingSignal.length === 0)) {
               // Apply intelligence filters before saving signal
+              // Small delay to avoid Finnhub rate limiting (30 calls/sec limit)
+              await new Promise(r => setTimeout(r, 1500));
               const { applySignalFilters } = await import("@/lib/trading/intelligence");
-              const filterResult = await applySignalFilters(
-                sym,
-                (signal.side || "BUY") as "BUY" | "SELL",
-                signal.confidence || 60,
-              );
+              let filterResult;
+              try {
+                filterResult = await applySignalFilters(
+                  sym,
+                  (signal.side || "BUY") as "BUY" | "SELL",
+                  signal.confidence || 60,
+                );
+                console.log(`[Trading Learn] Filters for ${sym}: adj=${filterResult.confidenceAdjustment}, filters=${filterResult.filtersApplied.join(",")}`);
+              } catch (filterErr) {
+                console.error(`[Trading Learn] Filter error for ${sym}:`, filterErr);
+                filterResult = { confidenceAdjustment: 0, filtersApplied: ["filter_error"], context: ["Filtros no disponibles"], blocked: false };
+              }
 
               // Query trading memory for historical context
               let memoryAdjustment = 0;
