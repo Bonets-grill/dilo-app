@@ -52,6 +52,7 @@ Rules:
 - Most messages need only 1 agent. Use 2+ only if the message clearly spans multiple domains.
 - "Hola" or casual chat = [{"role":"general","task":"respond to greeting"}]
 - If unsure, use "general"
+- CRITICAL: Look at conversation history! If user says "más", "otro", "sí", "continúa", "more" → use the SAME agent type as the previous exchange. Context matters!
 
 Example: User says "¿Qué tiempo hace en Madrid y recomiéndame una película?"
 Response: [{"role":"knowledge","task":"Get current weather in Madrid"},{"role":"entertainment","task":"Recommend a movie"}]
@@ -61,14 +62,24 @@ Response: [{"role":"finance","task":"Track expense: 45 in food"}]
 
 Respond with ONLY the JSON array, nothing else.`;
 
-export async function planAgents(userMessage: string): Promise<AgentSpec[]> {
+export async function planAgents(userMessage: string, recentMessages?: { role: string; content: string }[]): Promise<AgentSpec[]> {
   try {
+    // Include recent conversation context so orchestrator understands "más", "otro", "sí", etc.
+    const contextMessages: OpenAI.ChatCompletionMessageParam[] = [];
+    if (recentMessages && recentMessages.length > 0) {
+      const last4 = recentMessages.slice(-4);
+      for (const m of last4) {
+        contextMessages.push({ role: m.role as "user" | "assistant", content: m.content.slice(0, 150) });
+      }
+    }
+
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       max_tokens: 200,
       temperature: 0,
       messages: [
         { role: "system", content: ORCHESTRATOR_PROMPT },
+        ...contextMessages,
         { role: "user", content: userMessage },
       ],
     });
