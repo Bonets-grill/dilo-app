@@ -1056,6 +1056,35 @@ export async function POST(req: NextRequest) {
   const { loadUserFacts } = await import("@/lib/agent/facts");
   const userFacts = userId ? await loadUserFacts(userId) : "";
 
+  // Load journal knowledge (lessons + goals)
+  let journalKnowledge = "";
+  if (userId) {
+    try {
+      const [lessonsRes, goalsRes, recentJournalRes] = await Promise.all([
+        supabase.from("user_lessons").select("lesson, category").eq("user_id", userId).eq("active", true).order("times_relevant", { ascending: false }).limit(10),
+        supabase.from("user_goals").select("goal, status, progress_pct").eq("user_id", userId).eq("status", "active").limit(5),
+        supabase.from("user_journal").select("content, mood, category, created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(3),
+      ]);
+      const lessons = lessonsRes.data || [];
+      const goals = goalsRes.data || [];
+      const recentJournal = recentJournalRes.data || [];
+
+      if (lessons.length > 0 || goals.length > 0 || recentJournal.length > 0) {
+        journalKnowledge = "\n\nDIARIO Y APRENDIZAJES DEL USUARIO:";
+        if (lessons.length > 0) {
+          journalKnowledge += "\nLecciones aprendidas:\n" + lessons.map(l => `- [${l.category}] ${l.lesson}`).join("\n");
+        }
+        if (goals.length > 0) {
+          journalKnowledge += "\nMetas activas:\n" + goals.map(g => `- ${g.goal} (${g.progress_pct || 0}%)`).join("\n");
+        }
+        if (recentJournal.length > 0) {
+          journalKnowledge += "\nEntradas recientes del diario:\n" + recentJournal.map(j => `- [${j.mood || "?"}] ${j.content?.slice(0, 100)}`).join("\n");
+        }
+        journalKnowledge += "\nUsa esta info para personalizar tus respuestas. Si el usuario repite un error que ya aprendió, recuérdaselo con tacto.";
+      }
+    } catch { /* skip if journal tables don't exist */ }
+  }
+
   // Load user's name from profile
   let userName = "";
   if (userId) {
@@ -1163,7 +1192,17 @@ REGLAS DE NUTRICIÓN:
 - Para lista de compras → USA nutrition_shopping.
 - NUNCA bajes de 1200 kcal (mujer) o 1500 kcal (hombre).
 - Si el usuario tiene diabetes, embarazo, trastorno alimentario o enfermedad renal → NO generes plan, deriva a profesional.
-${userFacts}`;
+
+REGLAS DE BIENESTAR EMOCIONAL:
+- Si el usuario dice que se siente mal, estresado, ansioso, triste, agobiado → USA wellness_checkin OBLIGATORIAMENTE.
+- Si el usuario quiere relajarse, meditar, respirar → USA wellness_breathing o wellness_gratitude OBLIGATORIAMENTE.
+- NUNCA respondas solo con texto cuando hay herramientas de bienestar disponibles. USA LA HERRAMIENTA.
+- Después de usar la herramienta, añade empatía y seguimiento.
+
+REGLAS DE ENTRETENIMIENTO:
+- Si el usuario pide películas, series, qué ver → USA entertainment_search OBLIGATORIAMENTE con género en inglés (comedy, action, horror, etc.).
+- NUNCA inventes películas de tu memoria. USA LA HERRAMIENTA para datos reales de OMDb.
+${userFacts}${journalKnowledge}`;
 
   // Build tools list — trading tools per connection type
   let userTools = [...baseTools, ...FOREX_TOOLS, ...TRADING_MEMORY_TOOLS, ...KNOWLEDGE_TOOLS, ...ENTERTAINMENT_TOOLS]; // Forex + memory + knowledge + entertainment always available
