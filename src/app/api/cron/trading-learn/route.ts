@@ -77,28 +77,9 @@ export async function GET() {
       } catch { /* skip individual symbol errors */ }
     }
 
-    // ── 2. ANTI-DRAWDOWN CHECK ──
-    // If recent win rate < 40% on 20+ resolved signals, penalize all new signals
+    // ── 2. ANTI-DRAWDOWN CHECK (per-symbol, calculated inside signal loop) ──
+    // Moved inside the signal generation loop for per-symbol isolation
     // "Aflojar filtros durante drawdown es catastrófico" — prop firm data
-    let drawdownPenalty = 0;
-    {
-      const { data: recent20 } = await supabase
-        .from("trading_signal_log")
-        .select("outcome")
-        .not("outcome", "is", null)
-        .neq("outcome", "expired")
-        .order("created_at", { ascending: false })
-        .limit(20);
-
-      if (recent20 && recent20.length >= 20) {
-        const wins20 = recent20.filter(s => s.outcome === "win").length;
-        const winRate20 = (wins20 / recent20.length) * 100;
-        if (winRate20 < 40) {
-          drawdownPenalty = -15; // Heavy penalty — reduce signal quality threshold
-          console.log(`[Trading Learn] Anti-drawdown active: ${winRate20.toFixed(1)}% win rate on last 20 signals → penalty ${drawdownPenalty}`);
-        }
-      }
-    }
 
     // ── 3. SMC ANALYSIS via Python Engine ──
     const engineUp = await isEngineAvailable();
@@ -171,6 +152,27 @@ export async function GET() {
                 memoryAdjustment = memory.confidenceAdjustment;
                 memoryContext = [...memory.context, ...memory.warnings];
               } catch { /* skip if memory not available */ }
+
+              // Per-symbol drawdown check
+              let drawdownPenalty = 0;
+              try {
+                const { data: symRecent } = await supabase
+                  .from("trading_signal_log")
+                  .select("outcome")
+                  .eq("symbol", sym)
+                  .not("outcome", "is", null)
+                  .neq("outcome", "expired")
+                  .order("created_at", { ascending: false })
+                  .limit(10);
+                if (symRecent && symRecent.length >= 10) {
+                  const symWins = symRecent.filter(s => s.outcome === "win").length;
+                  const symWR = (symWins / symRecent.length) * 100;
+                  if (symWR < 40) {
+                    drawdownPenalty = -15;
+                    memoryContext.push(`DRAWDOWN ${sym}: ${symWR.toFixed(0)}% win rate en últimas 10 señales. Penalización -15.`);
+                  }
+                }
+              } catch { /* skip */ }
 
               const adjustedConfidence = Math.max(10, Math.min(95, (signal.confidence || 60) + filterResult.confidenceAdjustment + drawdownPenalty + memoryAdjustment));
 

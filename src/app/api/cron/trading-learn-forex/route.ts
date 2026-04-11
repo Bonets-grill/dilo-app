@@ -110,7 +110,9 @@ export async function GET() {
           let memoryContext: string[] = [];
           try {
             const { queryMemory } = await import("@/lib/trading/memory");
-            const memory = await queryMemory(instrument, signal.setup_type || "smc_forex_mtf", market_type, killZone.zone);
+            const { detectRegime } = await import("@/lib/trading/intelligence");
+            const regime = await detectRegime().catch(() => ({ regime: "unknown" }));
+            const memory = await queryMemory(instrument, signal.setup_type || "smc_forex_mtf", market_type, regime.regime);
             signal.confidence = Math.max(10, Math.min(95, signal.confidence + memory.confidenceAdjustment));
             memoryContext = [...memory.context, ...memory.warnings];
             if (memory.confidenceAdjustment !== 0) filtersApplied.push("memory_adjusted");
