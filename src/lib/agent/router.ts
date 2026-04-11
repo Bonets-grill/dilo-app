@@ -270,7 +270,7 @@ export function detectIntent(text: string): RouteResult {
     || /(?:vuelos?\s+(?:a|de|desde|para|barato)|flight)/i.test(lower)
     || /(?:precio|coste|cuesta|cuanto\s+vale|cuanto\s+cuesta|how\s+much)/i.test(lower) && /(?:comprar|producto|servicio|vuelo|hotel|coche)/i.test(lower)
     || /(?:noticias|news|que\s+paso\s+con|que\s+ha\s+pasado)/i.test(lower)
-    || /(?:clima|tiempo\s+(?:en|para|manana)|weather|temperatura|llueve|lluvia)/i.test(lower)) {
+    ) {
     return { type: "web_search", data: { query: text } };
   }
 
