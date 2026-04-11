@@ -14,7 +14,7 @@ const supabase = createClient(
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
 import { EXTENDED_TOOLS, ALL_TRADING_TOOLS, FOREX_TOOLS, TRADING_MEMORY_TOOLS, KNOWLEDGE_TOOLS, ENTERTAINMENT_TOOLS, executeExtendedTool } from "@/lib/skills";
-import { filterToolsByIntent } from "@/lib/agent/tool-router";
+import { classifyIntent, getToolsForCategory } from "@/lib/agent/classifier";
 
 // Tool definitions for OpenAI function calling (base — trading added dynamically)
 const baseTools: OpenAI.ChatCompletionTool[] = [
@@ -1200,9 +1200,10 @@ ${userFacts}`;
           })),
         ];
 
-        // Smart tool filtering — reduce 60+ tools to only relevant ones
+        // 2-Step Agent: classify intent first, then only send relevant tools
         const lastUserMsg = messages[messages.length - 1]?.content || "";
-        const filteredTools = filterToolsByIntent(lastUserMsg, userTools);
+        const intentCategory = await classifyIntent(lastUserMsg);
+        const filteredTools = getToolsForCategory(intentCategory, userTools);
 
         // Tool loop (max 5 iterations)
         for (let i = 0; i < 5; i++) {
