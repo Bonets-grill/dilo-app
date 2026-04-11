@@ -1244,7 +1244,7 @@ ${userFacts}${journalKnowledge}`;
         // ── MULTI-AGENT ORCHESTRATOR ──
         // 1. Plan which agents to spawn
         const lastUserMsg = messages[messages.length - 1]?.content || "";
-        const agentSpecs = await planAgents(lastUserMsg);
+        const agentSpecs = await planAgents(lastUserMsg, messages.slice(-4));
 
         // 2. Execute each agent independently
         const executeToolFn = async (name: string, input: Record<string, unknown>, uid: string) => {
