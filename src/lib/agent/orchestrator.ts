@@ -276,10 +276,11 @@ export async function executeAgent(
   const tools = definition.getTools();
   const toolsCalled: string[] = [];
 
-  // Build messages: system prompt + last 3 conversation messages for context + the task
+  // Build messages: system prompt + last 8 conversation messages for context + the task
+  // More context = agents can see previous tool results (persistence)
   const messages: OpenAI.ChatCompletionMessageParam[] = [
     { role: "system", content: definition.systemPrompt },
-    ...conversationHistory.slice(-4),
+    ...conversationHistory.slice(-8),
     { role: "user", content: spec.task },
   ];
 
