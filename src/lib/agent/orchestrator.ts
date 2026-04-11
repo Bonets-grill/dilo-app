@@ -31,7 +31,11 @@ export interface AgentResult {
 const ORCHESTRATOR_PROMPT = `You are an orchestrator. Given the user's message, decide which specialist agents to spawn.
 
 Available agents:
-- trader: stocks, portfolio, P&L, positions, signals, orders, buy/sell, market analysis, win rate, performance
+- trader_portfolio: my portfolio, positions, P&L, performance, risk analysis, trading rules, trading profile
+- trader_signals: generate signal, check sweeps, trading memory, trading insights, kill zone status
+- trader_orders: buy/sell orders, trade journal, trading calendar
+- trader_market: analyze stock (AAPL, TSLA), scan opportunities, compare stocks, earnings calendar
+- trader_emotions: emotional state, tilt, FOMO, revenge, weekly report, correlations
 - forex: forex pairs (EUR/USD, GBP/JPY, XAU/USD), gold, forex analysis, IG Markets
 - knowledge: wikipedia, calculations, weather, currency conversion, general knowledge questions
 - entertainment: movies, TV shows, what to watch, recommendations, actors
@@ -109,9 +113,25 @@ ${userName ? `El usuario se llama ${userName}.` : ""}
 SIEMPRE usa las herramientas disponibles. NUNCA inventes datos. Si una herramienta no devuelve datos, dilo honestamente.`;
 
   const definitions: Record<string, AgentDefinition> = {
-    trader: {
-      systemPrompt: `${base}\nEres un especialista en trading de acciones US (Alpaca). Solo sabes de: portfolio, posiciones, órdenes, señales, análisis de mercado, rendimiento, riesgo. SIEMPRE usa las herramientas para datos reales.`,
-      getTools: () => filterTools(["trading_", "market_"]),
+    trader_portfolio: {
+      systemPrompt: `${base}\nEres un especialista en portfolio de trading. Solo manejas: ver portfolio, posiciones, rendimiento, análisis de riesgo, reglas de trading, perfil de trader. SIEMPRE usa las herramientas.`,
+      getTools: () => filterTools([], ["trading_portfolio", "trading_performance", "trading_risk_analysis", "trading_rules_check", "trading_rules_set", "trading_get_profile", "trading_setup_profile"]),
+    },
+    trader_signals: {
+      systemPrompt: `${base}\nEres un especialista en señales de trading. Solo manejas: generar señales, verificar sweeps de liquidez, consultar memoria de trading, insights, y estado de kill zone. SIEMPRE usa las herramientas.`,
+      getTools: () => filterTools([], ["trading_generate_signal", "trading_check_sweeps", "trading_memory", "trading_insights", "trading_kill_zone_status"]),
+    },
+    trader_orders: {
+      systemPrompt: `${base}\nEres un especialista en órdenes de trading. Solo manejas: colocar órdenes (preview primero, ejecutar después), sincronizar journal, calendario de trading. SIEMPRE muestra preview antes de ejecutar.`,
+      getTools: () => filterTools([], ["trading_place_order", "trading_journal_sync", "trading_journal_annotate", "trading_calendar"]),
+    },
+    trader_market: {
+      systemPrompt: `${base}\nEres un especialista en análisis de mercado. Solo manejas: analizar acciones individuales, escanear oportunidades, comparar acciones, calendario de earnings. SIEMPRE usa datos reales de Finnhub.`,
+      getTools: () => filterTools([], ["market_analyze_stock", "market_scan_opportunities", "market_compare_stocks", "market_earnings_calendar"]),
+    },
+    trader_emotions: {
+      systemPrompt: `${base}\nEres un especialista en psicología de trading. Solo manejas: estado emocional (tilt, FOMO, revenge), reporte semanal, correlaciones de trading, kill zone. Sé empático pero firme con las advertencias.`,
+      getTools: () => filterTools([], ["trading_emotional_status", "trading_weekly_report", "trading_correlations", "trading_kill_zone_status"]),
     },
     forex: {
       systemPrompt: `${base}\nEres un especialista en forex y oro (IG Markets). Solo sabes de: EUR/USD, GBP/JPY, XAU/USD y otros pares. SIEMPRE usa las herramientas para datos reales.`,
