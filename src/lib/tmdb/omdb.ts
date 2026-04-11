@@ -21,8 +21,69 @@ export interface OMDbResult {
   type: string;
 }
 
+interface OMDbSearchItem {
+  Title: string;
+  Year: string;
+  imdbID: string;
+  Type: string;
+  Poster: string;
+}
+
 /**
- * Search by title
+ * Search multiple results by keyword
+ */
+export async function searchOMDbMultiple(query: string, type?: "movie" | "series"): Promise<OMDbResult[]> {
+  const apiKey = process.env.OMDB_API_KEY;
+  if (!apiKey) return [];
+
+  try {
+    const typeParam = type ? `&type=${type}` : "";
+    const res = await fetch(
+      `https://www.omdbapi.com/?s=${encodeURIComponent(query)}&apikey=${apiKey}${typeParam}`,
+      { signal: AbortSignal.timeout(10000) }
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (data.Response === "False") return [];
+
+    const items = (data.Search || []).slice(0, 5) as OMDbSearchItem[];
+    const results: OMDbResult[] = [];
+
+    // Get full details for top 3 results
+    for (const item of items.slice(0, 3)) {
+      const detail = await getByImdbId(item.imdbID);
+      if (detail) results.push(detail);
+    }
+
+    // Add remaining as basic info
+    for (const item of items.slice(3)) {
+      results.push({
+        title: item.Title,
+        year: item.Year,
+        rated: "N/A",
+        runtime: "N/A",
+        genre: "N/A",
+        director: "N/A",
+        actors: "N/A",
+        plot: "",
+        imdbRating: "N/A",
+        imdbVotes: "N/A",
+        rottenTomatoes: null,
+        metacritic: null,
+        awards: "N/A",
+        poster: item.Poster !== "N/A" ? item.Poster : null,
+        type: item.Type,
+      });
+    }
+
+    return results;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Search by exact title
  */
 export async function searchOMDb(title: string): Promise<OMDbResult | null> {
   const apiKey = process.env.OMDB_API_KEY;
