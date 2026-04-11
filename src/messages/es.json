@@ -342,6 +342,8 @@
     "cancel": "Cancelar",
     "logSuccess": "Comida registrada",
     "noPlan": "No tienes plan activo. Pídele a DILO en el chat que genere uno.",
+    "noPlanNew": "Crea tu plan de nutrición personalizado en 1 minuto.",
+    "createPlan": "Crear mi plan",
     "planTitle": "Plan activo",
     "planWeek": "Semana",
     "planCalories": "Calorías promedio",
