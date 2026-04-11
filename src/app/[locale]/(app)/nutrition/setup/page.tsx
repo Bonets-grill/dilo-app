@@ -113,17 +113,15 @@ export default function NutritionSetupPage() {
 
     if (dbErr) { setError(dbErr.message); setSaving(false); return; }
 
-    // Auto-generate first meal plan in background
-    try {
-      await fetch("/api/nutrition/generate-plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
-      });
-    } catch {
-      // Plan generation is not blocking — user can request later
-    }
+    // Auto-generate first meal plan in background (fire-and-forget, don't await)
+    fetch("/api/nutrition/generate-plan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: user.id }),
+      signal: AbortSignal.timeout(60000),
+    }).catch(() => {});
 
+    // Redirect immediately — don't wait for plan generation
     router.push("/nutrition");
   }
 
