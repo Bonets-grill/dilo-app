@@ -69,12 +69,11 @@ ${allergyNote}
 
 Rules:
 - NEVER go below ${targets.min_calories} kcal/day
-- 4 meals per day: breakfast, lunch, dinner, snack
-- Varied ingredients across days
-- Realistic portions and common ingredients
-- Include prep time estimates
+- 3 meals per day: breakfast, lunch, dinner
+- Varied, common ingredients
+- Short ingredient lists (max 5 per meal)
 
-Return ONLY valid JSON with this structure:
+Return ONLY valid JSON:
 {
   "days": [
     {
@@ -82,21 +81,21 @@ Return ONLY valid JSON with this structure:
       "meals": [
         {
           "name": "Meal name",
-          "meal_type": "breakfast|lunch|dinner|snack",
+          "meal_type": "breakfast",
           "calories": 400,
           "protein_g": 30,
           "carbs_g": 40,
           "fat_g": 15,
           "fiber_g": 5,
-          "ingredients": [{"name": "ingredient", "quantity": "100g"}],
-          "instructions": "Brief instructions",
-          "prep_time_min": 15
+          "ingredients": [{"name": "eggs", "quantity": "2"}],
+          "instructions": "Brief",
+          "prep_time_min": 10
         }
       ],
-      "total_calories": 2000,
+      "total_calories": 1500,
       "total_protein_g": 150,
-      "total_carbs_g": 200,
-      "total_fat_g": 70
+      "total_carbs_g": 100,
+      "total_fat_g": 50
     }
   ]
 }`;
@@ -108,7 +107,7 @@ Return ONLY valid JSON with this structure:
       { role: "user", content: prompt },
     ],
     temperature: 0.7,
-    max_tokens: 4000,
+    max_tokens: 8000,
     response_format: { type: "json_object" },
   });
 
