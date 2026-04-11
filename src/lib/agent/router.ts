@@ -196,13 +196,13 @@ export function detectIntent(text: string): RouteResult {
     return { type: "market_scan" };
   }
 
-  // MARKET ANALYZE: "analiza AAPL", "qué tal Tesla", "analiza el oro", "como va nvidia"
-  const analyzeMatch = lower.match(/(?:analiza|analisis|que\s+tal|como\s+(?:va|esta)|review|investiga)\s+(?:el\s+|la\s+|las?\s+)?(?:accion(?:es)?\s+(?:de\s+)?)?([\w/.]+)/i);
+  // MARKET ANALYZE: "analiza AAPL", "qué tal Tesla" — ONLY explicit stock tickers
+  // Removed "como va/esta" pattern — too aggressive, catches "cómo está el clima"
+  const analyzeMatch = lower.match(/(?:analiza|analisis)\s+(?:el\s+|la\s+|las?\s+)?(?:accion(?:es)?\s+(?:de\s+)?)?([\w/.]+)/i);
   if (analyzeMatch) {
     const sym = analyzeMatch[1];
-    if (/^(?:[A-Z]{1,5}|gold|oro|xau|sp500|us500|nasdaq|gbp|eur|jpy|usd|btc|eth|apple|tesla|nvidia|amazon|google|microsoft|meta|netflix)/i.test(sym)) {
-      const symbolMap: Record<string, string> = { oro: "XAUUSD", gold: "XAUUSD", sp500: "SPY", us500: "SPY", nasdaq: "QQQ", apple: "AAPL", tesla: "TSLA", nvidia: "NVDA", amazon: "AMZN", google: "GOOGL", microsoft: "MSFT", meta: "META", netflix: "NFLX" };
-      return { type: "market_analyze", data: { symbol: symbolMap[sym.toLowerCase()] || sym.toUpperCase() } };
+    if (/^(?:[A-Z]{2,5})$/i.test(sym) && /^(?:AAPL|NVDA|TSLA|AMZN|MSFT|META|GOOGL|SPY|QQQ|NFLX|AMD|INTC|DIS|BA|JPM|GS|V|MA|WMT|COST|XOM|CVX)$/i.test(sym)) {
+      return { type: "market_analyze", data: { symbol: sym.toUpperCase() } };
     }
   }
 
@@ -211,19 +211,10 @@ export function detectIntent(text: string): RouteResult {
     return { type: "trading_calendar" };
   }
 
-  // TRADING PORTFOLIO (direct execution — bypasses LLM): portfolio, P&L, ganancias, pérdidas, posiciones, resumen del día
-  if (/(?:mi\s+portfolio|mis\s+posiciones|mis\s+acciones|como\s+van\s+mis|my\s+portfolio|my\s+positions|my\s+stocks)/i.test(lower)
-    || /(?:cuanto\s+(?:he\s+)?(?:ganado|perdido|llevo)|cuanto\s+(?:voy\s+)?(?:ganando|perdiendo)|ganancias?\s+(?:de\s+)?hoy|perdidas?\s+(?:de\s+)?hoy|p.?l\s+(?:de\s+)?hoy|como\s+(?:va|voy)\s+hoy)/i.test(lower)
-    || /(?:estado\s+(?:de\s+)?(?:mi[s]?\s+)?(?:inversiones|posiciones|cuenta)|resumen\s+(?:de\s+)?(?:mi[s]?\s+)?(?:cuenta|trading|portfolio|dia|day))/i.test(lower)
-    || /(?:que\s+(?:tengo|llevo)\s+(?:en\s+)?(?:mi[s]?\s+)?(?:cuenta|portfolio|posiciones))/i.test(lower)
-    || /(?:summary|resumen).*(?:trading|day|portfolio|dia)/i.test(lower)
-    || /(?:how\s+(?:was|is|did)).*(?:trading|day|portfolio)/i.test(lower)
-    || /(?:como\s+(?:fue|ha\s+ido|estuvo)).*(?:dia|jornada|sesion|trading)/i.test(lower)
-    || /(?:give\s+me).*(?:summary|resumen).*(?:trading|day)/i.test(lower)
-    || /(?:trading|trade|portfolio|p[&/.]l\b|pnl\b|profit|loss|\bposicion|position|gewinn|verlust|perte|\bgain\b|perdita|guadagno).*(?:today|\bhoy\b|heute|aujourd|oggi|\bday\b|\bdia\b|tag|jour|giorno|resume|summary|resumen|zusammenfassung)/i.test(lower)
-    || /(?:today|\bhoy\b|heute|aujourd|oggi).*(?:trading|trade|portfolio|p[&/.]l\b|pnl\b)/i.test(lower)
-    || /(?:journee|giornata|jornada|sesion|session).*(?:trading|trade|bourse|borsa|handel)/i.test(lower)
-    || /(?:trading|trade|handel|bourse|borsa).*(?:tag|journee|giornata|jornada|\bdia\b|\bday\b)/i.test(lower)) {
+  // TRADING PORTFOLIO — ONLY very explicit requests, no ambiguous patterns
+  if (/(?:mi\s+portfolio|mis\s+posiciones|mis\s+acciones|my\s+portfolio|my\s+positions)/i.test(lower)
+    || /(?:cuanto\s+(?:he\s+)?(?:ganado|perdido)\s+(?:en\s+)?(?:trading|bolsa))/i.test(lower)
+    || /(?:resumen\s+(?:de\s+)?(?:mi\s+)?(?:trading|portfolio))/i.test(lower)) {
     return { type: "trading_portfolio" };
   }
 
