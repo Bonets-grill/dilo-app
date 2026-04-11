@@ -456,10 +456,16 @@ export default function NutritionPage() {
             ) : (
               <div className="text-center py-6">
                 <UtensilsCrossed size={32} className="mx-auto text-[var(--dim)] mb-3" />
-                <p className="text-sm text-[var(--dim)]">{t("noPlan")}</p>
+                <p className="text-sm text-[var(--dim)] mb-4">{t("noPlanNew")}</p>
+                <Link
+                  href="/nutrition/setup"
+                  className="inline-block px-6 py-2.5 rounded-xl bg-[var(--accent)] text-white text-sm font-medium"
+                >
+                  {t("createPlan")}
+                </Link>
                 <button
                   onClick={() => setShowPlan(false)}
-                  className="mt-4 px-6 py-2 rounded-xl border border-[var(--border)] text-sm text-[var(--dim)]"
+                  className="mt-3 block mx-auto px-6 py-2 rounded-xl border border-[var(--border)] text-sm text-[var(--dim)]"
                 >
                   {t("closePlan")}
                 </button>
