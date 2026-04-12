@@ -23,10 +23,6 @@ export default function RemindersPage() {
   const [past, setPast] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadReminders();
-  }, []);
-
   async function loadReminders() {
     const supabase = createBrowserSupabase();
     const { data: { user } } = await supabase.auth.getUser();
@@ -52,6 +48,11 @@ export default function RemindersPage() {
     if (pastRes.data) setPast(pastRes.data);
     setLoading(false);
   }
+
+  useEffect(() => {
+    const timer = setTimeout(loadReminders, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   async function cancelReminder(id: string) {
     const supabase = createBrowserSupabase();
@@ -124,11 +125,12 @@ export default function RemindersPage() {
                           <span className="text-[10px] text-[var(--dim)] capitalize">{r.channel}</span>
                         </div>
                       </div>
-                      <button
+                      <button type="button"
                         onClick={() => cancelReminder(r.id)}
+                        aria-label={`${t("cancel") ?? "Cancel"} ${r.text}`}
                         className="p-1.5 rounded-lg hover:bg-red-500/10 text-[var(--dim)] hover:text-red-400 transition-colors"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={14} aria-hidden="true" />
                       </button>
                     </div>
                   ))}

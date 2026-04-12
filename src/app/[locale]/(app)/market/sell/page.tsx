@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useState, useRef } from "react";
+import Image from "next/image";
 import {
   ArrowLeft,
   Camera,
@@ -104,7 +105,7 @@ export default function SellPage() {
     }
   };
 
-  const useSuggestion = (field: keyof AiSuggestion) => {
+  const applySuggestion = (field: keyof AiSuggestion) => {
     if (!suggestion) return;
     switch (field) {
       case "title":
@@ -122,7 +123,7 @@ export default function SellPage() {
     }
   };
 
-  const useAllSuggestions = () => {
+  const applyAllSuggestions = () => {
     if (!suggestion) return;
     setTitle(suggestion.title);
     setCategory(suggestion.category);
@@ -187,7 +188,7 @@ export default function SellPage() {
     <div className="h-full flex flex-col">
       {/* Header */}
       <div className="flex-shrink-0 flex items-center gap-3 px-4 py-3 border-b border-[var(--border)]">
-        <button onClick={() => (step > 1 ? setStep(step - 1) : router.back())} className="p-1">
+        <button type="button" onClick={() => (step > 1 ? setStep(step - 1) : router.back())} className="p-1">
           <ArrowLeft size={20} className="text-white" />
         </button>
         <h1 className="text-lg font-bold flex-1">{t("sell")}</h1>
@@ -215,8 +216,8 @@ export default function SellPage() {
             <div className="grid grid-cols-3 gap-2">
               {photoPreviewUrls.map((url, i) => (
                 <div key={i} className="relative aspect-square rounded-xl overflow-hidden">
-                  <img src={url} alt="" className="w-full h-full object-cover" />
-                  <button
+                  <Image src={url} alt="" fill className="object-cover" unoptimized />
+                  <button type="button"
                     onClick={() => removePhoto(i)}
                     className="absolute top-1 right-1 p-1 rounded-full bg-black/60"
                   >
@@ -225,7 +226,7 @@ export default function SellPage() {
                 </div>
               ))}
               {photos.length < 5 && (
-                <button
+                <button type="button"
                   onClick={() => photoInputRef.current?.click()}
                   className="aspect-square rounded-xl border-2 border-dashed border-white/[0.15] flex flex-col items-center justify-center gap-1 text-[var(--dim)] active:scale-95 transition"
                 >
@@ -248,7 +249,7 @@ export default function SellPage() {
             {videoPreviewUrl ? (
               <div className="relative rounded-xl overflow-hidden">
                 <video src={videoPreviewUrl} className="w-full h-40 object-cover" controls playsInline />
-                <button
+                <button type="button"
                   onClick={removeVideo}
                   className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60"
                 >
@@ -256,7 +257,7 @@ export default function SellPage() {
                 </button>
               </div>
             ) : (
-              <button
+              <button type="button"
                 onClick={() => videoInputRef.current?.click()}
                 className="w-full h-32 rounded-xl border-2 border-dashed border-white/[0.15] flex flex-col items-center justify-center gap-1 text-[var(--dim)] active:scale-95 transition"
               >
@@ -294,41 +295,41 @@ export default function SellPage() {
                   label={t("title")}
                   value={suggestion.title}
                   currentValue={title}
-                  onUse={() => useSuggestion("title")}
-                  buttonLabel={t("useSuggestion")}
+                  onUse={() => applySuggestion("title")}
+                  buttonLabel={t("applySuggestion")}
                 />
                 {/* Category suggestion */}
                 <SuggestionField
                   label={t("categories." + suggestion.category)}
                   value={t(`categories.${suggestion.category}`)}
                   currentValue={category === suggestion.category ? suggestion.category : ""}
-                  onUse={() => useSuggestion("category")}
-                  buttonLabel={t("useSuggestion")}
+                  onUse={() => applySuggestion("category")}
+                  buttonLabel={t("applySuggestion")}
                 />
                 {/* Price suggestion */}
                 <SuggestionField
                   label={t("price")}
                   value={`€${suggestion.price}`}
                   currentValue={price === String(suggestion.price) ? price : ""}
-                  onUse={() => useSuggestion("price")}
-                  buttonLabel={t("useSuggestion")}
+                  onUse={() => applySuggestion("price")}
+                  buttonLabel={t("applySuggestion")}
                 />
                 {/* Description suggestion */}
                 <SuggestionField
                   label={t("description")}
                   value={suggestion.description}
                   currentValue={description}
-                  onUse={() => useSuggestion("description")}
-                  buttonLabel={t("useSuggestion")}
+                  onUse={() => applySuggestion("description")}
+                  buttonLabel={t("applySuggestion")}
                 />
 
                 {/* Use all */}
-                <button
-                  onClick={useAllSuggestions}
+                <button type="button"
+                  onClick={applyAllSuggestions}
                   className="w-full py-3 rounded-xl bg-orange-500/20 text-orange-400 text-sm font-semibold active:scale-95 transition border border-orange-500/30"
                 >
                   <Sparkles size={14} className="inline mr-1.5" />
-                  {t("useSuggestion")} — {t("title")}
+                  {t("applySuggestion")} — {t("title")}
                 </button>
               </div>
             ) : (
@@ -387,7 +388,7 @@ export default function SellPage() {
               <span className="text-xs text-[var(--dim)] mb-2 block">{t("condition.new").split("")[0] && ""}</span>
               <div className="flex flex-wrap gap-2">
                 {CONDITIONS.map((c) => (
-                  <button
+                  <button type="button"
                     key={c}
                     onClick={() => setCondition(c)}
                     className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
@@ -429,7 +430,7 @@ export default function SellPage() {
 
       {/* Bottom button */}
       <div className="flex-shrink-0 p-4 border-t border-[var(--border)]">
-        <button
+        <button type="button"
           onClick={goNext}
           disabled={!canProceed() || publishing}
           className="w-full py-3 rounded-xl bg-orange-500 text-white text-sm font-semibold disabled:opacity-40 active:scale-[0.98] transition flex items-center justify-center gap-2"
@@ -468,7 +469,7 @@ function SuggestionField({
     <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.08]">
       <p className="text-[10px] text-[var(--dim)] uppercase tracking-wider mb-1">{label}</p>
       <p className="text-sm text-white mb-2">{value}</p>
-      <button
+      <button type="button"
         onClick={onUse}
         disabled={used}
         className={`text-xs px-3 py-1 rounded-lg font-medium transition ${

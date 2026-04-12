@@ -11,7 +11,9 @@ const supabase = createClient(
  * Body: { userId: string, confirm: true }
  */
 export async function POST(req: NextRequest) {
-  const { userId, confirm } = await req.json();
+  let body;
+  try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid request body" }, { status: 400 }); }
+  const { userId, confirm } = body;
   if (!userId || confirm !== true) {
     return NextResponse.json({ error: "Missing userId or confirmation" }, { status: 400 });
   }

@@ -28,7 +28,7 @@ export default function IncomingCallModal({
   }, [onReject]);
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/90 backdrop-blur-sm">
+    <div role="alertdialog" aria-modal="true" aria-label={t("incomingCall")} aria-describedby="incoming-call-info" className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/90 backdrop-blur-sm">
       {/* Pulsing ring animation */}
       <div className="relative mb-8">
         <div className="absolute inset-0 rounded-full bg-green-500/20 animate-ping" />
@@ -50,30 +50,34 @@ export default function IncomingCallModal({
       </div>
 
       {/* Call info */}
-      <p className="text-sm text-[var(--dim)] mb-2">{t("incomingCall")}</p>
-      <h2 className="text-2xl font-bold text-white mb-1">{callerName}</h2>
-      <p className="text-sm text-[var(--dim)] mb-12">
-        {callType === "video" ? t("videoCall") : t("voiceCall")}
-      </p>
+      <div id="incoming-call-info">
+        <p className="text-sm text-[var(--dim)] mb-2">{t("incomingCall")}</p>
+        <h2 className="text-2xl font-bold text-white mb-1">{callerName}</h2>
+        <p className="text-sm text-[var(--dim)] mb-12">
+          {callType === "video" ? t("videoCall") : t("voiceCall")}
+        </p>
+      </div>
 
       {/* Action buttons */}
       <div className="flex items-center gap-16">
-        <button
+        <button type="button"
           onClick={onReject}
+          aria-label={t("decline")}
           className="flex flex-col items-center gap-2"
         >
           <div className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center active:scale-95 transition-transform">
-            <PhoneOff size={28} className="text-white" />
+            <PhoneOff size={28} className="text-white" aria-hidden="true" />
           </div>
           <span className="text-xs text-[var(--dim)]">{t("decline")}</span>
         </button>
 
-        <button
+        <button type="button"
           onClick={onAnswer}
+          aria-label={t("accept")}
           className="flex flex-col items-center gap-2"
         >
           <div className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center active:scale-95 transition-transform">
-            <Phone size={28} className="text-white" />
+            <Phone size={28} className="text-white" aria-hidden="true" />
           </div>
           <span className="text-xs text-[var(--dim)]">{t("accept")}</span>
         </button>

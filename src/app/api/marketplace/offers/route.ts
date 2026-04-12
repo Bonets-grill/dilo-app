@@ -78,7 +78,9 @@ export async function GET(req: NextRequest) {
  * POST /api/marketplace/offers — Crear oferta en un producto
  */
 export async function POST(req: NextRequest) {
-  const { userId, listingId, amount, message } = await req.json();
+  let body;
+  try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid request body" }, { status: 400 }); }
+  const { userId, listingId, amount, message } = body;
 
   if (!userId) return NextResponse.json({ error: "userId requerido" }, { status: 400 });
   if (!listingId) return NextResponse.json({ error: "listingId requerido" }, { status: 400 });
@@ -129,7 +131,9 @@ export async function POST(req: NextRequest) {
  * PATCH /api/marketplace/offers — Aceptar/rechazar oferta (solo vendedor)
  */
 export async function PATCH(req: NextRequest) {
-  const { userId, offerId, action } = await req.json();
+  let body;
+  try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid request body" }, { status: 400 }); }
+  const { userId, offerId, action } = body;
 
   if (!userId) return NextResponse.json({ error: "userId requerido" }, { status: 400 });
   if (!offerId) return NextResponse.json({ error: "offerId requerido" }, { status: 400 });

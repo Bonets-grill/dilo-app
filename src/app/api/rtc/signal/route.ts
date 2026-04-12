@@ -15,7 +15,9 @@ const supabase = createClient(
  * Signals auto-expire after 30 seconds.
  */
 export async function POST(req: NextRequest) {
-  const { fromUserId, toUserId, type, data } = await req.json();
+  let body;
+  try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid request body" }, { status: 400 }); }
+  const { fromUserId, toUserId, type, data } = body;
   if (!fromUserId || !toUserId || !type) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }

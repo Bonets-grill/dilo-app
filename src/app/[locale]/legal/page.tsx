@@ -19,7 +19,7 @@ export default async function LegalPage({ params }: { params: Promise<{ locale: 
           </div>
           <div className="text-sm text-[var(--muted)] space-y-3">
             <p><strong>Última actualización:</strong> 10 de abril de 2026</p>
-            <p>DILO ("nosotros") recopila y trata datos personales de acuerdo con el Reglamento General de Protección de Datos (RGPD) y la Ley Orgánica de Protección de Datos (LOPD).</p>
+            <p>DILO (&quot;nosotros&quot;) recopila y trata datos personales de acuerdo con el Reglamento General de Protección de Datos (RGPD) y la Ley Orgánica de Protección de Datos (LOPD).</p>
 
             <h3 className="font-semibold text-[var(--fg)] mt-4">Datos que recopilamos y base legal</h3>
             <ul className="list-disc pl-4 space-y-1">

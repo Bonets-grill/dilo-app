@@ -71,7 +71,9 @@ export async function GET(req: NextRequest) {
  * POST /api/dm — Send a direct message
  */
 export async function POST(req: NextRequest) {
-  const { userId, receiverId, content, messageType = "text", mediaUrl } = await req.json();
+  let body;
+  try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid request body" }, { status: 400 }); }
+  const { userId, receiverId, content, messageType = "text", mediaUrl } = body;
   if (!userId || !receiverId || !content) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }

@@ -98,7 +98,6 @@ async function processUserNutrition(profile: Record<string, unknown>) {
         active: true,
       });
 
-      console.log(`[Nutrition Weekly] Generated new plan for ${userId}`);
     } catch (err) {
       console.error(`[Nutrition Weekly] Failed to generate plan for ${userId}:`, err);
     }
@@ -154,7 +153,6 @@ async function processUserNutrition(profile: Record<string, unknown>) {
 
     if (!check.safe) {
       console.warn(`[Nutrition Weekly] UNSAFE weight change for ${userId}: ${check.message}`);
-      // TODO: Send notification to user about unsafe weight change rate
     }
   }
 }

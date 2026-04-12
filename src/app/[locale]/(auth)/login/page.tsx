@@ -20,7 +20,10 @@ export default function LoginPage() {
   // Check if user has email saved
   useEffect(() => {
     const saved = localStorage.getItem("dilo-email");
-    if (saved) setEmail(saved);
+    if (saved) {
+      // Defer to avoid synchronous setState in effect
+      queueMicrotask(() => setEmail(saved));
+    }
   }, []);
 
   function handlePinChange(index: number, value: string) {
@@ -123,18 +126,20 @@ export default function LoginPage() {
           <p className="text-[var(--dim)] text-xs mt-1">{t("login")}</p>
         </div>
 
-        {error && <p className="text-red-400 text-xs text-center mb-4 px-2">{error}</p>}
+        {error && <p role="alert" className="text-red-400 text-xs text-center mb-4 px-2">{error}</p>}
 
         {/* Email field (always shown) */}
         <div className="mb-4">
           <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-[var(--bg2)] border border-[var(--border)]">
-            <Mail size={16} className="text-[var(--dim)]" />
+            <Mail size={16} className="text-[var(--dim)]" aria-hidden="true" />
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder={t("email")}
+              aria-label={t("email")}
               required
+              autoComplete="email"
               className="flex-1 bg-transparent text-sm text-white placeholder-[var(--dim)] focus:outline-none"
             />
           </div>
@@ -159,6 +164,8 @@ export default function LoginPage() {
                   value={digit}
                   onChange={e => handlePinChange(i, e.target.value)}
                   onKeyDown={e => handlePinKeyDown(i, e)}
+                  aria-label={`PIN digit ${i + 1}`}
+                  autoComplete="one-time-code"
                   className={`w-14 h-14 text-center text-xl font-bold rounded-2xl border-2 bg-[var(--bg2)] focus:outline-none transition-all ${
                     digit ? "border-white/30 text-white" : "border-[var(--border)] text-[var(--dim)]"
                   } focus:border-white/50`}
@@ -168,7 +175,7 @@ export default function LoginPage() {
 
             {loading && <p className="text-center text-xs text-[var(--dim)]">...</p>}
 
-            <button
+            <button type="button"
               onClick={() => setMode("password")}
               className="w-full text-center text-xs text-[var(--dim)] mt-4 py-2 flex items-center justify-center gap-1.5"
             >
@@ -186,19 +193,19 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder={t("password")}
+              aria-label={t("password")}
               required
+              autoComplete="current-password"
               className="w-full px-4 py-3 rounded-xl bg-[var(--bg2)] border border-[var(--border)] text-white placeholder-[var(--dim)] focus:outline-none focus:border-[var(--muted)] transition text-sm"
             />
-            <button
-              type="submit"
+            <button type="submit"
               disabled={loading}
               className="w-full px-4 py-3 rounded-xl bg-white text-black font-medium text-sm hover:bg-gray-200 transition disabled:opacity-50"
             >
               {loading ? "..." : t("login")}
             </button>
 
-            <button
-              type="button"
+            <button type="button"
               onClick={() => { setMode("pin"); setError(""); }}
               className="w-full text-center text-xs text-[var(--dim)] py-2 flex items-center justify-center gap-1.5"
             >

@@ -84,8 +84,9 @@ export default function NutritionSetupPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setError("Not logged in"); setSaving(false); return; }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     // Align with actual DB columns from migration 018
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: dbErr } = await (supabase.from("nutrition_profiles") as any).upsert({
       user_id: user.id,
       age: numAge,
@@ -135,7 +136,7 @@ export default function NutritionSetupPage() {
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           {step > 0 && (
-            <button onClick={back} className="p-2 rounded-xl bg-[var(--bg2)] border border-[var(--border)]">
+            <button type="button" onClick={back} className="p-2 rounded-xl bg-[var(--bg2)] border border-[var(--border)]">
               <ArrowLeft size={16} />
             </button>
           )}
@@ -165,10 +166,10 @@ export default function NutritionSetupPage() {
               <div>
                 <label className="text-xs text-[var(--dim)] mb-1 block">{ts("sex")}</label>
                 <div className="flex gap-2">
-                  <button onClick={() => setSex("male")} className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition ${sex === "male" ? "bg-blue-500/20 border-blue-500 text-blue-400" : "bg-[var(--bg2)] border-[var(--border)] text-[var(--dim)]"}`}>
+                  <button type="button" onClick={() => setSex("male")} className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition ${sex === "male" ? "bg-blue-500/20 border-blue-500 text-blue-400" : "bg-[var(--bg2)] border-[var(--border)] text-[var(--dim)]"}`}>
                     {ts("male")}
                   </button>
-                  <button onClick={() => setSex("female")} className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition ${sex === "female" ? "bg-pink-500/20 border-pink-500 text-pink-400" : "bg-[var(--bg2)] border-[var(--border)] text-[var(--dim)]"}`}>
+                  <button type="button" onClick={() => setSex("female")} className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition ${sex === "female" ? "bg-pink-500/20 border-pink-500 text-pink-400" : "bg-[var(--bg2)] border-[var(--border)] text-[var(--dim)]"}`}>
                     {ts("female")}
                   </button>
                 </div>
@@ -200,7 +201,7 @@ export default function NutritionSetupPage() {
               { val: "active", label: ts("active"), desc: ts("activeDesc") },
               { val: "very_active", label: ts("veryActive"), desc: ts("veryActiveDesc") },
             ] as const).map(opt => (
-              <button key={opt.val} onClick={() => setActivityLevel(opt.val)}
+              <button type="button" key={opt.val} onClick={() => setActivityLevel(opt.val)}
                 className={`w-full text-left px-4 py-3 rounded-xl border transition ${activityLevel === opt.val ? "bg-green-500/15 border-green-500" : "bg-[var(--bg2)] border-[var(--border)]"}`}>
                 <p className="text-sm font-medium">{opt.label}</p>
                 <p className="text-xs text-[var(--dim)]">{opt.desc}</p>
@@ -218,7 +219,7 @@ export default function NutritionSetupPage() {
               { val: "maintain", label: ts("maintain"), icon: "⚖️" },
               { val: "gain", label: ts("gain"), icon: "💪" },
             ] as const).map(opt => (
-              <button key={opt.val} onClick={() => setGoal(opt.val)}
+              <button type="button" key={opt.val} onClick={() => setGoal(opt.val)}
                 className={`w-full text-left px-4 py-3.5 rounded-xl border transition flex items-center gap-3 ${goal === opt.val ? "bg-green-500/15 border-green-500" : "bg-[var(--bg2)] border-[var(--border)]"}`}>
                 <span className="text-xl">{opt.icon}</span>
                 <span className="text-sm font-medium">{opt.label}</span>
@@ -229,7 +230,7 @@ export default function NutritionSetupPage() {
                 <label className="text-xs text-[var(--dim)] mb-1 block">{ts("lossRate")}</label>
                 <div className="flex gap-2">
                   {["0.25", "0.5", "0.75", "1.0"].map(v => (
-                    <button key={v} onClick={() => setWeeklyTarget(v)}
+                    <button type="button" key={v} onClick={() => setWeeklyTarget(v)}
                       className={`flex-1 py-2 rounded-xl text-xs font-medium border transition ${weeklyTarget === v ? "bg-green-500/15 border-green-500" : "bg-[var(--bg2)] border-[var(--border)] text-[var(--dim)]"}`}>
                       {v} kg
                     </button>
@@ -253,7 +254,7 @@ export default function NutritionSetupPage() {
               { val: "paleo", label: ts("paleo"), desc: ts("paleoDesc") },
               { val: "pescatarian", label: ts("pescatarian"), desc: ts("pescatarianDesc") },
             ] as const).map(opt => (
-              <button key={opt.val} onClick={() => setDietType(opt.val)}
+              <button type="button" key={opt.val} onClick={() => setDietType(opt.val)}
                 className={`w-full text-left px-4 py-3 rounded-xl border transition ${dietType === opt.val ? "bg-green-500/15 border-green-500" : "bg-[var(--bg2)] border-[var(--border)]"}`}>
                 <p className="text-sm font-medium">{opt.label}</p>
                 <p className="text-xs text-[var(--dim)]">{opt.desc}</p>
@@ -269,7 +270,7 @@ export default function NutritionSetupPage() {
             <p className="text-xs text-[var(--dim)]">{ts("allergiesHint")}</p>
             <div className="flex flex-wrap gap-2">
               {ALLERGY_OPTIONS.map(a => (
-                <button key={a} onClick={() => toggleArray(allergies, a, setAllergies)}
+                <button type="button" key={a} onClick={() => toggleArray(allergies, a, setAllergies)}
                   className={`px-3 py-2 rounded-full text-xs font-medium border transition ${allergies.includes(a) ? "bg-red-500/20 border-red-500 text-red-400" : "bg-[var(--bg2)] border-[var(--border)] text-[var(--dim)]"}`}>
                   {a}
                 </button>
@@ -290,7 +291,7 @@ export default function NutritionSetupPage() {
             <p className="text-xs text-[var(--dim)]">{ts("medicalHint")}</p>
             <div className="flex flex-wrap gap-2">
               {MEDICAL_OPTIONS.map(c => (
-                <button key={c} onClick={() => {
+                <button type="button" key={c} onClick={() => {
                   if (c === "none") { setMedicalConditions(["none"]); }
                   else { setMedicalConditions(prev => prev.filter(x => x !== "none")); toggleArray(medicalConditions.filter(x => x !== "none"), c, setMedicalConditions); }
                 }}
@@ -350,13 +351,13 @@ export default function NutritionSetupPage() {
         {/* Navigation buttons */}
         <div className="mt-6">
           {currentStep === "summary" ? (
-            <button onClick={save} disabled={saving}
+            <button type="button" onClick={save} disabled={saving}
               className="w-full py-3 rounded-xl bg-green-600 text-white font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50">
               <Check size={16} />
               {saving ? ts("saving") : ts("saveAndStart")}
             </button>
           ) : (
-            <button onClick={next} disabled={!canNext()}
+            <button type="button" onClick={next} disabled={!canNext()}
               className="w-full py-3 rounded-xl bg-white text-black font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-30">
               {ts("next")} <ArrowRight size={16} />
             </button>

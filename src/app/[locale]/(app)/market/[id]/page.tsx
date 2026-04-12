@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useEffect, useState, useRef, use } from "react";
+import Image from "next/image";
 import {
   ArrowLeft,
   ChevronLeft,
@@ -131,7 +132,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     return (
       <div className="h-full flex flex-col items-center justify-center gap-3 text-[var(--dim)]">
         <p className="text-sm">{tc("error")}</p>
-        <button onClick={() => router.back()} className="text-orange-400 text-sm">
+        <button type="button" onClick={() => router.back()} className="text-orange-400 text-sm">
           {tc("back")}
         </button>
       </div>
@@ -144,7 +145,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   return (
     <div className="h-full overflow-y-auto overscroll-y-contain">
       {/* Back button */}
-      <button
+      <button type="button"
         onClick={() => router.back()}
         className="fixed top-3 left-3 z-50 p-2 rounded-full bg-black/50 backdrop-blur-sm"
       >
@@ -162,16 +163,16 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           />
         ) : allMedia.length > 0 ? (
           <>
-            <img src={allMedia[galleryIdx]} alt="" className="w-full h-full object-cover" />
+            <Image src={allMedia[galleryIdx]} alt="" fill className="object-cover" />
             {allMedia.length > 1 && (
               <>
-                <button
+                <button type="button"
                   onClick={() => setGalleryIdx((p) => (p - 1 + allMedia.length) % allMedia.length)}
                   className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/40"
                 >
                   <ChevronLeft size={18} className="text-white" />
                 </button>
-                <button
+                <button type="button"
                   onClick={() => setGalleryIdx((p) => (p + 1) % allMedia.length)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/40"
                 >
@@ -220,9 +221,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         {/* Seller card */}
         <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08]">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-white/10 overflow-hidden flex-shrink-0">
+            <div className="relative w-12 h-12 rounded-full bg-white/10 overflow-hidden flex-shrink-0">
               {listing.seller.avatar_url ? (
-                <img src={listing.seller.avatar_url} alt="" className="w-full h-full object-cover" />
+                <Image src={listing.seller.avatar_url} alt="" fill className="object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-lg font-bold text-white">
                   {listing.seller.name?.charAt(0)?.toUpperCase()}
@@ -270,13 +271,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
 
         {/* Action buttons */}
         <div className="flex gap-2">
-          <button
+          <button type="button"
             onClick={() => setShowOffer(true)}
             className="flex-1 px-4 py-3 rounded-xl bg-white/[0.08] text-white text-sm font-semibold active:scale-95 transition border border-white/[0.1]"
           >
             {t("makeOffer")}
           </button>
-          <button className="flex-1 px-4 py-3 rounded-xl bg-orange-500 text-white text-sm font-semibold active:scale-95 transition">
+          <button type="button" className="flex-1 px-4 py-3 rounded-xl bg-orange-500 text-white text-sm font-semibold active:scale-95 transition">
             {t("buyNow")}
           </button>
         </div>
@@ -296,7 +297,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   placeholder={`${currSymbol}...`}
                   className="flex-1 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.1] text-sm text-white placeholder:text-[var(--dim)] focus:outline-none focus:border-orange-500/50"
                 />
-                <button
+                <button type="button"
                   onClick={handleOffer}
                   className="px-4 py-2 rounded-xl bg-orange-500 text-white text-sm font-medium"
                 >
@@ -318,9 +319,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   href={`/market/${item.id}`}
                   className="rounded-xl overflow-hidden bg-white/[0.03] border border-white/[0.06]"
                 >
-                  <div className="aspect-square bg-black">
+                  <div className="relative aspect-square bg-black">
                     {item.photo_urls?.[0] ? (
-                      <img src={item.photo_urls[0]} alt="" className="w-full h-full object-cover" />
+                      <Image src={item.photo_urls[0]} alt="" fill className="object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-[var(--dim)] text-xs">
                         No photo
@@ -340,7 +341,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         )}
 
         {/* Report */}
-        <button className="flex items-center gap-1.5 text-xs text-[var(--dim)] hover:text-red-400 transition">
+        <button type="button" className="flex items-center gap-1.5 text-xs text-[var(--dim)] hover:text-red-400 transition">
           <Flag size={12} />
           {t("report")}
         </button>

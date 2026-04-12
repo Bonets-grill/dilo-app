@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import {
   ArrowLeft,
   Eye,
@@ -99,7 +100,7 @@ export default function MyListingsPage() {
     <div className="h-full flex flex-col">
       {/* Header */}
       <div className="flex-shrink-0 flex items-center gap-3 px-4 py-3 border-b border-[var(--border)]">
-        <button onClick={() => router.back()} className="p-1">
+        <button type="button" onClick={() => router.back()} className="p-1">
           <ArrowLeft size={20} className="text-white" />
         </button>
         <h1 className="text-lg font-bold flex-1">{t("myListings")}</h1>
@@ -147,7 +148,7 @@ export default function MyListingsPage() {
             {/* Status filter */}
             <div className="flex gap-2 overflow-x-auto scrollbar-none">
               {STATUS_FILTERS.map((s) => (
-                <button
+                <button type="button"
                   key={s}
                   onClick={() => setStatusFilter(s)}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition ${
@@ -182,12 +183,13 @@ export default function MyListingsPage() {
                     className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] active:scale-[0.99] transition"
                   >
                     {/* Thumbnail */}
-                    <div className="w-16 h-16 rounded-lg overflow-hidden bg-black flex-shrink-0">
+                    <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-black flex-shrink-0">
                       {listing.photo_urls?.[0] ? (
-                        <img
+                        <Image
                           src={listing.photo_urls[0]}
                           alt=""
-                          className="w-full h-full object-cover"
+                          fill
+                          className="object-cover"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-[var(--dim)]">

@@ -4,10 +4,6 @@ import { useEffect } from "react";
 import { createBrowserSupabase } from "@/lib/supabase/client";
 
 export default function PushSetup() {
-  useEffect(() => {
-    registerPush();
-  }, []);
-
   async function registerPush() {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
     if (Notification.permission === "denied") return;
@@ -55,11 +51,14 @@ export default function PushSetup() {
       });
 
       if (error) console.error("[Push] DB save failed:", error);
-      else console.log("[Push] Subscription saved:", subJson.endpoint.slice(0, 50));
     } catch (e) {
       console.error("[Push] Registration failed:", e);
     }
   }
+
+  useEffect(() => {
+    registerPush();
+  }, []);
 
   return null; // Invisible component
 }

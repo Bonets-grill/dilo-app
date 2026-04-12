@@ -16,6 +16,27 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "DILO",
   },
+  openGraph: {
+    title: "DILO — Your Personal AI Secretary",
+    description: "Connect your WhatsApp. Speak. It handles the rest.",
+    siteName: "DILO",
+    url: "https://ordydilo.com",
+    images: [
+      {
+        url: "/og-image.svg",
+        width: 1200,
+        height: 630,
+        alt: "DILO — Tu secretario personal con IA",
+      },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "DILO — Your Personal AI Secretary",
+    description: "Connect your WhatsApp. Speak. It handles the rest.",
+    images: ["/og-image.svg"],
+  },
 };
 
 export const viewport: Viewport = {

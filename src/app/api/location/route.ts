@@ -11,7 +11,9 @@ const supabase = createClient(
  * GET /api/location?userId=xxx&limit=20 — Get recent locations
  */
 export async function POST(req: NextRequest) {
-  const { userId, lat, lng, accuracy, speed, altitude } = await req.json();
+  let body;
+  try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid request body" }, { status: 400 }); }
+  const { userId, lat, lng, accuracy, speed, altitude } = body;
   if (!userId || !lat || !lng) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

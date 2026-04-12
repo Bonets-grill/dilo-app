@@ -49,54 +49,52 @@ describe("Smart Router", () => {
   });
 
   // Trading
-  test("detects trading portfolio: 'mi portfolio'", () => {
-    expect(detectIntent("mi portfolio").type).toBe("trading_portfolio");
+  // These intents are now handled by the 2-step LLM classifier, not regex.
+  // The smart router returns "chat" and the classifier routes them correctly.
+  test("routes trading queries to classifier: 'mi portfolio'", () => {
+    expect(detectIntent("mi portfolio").type).toBe("chat");
   });
-  test("detects trading portfolio: 'cuánto he ganado hoy'", () => {
-    expect(detectIntent("cuánto he ganado hoy").type).toBe("trading_portfolio");
+  test("routes trading queries to classifier: 'cuánto he ganado hoy'", () => {
+    expect(detectIntent("cuánto he ganado hoy").type).toBe("chat");
   });
-  test("detects trading portfolio: 'resumen de mi día de trading'", () => {
-    expect(detectIntent("resumen de mi día de trading").type).toBe("trading_portfolio");
+  test("routes trading queries to classifier: 'resumen de mi día de trading'", () => {
+    expect(detectIntent("resumen de mi día de trading").type).toBe("chat");
   });
-  test("detects market scan: 'oportunidades'", () => {
-    expect(detectIntent("oportunidades").type).toBe("market_scan");
+  test("routes market queries to classifier: 'oportunidades'", () => {
+    expect(detectIntent("oportunidades").type).toBe("chat");
   });
-  test("detects market analyze: 'analiza NVDA'", () => {
-    const result = detectIntent("analiza NVDA");
-    expect(result.type).toBe("market_analyze");
-    expect(result.data?.symbol).toBe("NVDA");
+  test("routes market queries to classifier: 'analiza NVDA'", () => {
+    expect(detectIntent("analiza NVDA").type).toBe("chat");
   });
-  test("detects trading calendar: 'mi calendario de trading'", () => {
-    expect(detectIntent("mi calendario de trading").type).toBe("trading_calendar");
+  test("routes trading calendar to classifier: 'mi calendario de trading'", () => {
+    expect(detectIntent("mi calendario de trading").type).toBe("chat");
   });
-  test("detects trading connect: 'conectar broker'", () => {
-    expect(detectIntent("conectar broker").type).toBe("trading_connect");
-  });
-
-  // Web search
-  test("detects web search: 'busca vuelos a Madrid'", () => {
-    expect(detectIntent("busca vuelos a Madrid").type).toBe("web_search");
-  });
-  test("detects web search: 'busca el clima en Madrid'", () => {
-    expect(detectIntent("busca el clima en Madrid").type).toBe("web_search");
+  test("routes trading connect to classifier: 'conectar broker'", () => {
+    expect(detectIntent("conectar broker").type).toBe("chat");
   });
 
-  // Gasolineras
-  test("detects gasolineras: 'gasolina barata cerca'", () => {
-    expect(detectIntent("gasolina barata cerca").type).toBe("gasolineras");
+  // Web search — now goes through classifier
+  test("routes web search to classifier: 'busca vuelos a Madrid'", () => {
+    expect(detectIntent("busca vuelos a Madrid").type).toBe("chat");
+  });
+  test("routes web search to classifier: 'busca el clima en Madrid'", () => {
+    expect(detectIntent("busca el clima en Madrid").type).toBe("chat");
   });
 
-  // Electricidad
-  test("detects electricidad: 'precio de la luz'", () => {
-    expect(detectIntent("precio de la luz").type).toBe("electricidad");
+  // Services — now go through classifier
+  test("routes gasolineras to classifier: 'gasolina barata cerca'", () => {
+    expect(detectIntent("gasolina barata cerca").type).toBe("chat");
+  });
+  test("routes electricidad to classifier: 'precio de la luz'", () => {
+    expect(detectIntent("precio de la luz").type).toBe("chat");
   });
 
-  // Google
-  test("detects google connect: 'conectar mi gmail'", () => {
-    expect(detectIntent("conectar mi gmail").type).toBe("conectar_google");
+  // Google — now goes through classifier
+  test("routes google connect to classifier: 'conectar mi gmail'", () => {
+    expect(detectIntent("conectar mi gmail").type).toBe("chat");
   });
-  test("detects google connect: 'lee mis emails'", () => {
-    expect(detectIntent("lee mis emails").type).toBe("conectar_google");
+  test("routes google connect to classifier: 'lee mis emails'", () => {
+    expect(detectIntent("lee mis emails").type).toBe("chat");
   });
 
   // WhatsApp
@@ -112,12 +110,12 @@ describe("Smart Router", () => {
     expect(detectIntent("cuéntame un chiste").type).toBe("chat");
   });
 
-  // Multi-language trading
-  test("detects portfolio in English: 'my portfolio'", () => {
-    expect(detectIntent("my portfolio").type).toBe("trading_portfolio");
+  // Multi-language — now goes through classifier
+  test("routes portfolio in English to classifier: 'my portfolio'", () => {
+    expect(detectIntent("my portfolio").type).toBe("chat");
   });
-  test("detects portfolio in French: 'mon portfolio aujourd'hui'", () => {
-    expect(detectIntent("mon portfolio aujourd'hui").type).toBe("trading_portfolio");
+  test("routes portfolio in French to classifier: 'mon portfolio aujourd'hui'", () => {
+    expect(detectIntent("mon portfolio aujourd'hui").type).toBe("chat");
   });
 });
 

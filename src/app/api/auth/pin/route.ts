@@ -17,7 +17,9 @@ function hashPin(pin: string, email: string): string {
  * { action: "verify", email, pin } — verify PIN, return userId
  */
 export async function POST(req: NextRequest) {
-  const { action, userId, email, pin } = await req.json();
+  let body;
+  try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid request body" }, { status: 400 }); }
+  const { action, userId, email, pin } = body;
 
   if (!pin || pin.length < 4 || pin.length > 6 || !/^\d+$/.test(pin)) {
     return NextResponse.json({ error: "PIN must be 4-6 digits" }, { status: 400 });

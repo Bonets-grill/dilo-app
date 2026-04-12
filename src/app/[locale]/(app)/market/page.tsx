@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { createBrowserSupabase } from "@/lib/supabase/client";
 import {
   Heart,
@@ -96,21 +97,22 @@ function PhotoCarousel({ urls }: { urls: string[] }) {
   }
   return (
     <div className="relative w-full h-[60vh]">
-      <img
+      <Image
         src={urls[idx]}
         alt=""
-        className="w-full h-full object-cover"
+        fill
+        className="object-cover"
         draggable={false}
       />
       {urls.length > 1 && (
         <>
-          <button
+          <button type="button"
             onClick={(e) => { e.stopPropagation(); setIdx((p) => (p - 1 + urls.length) % urls.length); }}
             className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/40"
           >
             <ChevronLeft size={18} className="text-white" />
           </button>
-          <button
+          <button type="button"
             onClick={(e) => { e.stopPropagation(); setIdx((p) => (p + 1) % urls.length); }}
             className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/40"
           >
@@ -145,7 +147,7 @@ function VideoPlayer({ url }: { url: string }) {
         muted={muted}
         playsInline
       />
-      <button
+      <button type="button"
         onClick={() => setMuted((m) => !m)}
         className="absolute top-3 right-3 p-2 rounded-full bg-black/40"
       >
@@ -173,9 +175,9 @@ function ListingCard({ listing, t }: { listing: Listing; t: (key: string) => str
           <div className="flex-1 min-w-0">
             {/* Seller info */}
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 rounded-full bg-white/20 overflow-hidden flex-shrink-0">
+              <div className="relative w-7 h-7 rounded-full bg-white/20 overflow-hidden flex-shrink-0">
                 {listing.seller.avatar_url ? (
-                  <img src={listing.seller.avatar_url} alt="" className="w-full h-full object-cover" />
+                  <Image src={listing.seller.avatar_url} alt="" fill className="object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-white">
                     {listing.seller.name?.charAt(0)?.toUpperCase()}
@@ -209,7 +211,7 @@ function ListingCard({ listing, t }: { listing: Listing; t: (key: string) => str
 
           {/* Right side action buttons */}
           <div className="flex flex-col items-center gap-4 ml-3">
-            <button
+            <button type="button"
               onClick={() => setLiked((l) => !l)}
               className="flex flex-col items-center gap-0.5"
             >
@@ -223,7 +225,7 @@ function ListingCard({ listing, t }: { listing: Listing; t: (key: string) => str
               <MessageCircle size={24} className="text-white" />
               <span className="text-[10px] text-white">{t("chatSeller")?.split(" ")[0]}</span>
             </Link>
-            <button className="flex flex-col items-center gap-0.5">
+            <button type="button" className="flex flex-col items-center gap-0.5">
               <Share2 size={24} className="text-white" />
               <span className="text-[10px] text-white">{t("share")}</span>
             </button>
@@ -333,7 +335,7 @@ export default function MarketPage() {
       <div className="flex-shrink-0 px-3 pb-2 overflow-x-auto scrollbar-none">
         <div className="flex gap-2 min-w-max">
           {CATEGORIES.map((cat) => (
-            <button
+            <button type="button"
               key={cat}
               onClick={() => setCategory(cat)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium transition whitespace-nowrap ${
@@ -355,7 +357,7 @@ export default function MarketPage() {
       >
         {/* Pull to refresh zone */}
         <div className="text-center py-2">
-          <button onClick={handleRefresh} className="text-xs text-[var(--dim)]">
+          <button type="button" onClick={handleRefresh} className="text-xs text-[var(--dim)]">
             ↓ {t("feed")}
           </button>
         </div>

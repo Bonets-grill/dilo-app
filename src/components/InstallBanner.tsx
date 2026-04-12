@@ -25,7 +25,7 @@ export default function InstallBanner() {
     if (dismissed && Date.now() - parseInt(dismissed) < 7 * 86400000) return;
 
     const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
-    setIsIOS(ios);
+    queueMicrotask(() => setIsIOS(ios));
 
     // Android: listen for install prompt
     const handler = (e: Event) => {
@@ -60,10 +60,10 @@ export default function InstallBanner() {
   if (!show) return null;
 
   return (
-    <div className="fixed bottom-16 left-3 right-3 z-50 animate-in slide-in-from-bottom">
+    <div className="fixed bottom-16 left-3 right-3 z-50 animate-in slide-in-from-bottom" role="alert">
       <div className="bg-[var(--bg2)] border border-[var(--border)] rounded-2xl p-4 shadow-xl">
-        <button onClick={dismiss} className="absolute top-3 right-3 text-[var(--dim)]">
-          <X size={16} />
+        <button type="button" onClick={dismiss} aria-label="Close install banner" className="absolute top-3 right-3 text-[var(--dim)]">
+          <X size={16} aria-hidden="true" />
         </button>
 
         <p className="text-sm font-semibold mb-1">Instala DILO en tu móvil</p>
@@ -75,7 +75,7 @@ export default function InstallBanner() {
               1. Toca <Share size={14} className="text-blue-400 inline" /> <span className="text-white">(Compartir)</span> abajo
             </p>
             <p className="flex items-center gap-1.5">
-              2. Selecciona <Plus size={14} className="text-white inline" /> <span className="text-white">"Añadir a pantalla de inicio"</span>
+              2. Selecciona <Plus size={14} className="text-white inline" /> <span className="text-white">&quot;Añadir a pantalla de inicio&quot;</span>
             </p>
           </div>
         ) : (
@@ -83,7 +83,7 @@ export default function InstallBanner() {
             <p className="text-xs text-[var(--muted)] mb-2">
               Acceso rápido + notificaciones push
             </p>
-            <button onClick={install} className="w-full py-2 rounded-xl bg-[var(--accent)] text-white text-sm font-medium">
+            <button type="button" onClick={install} className="w-full py-2 rounded-xl bg-[var(--accent)] text-white text-sm font-medium">
               Instalar DILO
             </button>
           </div>
