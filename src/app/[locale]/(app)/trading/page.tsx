@@ -16,6 +16,7 @@ import {
   Globe,
 } from "lucide-react";
 import ForexSection, { type ForexData } from "./forex-section";
+import StrategyPanel from "./strategy-panel";
 
 interface DashboardData {
   account: { equity: number; cash: number; buyingPower: number; mode: string };
@@ -256,6 +257,9 @@ export default function TradingPage() {
             </div>
           </div>
         )}
+
+        {/* Strategy v2 — Plan del Día + Kill Zone + Metrics */}
+        <StrategyPanel />
 
         {/* Account Summary Card */}
         <div className="rounded-xl bg-[var(--card)] border border-[var(--border)] p-4">
