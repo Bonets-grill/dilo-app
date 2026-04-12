@@ -42,6 +42,52 @@ export async function GET() {
       return NextResponse.json({ error: "Engine unavailable" }, { status: 503 });
     }
 
+    // ── CEREBRO 1: Regime Detection (runs FIRST) ──
+    let regimeSummary: { dominant_regime?: string; recommendation?: string } = {};
+    try {
+      const regimeRes = await fetch(`${ENGINE_URL}/regime/batch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-API-Key": ENGINE_KEY },
+        body: JSON.stringify({ symbols: WATCHLIST, timeframe: "1d", period: "3mo" }),
+        signal: AbortSignal.timeout(60000),
+      });
+      if (regimeRes.ok) {
+        const regimeData = await regimeRes.json();
+        regimeSummary = regimeData.summary || {};
+
+        // Save regime per symbol to daily_strategy
+        for (const r of regimeData.results || []) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase.from("daily_strategy") as any).upsert({
+            date: today,
+            symbol: r.symbol,
+            regime: r.regime,
+            regime_confidence: r.confidence,
+            regime_details: r.details,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "date,symbol" }).catch(() => {});
+        }
+      }
+    } catch { /* regime detection is optional — continue without it */ }
+
+    // ── CEREBRO 5: Load Wisdom for watchlist ──
+    let wisdomMap: Record<string, Array<{ insight: string; confidence_adjustment: number }>> = {};
+    try {
+      const { data: wisdomEntries } = await supabase
+        .from("trading_wisdom")
+        .select("symbol, insight, confidence_adjustment, category")
+        .eq("active", true)
+        .in("symbol", [...WATCHLIST, null as unknown as string]);
+
+      if (wisdomEntries) {
+        for (const w of wisdomEntries) {
+          const key = w.symbol || "_global";
+          if (!wisdomMap[key]) wisdomMap[key] = [];
+          wisdomMap[key].push({ insight: w.insight, confidence_adjustment: w.confidence_adjustment || 0 });
+        }
+      }
+    } catch { /* wisdom is optional */ }
+
     // Call the Strategy endpoint on the Python engine
     const strategyRes = await fetch(`${ENGINE_URL}/strategy`, {
       method: "POST",
@@ -103,12 +149,15 @@ export async function GET() {
     }
 
     const duration = Date.now() - startTime;
+    const wisdomCount = Object.values(wisdomMap).reduce((s, w) => s + w.length, 0);
     const result = {
       date: today,
       symbols_analyzed: plans.length,
       saved,
       errors,
-      summary: data.summary || {},
+      regime: regimeSummary.dominant_regime || "unknown",
+      regime_recommendation: regimeSummary.recommendation || "",
+      wisdom_loaded: wisdomCount,
       duration_ms: duration,
     };
 

@@ -158,6 +158,127 @@ export async function GET() {
       insightsCreated++;
     }
 
+    // ── GENERATE WISDOM (Cerebro 3: condensed actionable insights) ──
+    let wisdomGenerated = 0;
+
+    // Analyze by symbol+hour for timing wisdom
+    const hourMap: Record<string, { wins: number; total: number }> = {};
+    const dayMap: Record<string, { wins: number; total: number }> = {};
+
+    for (const sig of allSignals) {
+      const hour = new Date(sig.created_at).getUTCHours();
+      const day = new Date(sig.created_at).getUTCDay();
+      const hKey = `${sig.symbol}|h${hour}`;
+      const dKey = `${sig.symbol}|d${day}`;
+
+      if (!hourMap[hKey]) hourMap[hKey] = { wins: 0, total: 0 };
+      hourMap[hKey].total++;
+      if (sig.outcome === "win") hourMap[hKey].wins++;
+
+      if (!dayMap[dKey]) dayMap[dKey] = { wins: 0, total: 0 };
+      dayMap[dKey].total++;
+      if (sig.outcome === "win") dayMap[dKey].wins++;
+    }
+
+    const dayNames = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+
+    // Best/worst hours per symbol
+    for (const [key, data] of Object.entries(hourMap)) {
+      if (data.total < 5) continue;
+      const [symbol, hourStr] = key.split("|");
+      const hour = parseInt(hourStr.slice(1));
+      const wr = Math.round((data.wins / data.total) * 100);
+
+      if (wr >= 65) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase.from("trading_wisdom") as any).upsert({
+          symbol,
+          market_type: allSignals.find((s: { symbol: string }) => s.symbol === symbol)?.market_type || "stocks",
+          category: "timing",
+          insight: `${symbol}: ${wr}% WR a las ${hour}:00 UTC (${data.total} señales)`,
+          confidence: Math.min(90, 50 + data.total),
+          sample_size: data.total,
+          confidence_adjustment: Math.min(10, Math.round((wr - 50) / 5)),
+          metadata: { hour, win_rate: wr, total: data.total },
+          last_verified: weekStart,
+          active: true,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "symbol,market_type,category,md5(insight)" }).catch(() => {});
+        wisdomGenerated++;
+      } else if (wr <= 35) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase.from("trading_wisdom") as any).upsert({
+          symbol,
+          market_type: allSignals.find((s: { symbol: string }) => s.symbol === symbol)?.market_type || "stocks",
+          category: "avoid",
+          insight: `${symbol}: EVITAR ${hour}:00 UTC — solo ${wr}% WR (${data.total} señales)`,
+          confidence: Math.min(90, 50 + data.total),
+          sample_size: data.total,
+          confidence_adjustment: -Math.min(15, Math.round((50 - wr) / 3)),
+          metadata: { hour, win_rate: wr, total: data.total },
+          last_verified: weekStart,
+          active: true,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "symbol,market_type,category,md5(insight)" }).catch(() => {});
+        wisdomGenerated++;
+      }
+    }
+
+    // Best/worst days per symbol
+    for (const [key, data] of Object.entries(dayMap)) {
+      if (data.total < 5) continue;
+      const [symbol, dayStr] = key.split("|");
+      const dayIdx = parseInt(dayStr.slice(1));
+      const wr = Math.round((data.wins / data.total) * 100);
+
+      if (wr >= 65 || wr <= 35) {
+        const isGood = wr >= 65;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase.from("trading_wisdom") as any).upsert({
+          symbol,
+          market_type: allSignals.find((s: { symbol: string }) => s.symbol === symbol)?.market_type || "stocks",
+          category: isGood ? "timing" : "avoid",
+          insight: `${symbol}: ${isGood ? "" : "EVITAR "}${dayNames[dayIdx]} — ${wr}% WR (${data.total} señales)`,
+          confidence: Math.min(90, 50 + data.total),
+          sample_size: data.total,
+          confidence_adjustment: isGood ? Math.min(8, Math.round((wr - 50) / 5)) : -Math.min(12, Math.round((50 - wr) / 3)),
+          metadata: { day: dayIdx, day_name: dayNames[dayIdx], win_rate: wr, total: data.total },
+          last_verified: weekStart,
+          active: true,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "symbol,market_type,category,md5(insight)" }).catch(() => {});
+        wisdomGenerated++;
+      }
+    }
+
+    // Setup-type wisdom per symbol (from patterns already computed)
+    for (const [, pattern] of Object.entries(patternMap)) {
+      const { symbol, setup_type, market_type, signals } = pattern;
+      const total = signals.length;
+      if (total < 10) continue;
+      const wins = signals.filter((s: { outcome: string }) => s.outcome === "win").length;
+      const wr = Math.round((wins / total) * 100);
+
+      if (wr >= 65 || wr <= 35) {
+        const isGood = wr >= 65;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase.from("trading_wisdom") as any).upsert({
+          symbol,
+          market_type: market_type || "stocks",
+          category: isGood ? "pattern" : "avoid",
+          insight: `${symbol}: ${setup_type} ${isGood ? "funciona" : "NO funciona"} — ${wr}% WR (${total} señales)`,
+          confidence: Math.min(95, 50 + total * 2),
+          sample_size: total,
+          confidence_adjustment: isGood ? Math.min(15, Math.round((wr - 50) / 3)) : -Math.min(20, Math.round((50 - wr) / 2)),
+          metadata: { setup_type, win_rate: wr, total, avg_pnl: signals.filter((s: { pnl: number | null }) => s.pnl != null).reduce((a: number, s: { pnl: number }) => a + s.pnl, 0) / total },
+          last_verified: weekStart,
+          active: true,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "symbol,market_type,category,md5(insight)" }).catch(() => {});
+        wisdomGenerated++;
+      }
+    }
+
     // Find best and worst patterns
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: strongPatterns } = await (supabase.from("trading_patterns") as any)
@@ -204,6 +325,7 @@ export async function GET() {
     const resultData = {
       patterns_updated: patternsUpdated,
       insights_created: insightsCreated,
+      wisdom_generated: wisdomGenerated,
       total_signals_analyzed: allSignals.length,
     };
 
