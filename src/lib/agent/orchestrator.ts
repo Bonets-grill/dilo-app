@@ -55,8 +55,34 @@ const PRE_ROUTES: Array<{ pattern: RegExp; domain: string; agent: string }> = [
   { pattern: /\b(clima|tiempo\s+(?:en|para)|lluev[ea]|temperatura|pron[oó]stico|weather|niev[ae]|paraguas)\b/i, domain: "knowledge", agent: "knowledge" },
   // NEWS
   { pattern: /\b(noticia|headlines|titular|[uú]ltima\s+hora|qu[eé]\s+pas[aoó]\s+(?:en|con|hoy))\b/i, domain: "knowledge", agent: "news" },
-  // GMAIL
-  { pattern: /\b(email|correo|gmail|inbox|bandeja|gmail_)\b/i, domain: "communication", agent: "communication" },
+  // ── NEW MODULES (must match BEFORE generic gmail/email) ──
+  // WRITING
+  { pattern: /\b(escribe\s+(?:un\s+)?(?:email|correo|cold\s+email|follow\s+up)|write\s+(?:an?\s+)?email|carta\s+de\s+agradecimiento|thank\s+you\s+(?:note|letter)|cold\s+email|redacta\s+(?:un\s+)?(?:email|correo))\b/i, domain: "writing", agent: "email_writer" },
+  { pattern: /\b(post\s+(?:de|para|en)\s+(?:linkedin|instagram|twitter|facebook)|tweet|caption|social\s+media\s+post)\b/i, domain: "writing", agent: "social_writer" },
+  { pattern: /\b(copy\s+(?:para|for)|descripci[oó]n\s+de\s+producto|landing\s+page|ad\s+copy|tagline|press\s+release|nota\s+de\s+prensa)\b/i, domain: "writing", agent: "copywriter" },
+  { pattern: /\b(escribe\s+como|rewrite|hazlo\s+m[aá]s\s+(?:formal|casual|profesional)|write\s+(?:like|in\s+(?:the\s+)?style))\b/i, domain: "writing", agent: "style_writer" },
+  // CAREER
+  { pattern: /\b(curr[ií]cul[ou]m|CV|resume|hazme\s+un\s+CV|build\s+(?:my\s+)?resume)\b/i, domain: "career", agent: "resume_builder" },
+  { pattern: /\b(simula\s+(?:una\s+)?entrevista|interview\s+(?:practice|sim)|preguntas\s+de\s+entrevista)\b/i, domain: "career", agent: "interview_coach" },
+  { pattern: /\b(negociar\s+salario|salary\s+negoti|cu[aá]nto\s+pedir|cuanto\s+cobrar\s+por)\b/i, domain: "career", agent: "salary_advisor" },
+  { pattern: /\b(consejo(?:s)?\s+de\s+carrera|career\s+(?:advice|path)|errores?\s+a\s+evitar\s+en\s+(?:mi\s+)?carrera)\b/i, domain: "career", agent: "career_advisor" },
+  // BUSINESS
+  { pattern: /\b(modelo\s+de\s+negocio|business\s+model|c[oó]mo\s+monetizar|lean\s+canvas)\b/i, domain: "business", agent: "business_model" },
+  { pattern: /\b(compet(?:idor|encia|itor)|competitor\s+analysis|an[aá]lisis\s+de\s+competencia)\b/i, domain: "business", agent: "competitor_analyst" },
+  { pattern: /\b(estrategia\s+de\s+precios|pricing|cu[aá]nto\s+cobrar|how\s+(?:much\s+)?to\s+charge)\b/i, domain: "business", agent: "pricing_advisor" },
+  { pattern: /\b(SEO|keywords?|meta\s+description|posicionamiento|long\s+tail)\b/i, domain: "business", agent: "seo_expert" },
+  { pattern: /\b(estrategia\s+(?:de\s+)?redes\s+sociales|social\s+media\s+strat|content\s+calendar|qu[eé]\s+public[ao]r)\b/i, domain: "business", agent: "social_strategist" },
+  { pattern: /\b(ideas?\s+para\s+ganar\s+dinero|side\s+hustle|c[oó]mo\s+ganar\s+con|monetizar\s+(?:mis\s+)?skills?|earn\s+(?:money|ideas))\b/i, domain: "business", agent: "earn_advisor" },
+  // PRODUCTIVITY
+  { pattern: /\b(plan(?:ea|ifica)\s+(?:mi\s+)?viaje|trip\s+to|viajo\s+a|itinerario|vacaciones\s+(?:a|en))\b/i, domain: "productivity", agent: "trip_planner" },
+  { pattern: /\b(organiza\s+mi\s+(?:semana|d[ií]a)|schedule|mi\s+horario|plan\s+(?:del\s+)?d[ií]a|weekly\s+plan)\b/i, domain: "productivity", agent: "scheduler" },
+  { pattern: /\b(ay[uú]dame?\s+a\s+decidir|pros\s+y?\s+contras|should\s+I|ventajas\s+y?\s+desventajas|tomar\s+(?:una\s+)?decisi[oó]n)\b/i, domain: "productivity", agent: "decision" },
+  { pattern: /\b(ens[eé][ñn]ame|expl[ií]came|teach\s+me|c[oó]mo\s+funciona|what\s+is|qu[eé]\s+es\s+(?:un|una|el|la))\b/i, domain: "productivity", agent: "learner" },
+  { pattern: /\b(MBTI|personalidad|personality|qu[eé]\s+tipo\s+de\s+persona|my\s+personality)\b/i, domain: "productivity", agent: "personality" },
+  { pattern: /\b(m[uú]ltiples?\s+perspectivas?|different\s+opinions?|qu[eé]\s+opinar[ií]an?|viewpoints?)\b/i, domain: "productivity", agent: "decision" },
+  // ── EXISTING (generic patterns last) ──
+  // GMAIL — only direct inbox access
+  { pattern: /\b(lee\s+(?:mi\s+)?(?:email|correo)|gmail|inbox|bandeja|gmail_|mis\s+correos|revisar?\s+(?:mi\s+)?correo)\b/i, domain: "communication", agent: "communication" },
   // CALENDAR
   { pattern: /\b(calendario|agenda|evento|cita|meeting|reuni[oó]n|calendar_)\b/i, domain: "communication", agent: "communication" },
   // WHATSAPP
@@ -84,6 +110,10 @@ Domains:
 - knowledge: weather, Wikipedia, calculations, currency conversion, movies, TV shows, news, headlines, general knowledge
 - finances: expenses, spending, budget, reminders, subscriptions, price comparison, shopping
 - communication: email, gmail, calendar, whatsapp, send message, image generation, greetings, casual chat
+- productivity: trip planning, travel, schedule, daily planner, decisions, pros cons, learn a topic, teach me, explain something, MBTI, personality, multiple perspectives
+- writing: write an email, cold email, follow up, social media post, LinkedIn message, Instagram caption, marketing copy, product description, landing page, ad copy, rewrite in style
+- career: resume, CV, job interview, salary negotiation, career advice, career pitfalls, hiring
+- business: business model, competitors, pricing strategy, SEO, keywords, social media strategy, content calendar, how to make money, side hustle, monetize skills
 
 CRITICAL disambiguation examples:
 - "cómo va Cuba" → knowledge (it's news/geography, NOT a stock ticker)
@@ -131,6 +161,37 @@ Respond with ONLY the agent name.`,
 - communication: email, gmail, calendar, events, agenda. Ex: "lee mi correo", "crea evento mañana"
 - general: greetings, small talk, image generation, casual conversation. Ex: "hola", "genera una imagen", "cómo estás"
 Respond with ONLY the agent name.`,
+
+  productivity: `Pick the best agent:
+- trip_planner: plan trips, itineraries, travel. Ex: "planea mi viaje a Lisboa", "trip to Paris 5 days"
+- scheduler: daily/weekly schedule, organize time, plan my day. Ex: "organiza mi semana", "plan my day"
+- decision: pros/cons, help decide, multiple perspectives. Ex: "ayúdame a decidir", "pros y contras de", "qué opinan"
+- learner: learn topics, teach me, explain concepts. Ex: "enséñame sobre blockchain", "cómo funciona la bolsa"
+- personality: MBTI, personality analysis. Ex: "mi personalidad", "qué tipo de persona soy"
+Respond with ONLY the agent name.`,
+
+  writing: `Pick the best agent:
+- email_writer: write emails, cold emails, follow ups, thank you notes. Ex: "escribe un cold email", "follow up email"
+- social_writer: social media posts, LinkedIn, Instagram, Twitter. Ex: "post de LinkedIn", "Instagram caption"
+- copywriter: marketing copy, product descriptions, landing pages, ads, press releases. Ex: "copy para mi producto", "ad copy"
+- style_writer: rewrite text in a specific style. Ex: "escribe como Steve Jobs", "hazlo más formal"
+Respond with ONLY the agent name.`,
+
+  career: `Pick the best agent:
+- resume_builder: create/update resume or CV. Ex: "hazme un currículum", "actualiza mi CV"
+- interview_coach: simulate interviews, practice questions. Ex: "simula una entrevista para PM"
+- salary_advisor: salary negotiation, how much to ask. Ex: "cuánto pedir", "negotiate salary"
+- career_advisor: career advice, pitfalls, path planning. Ex: "consejos de carrera", "errores a evitar"
+Respond with ONLY the agent name.`,
+
+  business: `Pick the best agent:
+- business_model: create business model, lean canvas, monetization. Ex: "modelo de negocio para app", "cómo monetizar"
+- competitor_analyst: competitor analysis, market research. Ex: "analiza competidores", "quién compite conmigo"
+- pricing_advisor: pricing strategy, how much to charge. Ex: "cuánto cobrar", "estrategia de precios"
+- seo_expert: SEO, keywords, meta descriptions, positioning. Ex: "SEO para mi web", "keywords para"
+- social_strategist: social media strategy, content calendar. Ex: "estrategia de redes sociales", "qué publicar"
+- earn_advisor: income ideas, side hustles, monetize skills. Ex: "ideas para ganar dinero", "side hustle con programación"
+Respond with ONLY the agent name.`,
 };
 
 export async function planAgents(userMessage: string, recentMessages?: { role: string; content: string }[]): Promise<AgentSpec[]> {
@@ -170,7 +231,7 @@ export async function planAgents(userMessage: string, recentMessages?: { role: s
         ],
       });
       const domain = (domainRes.choices[0]?.message?.content || "communication").trim().toLowerCase();
-      const validDomains = ["trading", "health", "knowledge", "finances", "communication"];
+      const validDomains = ["trading", "health", "knowledge", "finances", "communication", "productivity", "writing", "career", "business"];
       safeDomain = validDomains.includes(domain) ? domain : "communication";
     }
 
@@ -193,6 +254,10 @@ export async function planAgents(userMessage: string, recentMessages?: { role: s
       "trader_emotions", "forex", "knowledge", "entertainment", "news",
       "nutri_tracker", "nutri_planner", "nutri_coach", "wellness",
       "whatsapp", "communication", "finance", "general",
+      "trip_planner", "scheduler", "decision", "learner", "personality",
+      "email_writer", "social_writer", "copywriter", "style_writer",
+      "resume_builder", "interview_coach", "salary_advisor", "career_advisor",
+      "business_model", "competitor_analyst", "pricing_advisor", "seo_expert", "social_strategist", "earn_advisor",
     ];
     const safeAgent = validAgents.includes(agentRole) ? agentRole : "general";
 
@@ -359,6 +424,90 @@ Limpia números automáticamente (quita guiones, espacios). Añade código de pa
     general: {
       systemPrompt: `${base}\nEres DILO, un asistente personal inteligente y amigo de verdad. Eres cálido, empático y genuino. Respuestas cortas y directas con calidez humana. Puedes generar imágenes y hacer cálculos.`,
       getTools: () => filterTools([], ["generate_image", "calculate", "web_search"]),
+    },
+
+    // ── PRODUCTIVITY AGENTS ──
+    trip_planner: {
+      systemPrompt: `${base}\nEres un experto en viajes. SIEMPRE usa productivity_plan_trip para generar itinerarios detallados con costes, hoteles y tips. NUNCA planees de memoria.`,
+      getTools: () => filterTools([], ["productivity_plan_trip"]),
+    },
+    scheduler: {
+      systemPrompt: `${base}\nEres un experto en productividad. SIEMPRE usa productivity_schedule para crear horarios optimizados.\nCRÍTICO: SIEMPRE pasa el parámetro language con el idioma del usuario ("${lang}").`,
+      getTools: () => filterTools([], ["productivity_schedule"]),
+    },
+    decision: {
+      systemPrompt: `${base}\nEres un asesor estratégico. Para decisiones usa productivity_decide. Para múltiples perspectivas usa productivity_perspectives. SIEMPRE usa las herramientas.`,
+      getTools: () => filterTools([], ["productivity_decide", "productivity_perspectives"]),
+    },
+    learner: {
+      systemPrompt: `${base}\nEres un profesor experto. SIEMPRE usa productivity_learn para enseñar temas de forma estructurada.`,
+      getTools: () => filterTools([], ["productivity_learn"]),
+    },
+    personality: {
+      systemPrompt: `${base}\nEres un psicólogo especialista en personalidad. USA productivity_mbti para analizar el tipo de personalidad.`,
+      getTools: () => filterTools([], ["productivity_mbti"]),
+    },
+
+    // ── WRITING AGENTS ──
+    email_writer: {
+      systemPrompt: `${base}\nEres un experto en comunicación escrita. SIEMPRE usa writing_email. NUNCA escribas emails de memoria.\nCRÍTICO: SIEMPRE pasa el parámetro sender_name con el nombre real del usuario ("${userName}").`,
+      getTools: () => filterTools([], ["writing_email"]),
+    },
+    social_writer: {
+      systemPrompt: `${base}\nEres un community manager experto. SIEMPRE usa writing_message para crear posts optimizados por plataforma.`,
+      getTools: () => filterTools([], ["writing_message"]),
+    },
+    copywriter: {
+      systemPrompt: `${base}\nEres un copywriter de clase mundial. SIEMPRE usa writing_copy con frameworks de marketing (AIDA, PAS, BAB).`,
+      getTools: () => filterTools([], ["writing_copy"]),
+    },
+    style_writer: {
+      systemPrompt: `${base}\nEres un experto en estilos de escritura. SIEMPRE usa writing_style_match para reescribir textos en el estilo solicitado.`,
+      getTools: () => filterTools([], ["writing_style_match"]),
+    },
+
+    // ── CAREER AGENTS ──
+    resume_builder: {
+      systemPrompt: `${base}\nEres un consultor de RRHH experto en CVs. SIEMPRE usa career_build_resume con método STAR y keywords ATS. Usa el nombre real del usuario.`,
+      getTools: () => filterTools([], ["career_build_resume"]),
+    },
+    interview_coach: {
+      systemPrompt: `${base}\nEres un recruiter senior. SIEMPRE usa career_interview_sim para generar preguntas de entrevista realistas.`,
+      getTools: () => filterTools([], ["career_interview_sim"]),
+    },
+    salary_advisor: {
+      systemPrompt: `${base}\nEres un coach de negociación salarial. SIEMPRE usa career_salary_negotiate para dar rangos de mercado y scripts.`,
+      getTools: () => filterTools([], ["career_salary_negotiate"]),
+    },
+    career_advisor: {
+      systemPrompt: `${base}\nEres un estratega de carrera. SIEMPRE usa career_pitfalls para analizar riesgos y crear un plan de acción.`,
+      getTools: () => filterTools([], ["career_pitfalls"]),
+    },
+
+    // ── BUSINESS AGENTS ──
+    business_model: {
+      systemPrompt: `${base}\nEres un consultor de startups. SIEMPRE usa business_model para generar Lean Canvas con cifras reales.`,
+      getTools: () => filterTools([], ["business_model"]),
+    },
+    competitor_analyst: {
+      systemPrompt: `${base}\nEres un analista de mercado. SIEMPRE usa business_competitor_analysis para identificar competidores y oportunidades.`,
+      getTools: () => filterTools([], ["business_competitor_analysis"]),
+    },
+    pricing_advisor: {
+      systemPrompt: `${base}\nEres un estratega de pricing. SIEMPRE usa business_pricing para crear estrategias de precios con tiers y márgenes.`,
+      getTools: () => filterTools([], ["business_pricing"]),
+    },
+    seo_expert: {
+      systemPrompt: `${base}\nEres un experto en SEO. SIEMPRE usa business_seo para generar keywords, meta descriptions y plan de contenido.`,
+      getTools: () => filterTools([], ["business_seo"]),
+    },
+    social_strategist: {
+      systemPrompt: `${base}\nEres un estratega de redes sociales. SIEMPRE usa business_social_strategy para crear calendarios de contenido.`,
+      getTools: () => filterTools([], ["business_social_strategy"]),
+    },
+    earn_advisor: {
+      systemPrompt: `${base}\nEres un asesor de ingresos. SIEMPRE usa business_earn_ideas para generar ideas basadas en habilidades y presupuesto.`,
+      getTools: () => filterTools([], ["business_earn_ideas"]),
     },
   };
 

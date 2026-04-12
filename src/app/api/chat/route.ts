@@ -1204,6 +1204,33 @@ REGLAS DE BIENESTAR EMOCIONAL:
 REGLAS DE ENTRETENIMIENTO:
 - Si el usuario pide películas, series, qué ver → USA entertainment_search OBLIGATORIAMENTE con género en inglés (comedy, action, horror, etc.).
 - NUNCA inventes películas de tu memoria. USA LA HERRAMIENTA para datos reales de OMDb.
+
+REGLAS DE PRODUCTIVIDAD:
+- "planea mi viaje" / "trip to" / "viajo a" → USA productivity_plan_trip OBLIGATORIAMENTE.
+- "organiza mi semana" / "mi horario" / "schedule" → USA productivity_schedule OBLIGATORIAMENTE.
+- "ayúdame a decidir" / "pros y contras" → USA productivity_decide OBLIGATORIAMENTE.
+- "enséñame" / "explícame" / "teach me" → USA productivity_learn OBLIGATORIAMENTE.
+- "mi personalidad" / "MBTI" → USA productivity_mbti OBLIGATORIAMENTE.
+
+REGLAS DE ESCRITURA:
+- "escribe un email" / "cold email" / "follow up" → USA writing_email OBLIGATORIAMENTE.
+- "post de LinkedIn" / "Instagram caption" / "tweet" → USA writing_message OBLIGATORIAMENTE.
+- "copy para" / "descripción de producto" / "landing page" / "ad copy" → USA writing_copy OBLIGATORIAMENTE.
+- "escribe como" / "hazlo más formal/casual" → USA writing_style_match OBLIGATORIAMENTE.
+
+REGLAS DE CARRERA:
+- "hazme un CV" / "currículum" / "resume" → USA career_build_resume OBLIGATORIAMENTE.
+- "simula entrevista" / "preguntas de entrevista" → USA career_interview_sim OBLIGATORIAMENTE.
+- "cuánto pedir" / "negociar salario" → USA career_salary_negotiate OBLIGATORIAMENTE.
+- "consejos de carrera" / "errores a evitar" → USA career_pitfalls OBLIGATORIAMENTE.
+
+REGLAS DE NEGOCIO:
+- "modelo de negocio" / "business model" → USA business_model OBLIGATORIAMENTE.
+- "analiza competidores" → USA business_competitor_analysis OBLIGATORIAMENTE.
+- "estrategia de precios" / "cuánto cobrar" → USA business_pricing OBLIGATORIAMENTE.
+- "SEO" / "keywords" / "posicionamiento" → USA business_seo OBLIGATORIAMENTE.
+- "estrategia redes sociales" / "content calendar" → USA business_social_strategy OBLIGATORIAMENTE.
+- "ideas para ganar dinero" / "side hustle" → USA business_earn_ideas OBLIGATORIAMENTE.
 ${userFacts}${journalKnowledge}`;
 
   // Build tools list — trading tools per connection type
