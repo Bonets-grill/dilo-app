@@ -13,6 +13,11 @@ import { TRADING_MEMORY_TOOLS, executeTradingMemoryTool } from "./trading-memory
 import { KNOWLEDGE_TOOLS, executeKnowledgeTool } from "./knowledge";
 import { ENTERTAINMENT_TOOLS, executeEntertainmentTool } from "./entertainment";
 import { TRADING_EMOTIONAL_TOOLS, executeTradingEmotionalTool } from "./trading-emotional";
+import { TRIP_PLANNER_TOOLS, executeTripPlannerTool } from "./trip-planner";
+import { DECISION_HELPER_TOOLS, executeDecisionHelperTool } from "./decision-helper";
+import { EMAIL_WRITER_TOOLS, executeEmailWriterTool } from "./email-writer";
+import { RESUME_BUILDER_TOOLS, executeResumeBuilderTool } from "./resume-builder";
+import { BUSINESS_ADVISOR_TOOLS, executeBusinessAdvisorTool } from "./business-advisor";
 
 // Base extended tools (always available)
 export const EXTENDED_TOOLS: OpenAI.ChatCompletionTool[] = [
@@ -21,6 +26,11 @@ export const EXTENDED_TOOLS: OpenAI.ChatCompletionTool[] = [
   ...CALENDAR_TOOLS,
   ...NUTRITION_TOOLS,
   ...WELLNESS_TOOLS,
+  ...TRIP_PLANNER_TOOLS,
+  ...DECISION_HELPER_TOOLS,
+  ...EMAIL_WRITER_TOOLS,
+  ...RESUME_BUILDER_TOOLS,
+  ...BUSINESS_ADVISOR_TOOLS,
 ];
 
 // Trading tools (only for users with Alpaca connected)
@@ -97,7 +107,6 @@ export async function executeExtendedTool(
     };
     const fxInstrument = FOREX_MAP[sym];
     if (fxInstrument) {
-      console.log(`[Tool Router] Redirecting market_analyze_stock(${sym}) → forex_analyze(${fxInstrument})`);
       return executeForexTool("forex_analyze", { instrument: fxInstrument });
     }
   }
@@ -162,6 +171,29 @@ export async function executeExtendedTool(
   // Trading emotional tools
   if (toolName === "trading_emotional_status" || toolName === "trading_weekly_report" || toolName === "trading_correlations" || toolName === "trading_kill_zone_status") {
     return executeTradingEmotionalTool(toolName, input, userId);
+  }
+
+  // Productivity tools (trip planner, schedule)
+  if (toolName.startsWith("productivity_")) {
+    if (toolName === "productivity_plan_trip" || toolName === "productivity_schedule") {
+      return executeTripPlannerTool(toolName, input);
+    }
+    return executeDecisionHelperTool(toolName, input);
+  }
+
+  // Writing tools (emails, messages, copy, style)
+  if (toolName.startsWith("writing_")) {
+    return executeEmailWriterTool(toolName, input);
+  }
+
+  // Career tools (resume, interview, salary, pitfalls)
+  if (toolName.startsWith("career_")) {
+    return executeResumeBuilderTool(toolName, input);
+  }
+
+  // Business tools (model, competitors, pricing, SEO, social, earn)
+  if (toolName.startsWith("business_")) {
+    return executeBusinessAdvisorTool(toolName, input);
   }
 
   // Not an extended tool — return null so the main executor handles it

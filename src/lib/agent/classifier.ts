@@ -23,6 +23,10 @@ export type IntentCategory =
   | "wellness"
   | "finance"
   | "communication"
+  | "productivity"
+  | "writing"
+  | "career"
+  | "business"
   | "general";
 
 const CLASSIFIER_PROMPT = `You are an intent classifier. Classify the user's message into exactly ONE category.
@@ -35,6 +39,10 @@ Categories:
 - wellness: emotions, mood, stress, anxiety, meditation, sleep, breathing, mental health, journaling
 - finance: expenses, spending, budget, bills, savings, subscriptions, price comparison, gas stations, restaurants, shopping
 - communication: email, gmail, calendar, whatsapp, send message, reminders, contacts
+- productivity: trip planning, travel, schedule, daily planner, decision making, pros cons, learn a topic, teach me, explain, MBTI, personality, multiple perspectives
+- writing: write an email, cold email, follow up, thank you note, social media post, LinkedIn message, Instagram caption, marketing copy, product description, landing page, ad copy, tagline, rewrite in style of, write like
+- career: resume, CV, job interview, salary negotiation, career advice, career path, pitfalls, hiring, recruitment
+- business: business model, competitors, pricing strategy, SEO, keywords, social media strategy, content calendar, how to make money, side hustle, monetize skills, earn ideas
 - general: greetings, small talk, image generation, anything that doesn't fit above
 
 Respond with ONLY the category name, nothing else.`;
@@ -53,7 +61,7 @@ export async function classifyIntent(message: string): Promise<IntentCategory> {
 
     const result = (response.choices[0]?.message?.content || "general").trim().toLowerCase() as IntentCategory;
 
-    const valid: IntentCategory[] = ["entertainment", "trading", "knowledge", "nutrition", "wellness", "finance", "communication", "general"];
+    const valid: IntentCategory[] = ["entertainment", "trading", "knowledge", "nutrition", "wellness", "finance", "communication", "productivity", "writing", "career", "business", "general"];
     return valid.includes(result) ? result : "general";
   } catch {
     return "general";
@@ -83,6 +91,10 @@ export function getToolsForCategory(
     wellness: ["wellness_"],
     finance: ["track_expense", "get_expenses", "knowledge_currency"],
     communication: ["gmail_", "calendar_", "search_contacts", "read_whatsapp", "send_whatsapp"],
+    productivity: ["productivity_"],
+    writing: ["writing_"],
+    career: ["career_"],
+    business: ["business_"],
     general: [], // Only base tools
   };
 
