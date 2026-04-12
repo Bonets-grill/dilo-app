@@ -25,9 +25,7 @@ export default function ExpensesPage() {
   const [editing, setEditing] = useState<string | null>(null);
   const [editData, setEditData] = useState<{ description: string; amount: string; category: string }>({ description: "", amount: "", category: "" });
 
-  useEffect(() => { loadExpenses(); }, []);
-
-  async function loadExpenses() {
+  const loadExpenses = async () => {
     const supabase = createBrowserSupabase();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
@@ -47,7 +45,9 @@ export default function ExpensesPage() {
       setTotal(data.reduce((sum: number, e: Expense) => sum + Number(e.amount), 0));
     }
     setLoading(false);
-  }
+  };
+
+  useEffect(() => { setTimeout(loadExpenses, 0); }, []);
 
   async function deleteExpense(id: string) {
     const supabase = createBrowserSupabase();
@@ -121,18 +121,21 @@ export default function ExpensesPage() {
                       /* Edit mode */
                       <div key={e.id} className="px-3.5 py-3 space-y-2">
                         <input value={editData.description} onChange={ev => setEditData(p => ({ ...p, description: ev.target.value }))}
+                          aria-label={t("description") ?? "Description"}
                           className="w-full bg-[var(--bg3)] rounded-lg px-3 py-1.5 text-sm border border-[var(--border)] focus:outline-none" />
                         <div className="flex gap-2">
                           <input value={editData.amount} onChange={ev => setEditData(p => ({ ...p, amount: ev.target.value }))} type="number" step="0.01"
+                            aria-label={t("amount") ?? "Amount"}
                             className="w-24 bg-[var(--bg3)] rounded-lg px-3 py-1.5 text-sm border border-[var(--border)] focus:outline-none" />
                           <select value={editData.category} onChange={ev => setEditData(p => ({ ...p, category: ev.target.value }))}
+                            aria-label={t("category") ?? "Category"}
                             className="flex-1 bg-[var(--bg3)] rounded-lg px-2 py-1.5 text-sm border border-[var(--border)] focus:outline-none">
                             {CATEGORIES.map(c => <option key={c} value={c}>{categoryEmojis[c]} {ct(c as "food")}</option>)}
                           </select>
                         </div>
                         <div className="flex gap-2 justify-end">
-                          <button onClick={() => setEditing(null)} className="p-1.5 rounded-lg bg-[var(--bg3)] text-[var(--dim)]"><X size={14} /></button>
-                          <button onClick={() => saveEdit(e.id)} className="p-1.5 rounded-lg bg-green-600 text-white"><Check size={14} /></button>
+                          <button type="button" onClick={() => setEditing(null)} aria-label={t("cancel") ?? "Cancel"} className="p-1.5 rounded-lg bg-[var(--bg3)] text-[var(--dim)]"><X size={14} aria-hidden="true" /></button>
+                          <button type="button" onClick={() => saveEdit(e.id)} aria-label={t("save") ?? "Save"} className="p-1.5 rounded-lg bg-green-600 text-white"><Check size={14} aria-hidden="true" /></button>
                         </div>
                       </div>
                     ) : (
@@ -147,11 +150,11 @@ export default function ExpensesPage() {
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium">&euro;{Number(e.amount).toFixed(2)}</span>
-                          <button onClick={() => startEdit(e)} className="p-1.5 rounded-lg opacity-40 hover:opacity-100 active:opacity-100 transition">
-                            <Pencil size={13} className="text-[var(--dim)]" />
+                          <button type="button" onClick={() => startEdit(e)} aria-label={`${t("edit") ?? "Edit"} ${e.description}`} className="p-1.5 rounded-lg opacity-40 hover:opacity-100 active:opacity-100 transition">
+                            <Pencil size={13} className="text-[var(--dim)]" aria-hidden="true" />
                           </button>
-                          <button onClick={() => deleteExpense(e.id)} className="p-1.5 rounded-lg opacity-40 hover:opacity-100 active:opacity-100 transition">
-                            <Trash2 size={13} className="text-red-400" />
+                          <button type="button" onClick={() => deleteExpense(e.id)} aria-label={`${t("delete") ?? "Delete"} ${e.description}`} className="p-1.5 rounded-lg opacity-40 hover:opacity-100 active:opacity-100 transition">
+                            <Trash2 size={13} className="text-red-400" aria-hidden="true" />
                           </button>
                         </div>
                       </div>

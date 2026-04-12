@@ -22,6 +22,12 @@ export default function EmergencyPage() {
   const [adventureMode, setAdventureMode] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const loadContacts = async (uid: string) => {
+    const res = await fetch(`/api/emergency?userId=${uid}`);
+    const data = await res.json();
+    setContacts(data.contacts || []);
+  };
+
   useEffect(() => {
     const supabase = createBrowserSupabase();
     supabase.auth.getUser().then(({ data }) => {
@@ -33,12 +39,6 @@ export default function EmergencyPage() {
       setLoading(false);
     });
   }, []);
-
-  async function loadContacts(uid: string) {
-    const res = await fetch(`/api/emergency?userId=${uid}`);
-    const data = await res.json();
-    setContacts(data.contacts || []);
-  }
 
   async function addContact() {
     if (!newName || !newPhone || !userId) return;
@@ -88,7 +88,7 @@ export default function EmergencyPage() {
               <MapPin size={18} className={adventureMode ? "text-green-400" : "text-[var(--dim)]"} />
               <h3 className="text-sm font-semibold">Modo Aventura</h3>
             </div>
-            <button
+            <button type="button"
               onClick={toggleAdventure}
               className={`relative w-12 h-7 rounded-full transition-colors ${adventureMode ? "bg-green-500" : "bg-[var(--border)]"}`}
             >
@@ -128,7 +128,7 @@ export default function EmergencyPage() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold">Contactos de emergencia</h3>
-            <button onClick={() => setAdding(true)} className="p-1.5 rounded-lg bg-[var(--accent)]/15 text-[var(--accent)]">
+            <button type="button" onClick={() => setAdding(true)} className="p-1.5 rounded-lg bg-[var(--accent)]/15 text-[var(--accent)]">
               <Plus size={16} />
             </button>
           </div>
@@ -136,7 +136,7 @@ export default function EmergencyPage() {
           {contacts.length === 0 && !adding && (
             <div className="rounded-2xl bg-[var(--bg2)] border border-[var(--border)] p-6 text-center">
               <p className="text-sm text-[var(--dim)] mb-3">Añade contactos que recibirán alertas de emergencia</p>
-              <button onClick={() => setAdding(true)} className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg text-sm font-medium">
+              <button type="button" onClick={() => setAdding(true)} className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg text-sm font-medium">
                 Añadir contacto
               </button>
             </div>
@@ -151,8 +151,8 @@ export default function EmergencyPage() {
               <input value={newRelation} onChange={e => setNewRelation(e.target.value)} placeholder="Relación (ej: madre, esposa)"
                 className="w-full bg-[var(--bg1)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--fg)] placeholder-[var(--dim)]" />
               <div className="flex gap-2">
-                <button onClick={addContact} className="flex-1 py-2 bg-[var(--accent)] text-white rounded-lg text-sm font-medium">Guardar</button>
-                <button onClick={() => setAdding(false)} className="px-4 py-2 bg-[var(--bg3)] text-[var(--dim)] rounded-lg text-sm">Cancelar</button>
+                <button type="button" onClick={addContact} className="flex-1 py-2 bg-[var(--accent)] text-white rounded-lg text-sm font-medium">Guardar</button>
+                <button type="button" onClick={() => setAdding(false)} className="px-4 py-2 bg-[var(--bg3)] text-[var(--dim)] rounded-lg text-sm">Cancelar</button>
               </div>
             </div>
           )}
@@ -165,7 +165,7 @@ export default function EmergencyPage() {
                   <p className="text-sm font-medium">{c.name}</p>
                   <p className="text-[10px] text-[var(--dim)]">{c.phone} {c.relationship && `· ${c.relationship}`}</p>
                 </div>
-                <button onClick={() => removeContact(c.id)} className="p-1.5 text-[var(--dim)] hover:text-red-400">
+                <button type="button" onClick={() => removeContact(c.id)} className="p-1.5 text-[var(--dim)] hover:text-red-400">
                   <Trash2 size={14} />
                 </button>
               </div>

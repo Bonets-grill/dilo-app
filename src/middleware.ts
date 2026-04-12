@@ -5,9 +5,24 @@ import { routing } from "./i18n/routing";
 
 const intlMiddleware = createIntlMiddleware(routing);
 
+const BLOCKED_PATHS = new Set([
+  "/.env", "/.env.local", "/.env.production", "/.env.development",
+  "/.npmrc", "/package.json", "/package-lock.json",
+  "/tsconfig.json", "/docker-compose.yml", "/docker-compose.yaml",
+  "/yarn.lock", "/pnpm-lock.yaml", "/.gitignore",
+  "/vercel.json", "/.file-locks", "/CLAUDE.md", "/AGENTS.md",
+]);
+
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Block sensitive files
+  if (BLOCKED_PATHS.has(pathname) || /^\/.env(\..+)?$/.test(pathname)) {
+    return new NextResponse(null, { status: 404 });
+  }
+
   // Skip intl middleware for auth callback (it's a route handler, not a page)
-  if (request.nextUrl.pathname.includes("/auth/callback")) {
+  if (pathname.includes("/auth/callback")) {
     return NextResponse.next();
   }
 
@@ -25,7 +40,11 @@ export async function middleware(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options);
+            response.cookies.set(name, value, {
+              ...options,
+              httpOnly: true,
+              secure: process.env.NODE_ENV === "production",
+            });
           });
         },
       },
@@ -39,5 +58,23 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next|icons|.*\\..*).*)"],
+  matcher: [
+    // Sensitive files at root (override the dot exclusion)
+    "/.env",
+    "/.env.local",
+    "/.env.production",
+    "/.env.development",
+    "/.npmrc",
+    "/package.json",
+    "/package-lock.json",
+    "/tsconfig.json",
+    "/docker-compose.yml",
+    "/docker-compose.yaml",
+    "/.gitignore",
+    "/vercel.json",
+    "/.file-locks",
+    "/CLAUDE.md",
+    "/AGENTS.md",
+    // All pages (existing pattern)
+    "/((?!api|_next|icons|.*\\..*).*)"],
 };

@@ -42,11 +42,11 @@ function Landing() {
   return (
     <div className="min-h-dvh bg-[var(--bg)]">
       {/* Hero */}
-      <section className="px-6 pt-16 pb-12 text-center max-w-lg mx-auto">
+      <section aria-labelledby="hero-heading" className="px-6 pt-16 pb-12 text-center max-w-lg mx-auto">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#0a0a0f] border border-[var(--border)] mb-6">
           <span className="text-2xl font-black text-white tracking-tight">DILO</span>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight leading-[1.15]">
+        <h1 id="hero-heading" className="text-3xl sm:text-4xl font-bold tracking-tight leading-[1.15]">
           {t("hero")}
         </h1>
         <p className="text-[var(--muted)] mt-4 text-[15px] leading-relaxed max-w-sm mx-auto">
@@ -65,7 +65,7 @@ function Landing() {
       </section>
 
       {/* Features Grid */}
-      <section className="px-4 pb-12 max-w-lg mx-auto">
+      <section aria-label="Features" className="px-4 pb-12 max-w-lg mx-auto">
         <div className="space-y-3">
           {FEATURES.map(({ key, icon: Icon, color, bg }) => (
             <div
@@ -89,8 +89,8 @@ function Landing() {
       </section>
 
       {/* How it works */}
-      <section className="px-6 pb-12 max-w-lg mx-auto">
-        <h2 className="text-lg font-semibold mb-5 text-center">{t("howItWorks")}</h2>
+      <section aria-labelledby="how-heading" className="px-6 pb-12 max-w-lg mx-auto">
+        <h2 id="how-heading" className="text-lg font-semibold mb-5 text-center">{t("howItWorks")}</h2>
         <div className="space-y-4">
           {([1, 2, 3] as const).map((n) => (
             <div key={n} className="flex items-center gap-4">
@@ -107,8 +107,8 @@ function Landing() {
       </section>
 
       {/* Pricing */}
-      <section className="px-4 pb-12 max-w-lg mx-auto">
-        <h2 className="text-lg font-semibold mb-5 text-center">{t("pricing.title")}</h2>
+      <section aria-labelledby="pricing-heading" className="px-4 pb-12 max-w-lg mx-auto">
+        <h2 id="pricing-heading" className="text-lg font-semibold mb-5 text-center">{t("pricing.title")}</h2>
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-2xl bg-[var(--bg2)] border border-[var(--border)] p-4 text-center">
             <p className="text-lg font-bold">{t("pricing.free")}</p>

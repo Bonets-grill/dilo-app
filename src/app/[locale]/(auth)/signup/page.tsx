@@ -89,12 +89,12 @@ export default function SignupPage() {
           <p className="text-[var(--dim)] text-xs mt-1">{t("signup")}</p>
         </div>
 
-        {error && <p className="text-red-400 text-xs text-center mb-3">{error}</p>}
+        {error && <p role="alert" className="text-red-400 text-xs text-center mb-3">{error}</p>}
 
         <form onSubmit={handleSubmit} className="space-y-3">
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("name")} required className="w-full px-4 py-3 rounded-xl bg-[var(--bg2)] border border-[var(--border)] text-white placeholder-[var(--dim)] focus:outline-none focus:border-[var(--muted)] transition text-sm" />
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("email")} required className="w-full px-4 py-3 rounded-xl bg-[var(--bg2)] border border-[var(--border)] text-white placeholder-[var(--dim)] focus:outline-none focus:border-[var(--muted)] transition text-sm" />
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t("password")} required minLength={6} className="w-full px-4 py-3 rounded-xl bg-[var(--bg2)] border border-[var(--border)] text-white placeholder-[var(--dim)] focus:outline-none focus:border-[var(--muted)] transition text-sm" />
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("name")} aria-label={t("name")} required autoComplete="name" className="w-full px-4 py-3 rounded-xl bg-[var(--bg2)] border border-[var(--border)] text-white placeholder-[var(--dim)] focus:outline-none focus:border-[var(--muted)] transition text-sm" />
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("email")} aria-label={t("email")} required autoComplete="email" className="w-full px-4 py-3 rounded-xl bg-[var(--bg2)] border border-[var(--border)] text-white placeholder-[var(--dim)] focus:outline-none focus:border-[var(--muted)] transition text-sm" />
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t("password")} aria-label={t("password")} required minLength={6} autoComplete="new-password" className="w-full px-4 py-3 rounded-xl bg-[var(--bg2)] border border-[var(--border)] text-white placeholder-[var(--dim)] focus:outline-none focus:border-[var(--muted)] transition text-sm" />
           <button type="submit" disabled={loading} className="w-full px-4 py-3 rounded-xl bg-white text-black font-medium text-sm hover:bg-gray-200 transition disabled:opacity-50">{loading ? "..." : t("signup")}</button>
         </form>
 

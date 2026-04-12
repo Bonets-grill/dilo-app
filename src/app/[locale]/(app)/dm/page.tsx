@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { createBrowserSupabase } from "@/lib/supabase/client";
 import {
@@ -370,22 +371,22 @@ export default function DMPage() {
       <div className="h-full flex flex-col">
         {/* Header */}
         <div className="flex-shrink-0 flex items-center gap-3 px-4 py-3 border-b border-[var(--border)]">
-          <button onClick={closeChat} className="text-[var(--dim)]"><ArrowLeft size={20} /></button>
+          <button type="button" onClick={closeChat} className="text-[var(--dim)]"><ArrowLeft size={20} /></button>
           <div className="w-8 h-8 rounded-full bg-[var(--accent)]/20 flex items-center justify-center text-xs font-bold text-[var(--accent)]">
             {getInitials(chatWith.name)}
           </div>
           <span className="text-sm font-semibold flex-1">{chatWith.name}</span>
-          <button onClick={togglePTT}
+          <button type="button" onClick={togglePTT}
             className={`p-2 rounded-lg transition-colors ${pttActive ? "bg-green-500/20 text-green-400" : "text-[var(--dim)]"}`}>
             <Mic size={18} />
           </button>
           <div className="relative">
-            <button onClick={() => setShowMenu(!showMenu)} className="p-2 text-[var(--dim)]">
+            <button type="button" onClick={() => setShowMenu(!showMenu)} className="p-2 text-[var(--dim)]">
               <MoreVertical size={18} />
             </button>
             {showMenu && (
               <div className="absolute right-0 top-10 w-48 rounded-xl bg-[#1c1c1e] border border-white/10 shadow-2xl z-50 overflow-hidden">
-                <button onClick={blockUser} className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-red-400 active:bg-white/10">
+                <button type="button" onClick={blockUser} className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-red-400 active:bg-white/10">
                   <Ban size={16} /> {t("blockUser")}
                 </button>
               </div>
@@ -403,7 +404,7 @@ export default function DMPage() {
               </span>
               <span className={`w-2 h-2 rounded-full ${pttStatus === "connected" || pttStatus === "receiving" ? "bg-green-400" : "bg-yellow-400 animate-pulse"}`} />
             </div>
-            <button
+            <button type="button"
               onTouchStart={pttDown} onTouchEnd={pttUp}
               onMouseDown={pttDown} onMouseUp={pttUp} onMouseLeave={pttUp}
               className={`w-full py-4 rounded-xl font-bold text-sm transition-all ${
@@ -428,9 +429,9 @@ export default function DMPage() {
                   : "bg-[var(--bg2)] border border-[var(--border)] rounded-bl-md"
               }`}>
                 {m.type === "image" && m.mediaUrl ? (
-                  <img src={m.mediaUrl} alt="Imagen" className="rounded-xl max-w-full max-h-[200px] object-cover cursor-pointer" onClick={() => window.open(m.mediaUrl!, "_blank")} />
+                  <Image src={m.mediaUrl} alt="Imagen" width={300} height={200} className="rounded-xl max-w-full max-h-[200px] object-cover cursor-pointer" onClick={() => window.open(m.mediaUrl!, "_blank")} />
                 ) : m.type === "voice" && m.mediaUrl ? (
-                  <button onClick={() => toggleAudio(m.mediaUrl!)} className="flex items-center gap-2">
+                  <button type="button" onClick={() => toggleAudio(m.mediaUrl!)} className="flex items-center gap-2">
                     {playingAudio === m.mediaUrl ? <Pause size={16} /> : <Play size={16} />}
                     <span className="text-xs">{t("voiceMessage")}</span>
                   </button>
@@ -455,13 +456,13 @@ export default function DMPage() {
                 <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                 <span className="text-xs text-red-400">{t("recordingAudio")}</span>
               </div>
-              <button onClick={stopRecording} className="w-9 h-9 rounded-full bg-red-500 text-white flex items-center justify-center">
+              <button type="button" onClick={stopRecording} className="w-9 h-9 rounded-full bg-red-500 text-white flex items-center justify-center">
                 <Square size={14} />
               </button>
             </>
           ) : (
             <>
-              <button onClick={() => imgRef.current?.click()} className="w-9 h-9 rounded-full bg-[var(--bg2)] border border-[var(--border)] text-[var(--dim)] flex items-center justify-center flex-shrink-0">
+              <button type="button" onClick={() => imgRef.current?.click()} className="w-9 h-9 rounded-full bg-[var(--bg2)] border border-[var(--border)] text-[var(--dim)] flex items-center justify-center flex-shrink-0">
                 <ImagePlus size={16} />
               </button>
               <input
@@ -472,12 +473,12 @@ export default function DMPage() {
                 className="flex-1 bg-[var(--bg2)] border border-[var(--border)] rounded-full px-4 py-2 text-sm text-[var(--fg)] placeholder-[var(--dim)] focus:outline-none focus:border-[var(--accent)]/50"
               />
               {msgInput.trim() ? (
-                <button onClick={sendMessage} disabled={sending}
+                <button type="button" onClick={sendMessage} disabled={sending}
                   className="w-9 h-9 rounded-full bg-[var(--accent)] text-white flex items-center justify-center disabled:opacity-40">
                   <Send size={16} />
                 </button>
               ) : (
-                <button onClick={startRecording}
+                <button type="button" onClick={startRecording}
                   className="w-9 h-9 rounded-full bg-[var(--bg2)] border border-[var(--border)] text-[var(--dim)] flex items-center justify-center">
                   <Mic size={16} />
                 </button>
@@ -495,7 +496,7 @@ export default function DMPage() {
       <div className="h-full overflow-y-auto overscroll-y-contain">
         <div className="px-4 py-5 max-w-lg mx-auto">
           <div className="flex items-center gap-3 mb-4">
-            <button onClick={() => setView("list")} className="text-[var(--dim)]"><ArrowLeft size={20} /></button>
+            <button type="button" onClick={() => setView("list")} className="text-[var(--dim)]"><ArrowLeft size={20} /></button>
             <h2 className="text-lg font-semibold">{t("findUsers")}</h2>
           </div>
 
@@ -527,7 +528,7 @@ export default function DMPage() {
                 ) : user.connection?.status === "pending" ? (
                   <span className="text-xs text-yellow-400 flex items-center gap-1"><Clock size={12} /> {t("pending")}</span>
                 ) : (
-                  <button onClick={() => sendRequest(user.id)}
+                  <button type="button" onClick={() => sendRequest(user.id)}
                     className="px-3 py-1.5 rounded-lg bg-[var(--accent)] text-white text-xs font-medium flex items-center gap-1">
                     <UserPlus size={12} /> {t("connect")}
                   </button>
@@ -550,7 +551,7 @@ export default function DMPage() {
       <div className="px-4 py-5 max-w-lg mx-auto">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">{t("title")}</h2>
-          <button onClick={() => setView("search")}
+          <button type="button" onClick={() => setView("search")}
             className="p-2 rounded-lg bg-[var(--bg2)] border border-[var(--border)] text-[var(--dim)]">
             <UserPlus size={16} />
           </button>
@@ -569,8 +570,8 @@ export default function DMPage() {
                   <p className="text-sm font-medium">{req.name}</p>
                   <p className="text-[10px] text-[var(--dim)]">{t("wantsToConnect")}</p>
                 </div>
-                <button onClick={() => acceptRequest(req.userId)} className="p-2 rounded-lg bg-green-500/15 text-green-400"><Check size={16} /></button>
-                <button className="p-2 rounded-lg bg-red-500/15 text-red-400"><X size={16} /></button>
+                <button type="button" onClick={() => acceptRequest(req.userId)} className="p-2 rounded-lg bg-green-500/15 text-green-400"><Check size={16} /></button>
+                <button type="button" className="p-2 rounded-lg bg-red-500/15 text-red-400"><X size={16} /></button>
               </div>
             ))}
           </div>
@@ -584,7 +585,7 @@ export default function DMPage() {
             </div>
             <p className="text-sm text-[var(--dim)] mb-1">{t("noContacts")}</p>
             <p className="text-xs text-[var(--dim)] mb-4">{t("noContactsDesc")}</p>
-            <button onClick={() => setView("search")}
+            <button type="button" onClick={() => setView("search")}
               className="px-4 py-2 rounded-lg bg-[var(--accent)] text-white text-sm font-medium flex items-center gap-2">
               <UserPlus size={14} /> {t("findUsers")}
             </button>
@@ -592,7 +593,7 @@ export default function DMPage() {
         ) : (
           <div className="space-y-1">
             {contacts.map(c => (
-              <button key={c.connectionId} onClick={() => openChat(c.userId, c.name)}
+              <button type="button" key={c.connectionId} onClick={() => openChat(c.userId, c.name)}
                 className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--bg2)] transition text-left">
                 <div className="relative">
                   <div className="w-11 h-11 rounded-full bg-[var(--accent)]/20 flex items-center justify-center text-sm font-bold text-[var(--accent)]">

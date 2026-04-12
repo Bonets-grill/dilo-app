@@ -35,7 +35,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { userId, consentType, granted, version } = await req.json();
+  let body;
+  try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid request body" }, { status: 400 }); }
+  const { userId, consentType, granted, version } = body;
   if (!userId || !consentType || granted === undefined || !version) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }

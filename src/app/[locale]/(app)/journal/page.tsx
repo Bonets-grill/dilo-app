@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { createBrowserSupabase } from "@/lib/supabase/client";
 import {
-  Send,
   BookOpen,
   Target,
   Lightbulb,
@@ -96,6 +95,16 @@ export default function JournalPage() {
   const taRef = useRef<HTMLTextAreaElement>(null);
   const voiceRef = useRef<HTMLTextAreaElement>(null);
 
+  async function loadJournal(uid: string) {
+    const res = await fetch(`/api/journal?userId=${uid}&limit=30`);
+    const data = await res.json();
+    setEntries((data.entries || []).reverse());
+    setGoals(data.activeGoals || []);
+    setLessons(data.topLessons || []);
+    setLoading(false);
+    setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+  }
+
   useEffect(() => {
     const supabase = createBrowserSupabase();
     supabase.auth.getUser().then(({ data }) => {
@@ -107,16 +116,6 @@ export default function JournalPage() {
       }
     });
   }, []);
-
-  async function loadJournal(uid: string) {
-    const res = await fetch(`/api/journal?userId=${uid}&limit=30`);
-    const data = await res.json();
-    setEntries((data.entries || []).reverse());
-    setGoals(data.activeGoals || []);
-    setLessons(data.topLessons || []);
-    setLoading(false);
-    setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
-  }
 
   async function sendEntry() {
     if (!input.trim() || !userId || sending) return;
@@ -232,7 +231,7 @@ export default function JournalPage() {
             <BookOpen size={18} className="text-[var(--accent)]" />
             <h2 className="text-base font-semibold">{t("title")}</h2>
           </div>
-          <button onClick={() => setShowInsights(!showInsights)}
+          <button type="button" onClick={() => setShowInsights(!showInsights)}
             className="flex items-center gap-1 text-xs text-[var(--dim)] px-2 py-1 rounded-lg bg-[var(--bg2)]">
             <Lightbulb size={12} />
             {showInsights ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
@@ -352,7 +351,7 @@ export default function JournalPage() {
           <div className="max-w-2xl mx-auto">
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-[12px] text-[var(--dim)] font-medium">{t("audioTranscription")}</span>
-              <button onClick={() => setVoicePreview(null)} className="p-1 rounded-full hover:bg-[var(--bg3)]">
+              <button type="button" onClick={() => setVoicePreview(null)} className="p-1 rounded-full hover:bg-[var(--bg3)]">
                 <X size={14} className="text-[var(--dim)]" />
               </button>
             </div>
@@ -360,11 +359,11 @@ export default function JournalPage() {
               rows={5}
               className="w-full bg-[var(--bg1)] rounded-xl border border-[var(--border)] px-3 py-2 text-[15px] text-white resize-none leading-7 max-h-[280px] focus:outline-none focus:border-white/30" />
             <div className="flex gap-2 mt-1.5 mb-0.5 justify-end">
-              <button onClick={() => { const txt = voicePreview || ""; setVoicePreview(null); setInput(txt); setTimeout(() => taRef.current?.focus(), 50); }}
+              <button type="button" onClick={() => { const txt = voicePreview || ""; setVoicePreview(null); setInput(txt); setTimeout(() => taRef.current?.focus(), 50); }}
                 className="px-3 py-1.5 rounded-full text-[12px] font-medium bg-[var(--bg3)] text-white flex items-center gap-1.5">
                 <Pencil size={12} /> {t("editMore")}
               </button>
-              <button onClick={() => { const text = voicePreview || ""; setVoicePreview(null); setInput(text); setTimeout(() => sendEntry(), 50); }}
+              <button type="button" onClick={() => { const text = voicePreview || ""; setVoicePreview(null); setInput(text); setTimeout(() => sendEntry(), 50); }}
                 className="px-4 py-1.5 rounded-full text-[12px] font-medium bg-[var(--accent)] text-white flex items-center gap-1.5">
                 <ArrowUp size={12} /> {t("send")}
               </button>
@@ -376,7 +375,7 @@ export default function JournalPage() {
       {/* Input */}
       <div className={`flex-shrink-0 px-3 py-1.5 border-t border-[var(--border)] ${voicePreview !== null ? "hidden" : ""}`}>
         <div className="flex items-end gap-2">
-          <button onClick={() => fileRef.current?.click()} className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 mb-0.5 bg-[var(--bg3)]">
+          <button type="button" onClick={() => fileRef.current?.click()} className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 mb-0.5 bg-[var(--bg3)]">
             <ImagePlus size={16} className="text-white" />
           </button>
           <div className="flex-1 flex items-end bg-[var(--bg2)] rounded-2xl border border-[var(--border)] px-3 py-1.5">
@@ -388,11 +387,11 @@ export default function JournalPage() {
               className="flex-1 bg-transparent text-[14px] text-white placeholder-[var(--dim)] resize-none leading-6 max-h-[100px] focus:outline-none disabled:opacity-50" />
           </div>
           {input.trim() ? (
-            <button onClick={sendEntry} disabled={sending} className="w-9 h-9 rounded-full bg-[var(--accent)] text-white flex items-center justify-center flex-shrink-0 disabled:opacity-30 mb-0.5">
+            <button type="button" onClick={sendEntry} disabled={sending} className="w-9 h-9 rounded-full bg-[var(--accent)] text-white flex items-center justify-center flex-shrink-0 disabled:opacity-30 mb-0.5">
               <ArrowUp size={18} />
             </button>
           ) : (
-            <button onClick={toggleRec} disabled={transcribing} className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 mb-0.5 ${rec ? "bg-red-500 animate-pulse" : "bg-[var(--bg3)]"} ${transcribing ? "opacity-40" : ""}`}>
+            <button type="button" onClick={toggleRec} disabled={transcribing} className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 mb-0.5 ${rec ? "bg-red-500 animate-pulse" : "bg-[var(--bg3)]"} ${transcribing ? "opacity-40" : ""}`}>
               {rec ? <Square size={12} className="text-white" /> : <Mic size={16} className="text-white" />}
             </button>
           )}

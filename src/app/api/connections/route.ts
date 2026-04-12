@@ -104,7 +104,9 @@ export async function GET(req: NextRequest) {
  * POST /api/connections — Send connection request or accept/block
  */
 export async function POST(req: NextRequest) {
-  const { userId, targetId, action } = await req.json();
+  let body;
+  try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid request body" }, { status: 400 }); }
+  const { userId, targetId, action } = body;
   if (!userId || !targetId) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
 
   if (action === "request") {

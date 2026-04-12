@@ -82,9 +82,9 @@ export default function StrategyPanel() {
   }, []);
 
   useEffect(() => {
-    fetchStatus();
+    const timer = setTimeout(fetchStatus, 0);
     const interval = setInterval(fetchStatus, 30_000);
-    return () => clearInterval(interval);
+    return () => { clearTimeout(timer); clearInterval(interval); };
   }, [fetchStatus]);
 
   if (loading) {

@@ -64,6 +64,57 @@ export default function EmergencySystem() {
     return () => { if (locationIntervalRef.current) clearInterval(locationIntervalRef.current); };
   }, [adventureMode, userId, saveLocation]);
 
+  // ── TRIGGER EMERGENCY ──
+  const triggerEmergency = useCallback(async (reason: "fall" | "offline" | "manual") => {
+    if (!userId) return;
+
+    // Get emergency contacts
+    const res = await fetch(`/api/emergency?userId=${userId}`).catch(() => null);
+    const data = res ? await res.json() : { contacts: [] };
+    const contacts: EmergencyContact[] = data.contacts || [];
+
+    if (contacts.length === 0) return;
+
+    // Get location
+    const loc = lastLocationRef.current;
+    let locationText = "Ubicación no disponible";
+    let mapsLink = "";
+
+    if (loc) {
+      mapsLink = `https://maps.google.com/?q=${loc.lat},${loc.lng}`;
+      locationText = `${loc.lat.toFixed(6)}, ${loc.lng.toFixed(6)}`;
+    } else if (navigator.geolocation) {
+      try {
+        const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
+          navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 5000 })
+        );
+        mapsLink = `https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
+        locationText = `${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`;
+      } catch { /* skip */ }
+    }
+
+    const reasonText = reason === "fall" ? "Posible caida detectada" : reason === "offline" ? "Conexion perdida (Modo Aventura)" : "Boton de emergencia activado";
+    const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+    const message = `URGENCIA DILO\n\n${reasonText}\n${locationText}\n${mapsLink ? `${mapsLink}\n` : ""}${time}\n\nContactar inmediatamente.`;
+
+    // Open SMS with pre-filled message for each contact
+    const phones = contacts.map(c => c.phone).join(",");
+    const smsUrl = `sms:${phones}?body=${encodeURIComponent(message)}`;
+
+    // Try to open SMS app
+    window.open(smsUrl, "_self");
+  }, [userId]);
+
+  // ── DISMISS FALL ──
+  function dismissFall() {
+    setFallDetected(false);
+    if (fallTimerRef.current) {
+      clearTimeout(fallTimerRef.current);
+      fallTimerRef.current = null;
+    }
+  }
+
   // ── OFFLINE DETECTION (Adventure Mode → send emergency) ──
   useEffect(() => {
     if (!adventureMode || !userId) return;
@@ -75,7 +126,7 @@ export default function EmergencySystem() {
 
     window.addEventListener("offline", handleOffline);
     return () => window.removeEventListener("offline", handleOffline);
-  }, [adventureMode, userId]);
+  }, [adventureMode, userId, triggerEmergency]);
 
   // ── FALL DETECTION ──
   useEffect(() => {
@@ -110,58 +161,7 @@ export default function EmergencySystem() {
     }
 
     return () => window.removeEventListener("devicemotion", handleMotion);
-  }, [userId, fallDetected]);
-
-  // ── DISMISS FALL ──
-  function dismissFall() {
-    setFallDetected(false);
-    if (fallTimerRef.current) {
-      clearTimeout(fallTimerRef.current);
-      fallTimerRef.current = null;
-    }
-  }
-
-  // ── TRIGGER EMERGENCY ──
-  async function triggerEmergency(reason: "fall" | "offline" | "manual") {
-    if (!userId) return;
-
-    // Get emergency contacts
-    const res = await fetch(`/api/emergency?userId=${userId}`).catch(() => null);
-    const data = res ? await res.json() : { contacts: [] };
-    const contacts: EmergencyContact[] = data.contacts || [];
-
-    if (contacts.length === 0) return;
-
-    // Get location
-    const loc = lastLocationRef.current;
-    let locationText = "Ubicación no disponible";
-    let mapsLink = "";
-
-    if (loc) {
-      mapsLink = `https://maps.google.com/?q=${loc.lat},${loc.lng}`;
-      locationText = `${loc.lat.toFixed(6)}, ${loc.lng.toFixed(6)}`;
-    } else if (navigator.geolocation) {
-      try {
-        const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
-          navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 5000 })
-        );
-        mapsLink = `https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
-        locationText = `${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`;
-      } catch { /* skip */ }
-    }
-
-    const reasonText = reason === "fall" ? "Posible caída detectada" : reason === "offline" ? "Conexión perdida (Modo Aventura)" : "Botón de emergencia activado";
-    const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-
-    const message = `🚨 URGENCIA DILO\n\n${reasonText}\n📍 ${locationText}\n${mapsLink ? `🗺️ ${mapsLink}\n` : ""}⏰ ${time}\n\nContactar inmediatamente.`;
-
-    // Open SMS with pre-filled message for each contact
-    const phones = contacts.map(c => c.phone).join(",");
-    const smsUrl = `sms:${phones}?body=${encodeURIComponent(message)}`;
-
-    // Try to open SMS app
-    window.open(smsUrl, "_self");
-  }
+  }, [userId, fallDetected, triggerEmergency]);
 
   // ── DILO URGENCIA BUTTON (hold 3 seconds) ──
   const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -218,11 +218,11 @@ export default function EmergencySystem() {
     <>
       {/* Fall detection overlay */}
       {fallDetected && (
-        <div className="fixed inset-0 z-[9999] bg-red-900/95 flex flex-col items-center justify-center p-6 text-center animate-pulse">
-          <p className="text-6xl mb-4">🚨</p>
-          <h1 className="text-2xl font-bold text-white mb-2">¿Estás bien?</h1>
-          <p className="text-white/80 mb-6">DILO detectó una posible caída. Si no respondes en 30 segundos, se enviará una alerta de emergencia.</p>
-          <button
+        <div role="alertdialog" aria-modal="true" aria-labelledby="fall-title" aria-describedby="fall-desc" className="fixed inset-0 z-[9999] bg-red-900/95 flex flex-col items-center justify-center p-6 text-center animate-pulse">
+          <p className="text-6xl mb-4" aria-hidden="true">🚨</p>
+          <h1 id="fall-title" className="text-2xl font-bold text-white mb-2">¿Estás bien?</h1>
+          <p id="fall-desc" className="text-white/80 mb-6">DILO detectó una posible caída. Si no respondes en 30 segundos, se enviará una alerta de emergencia.</p>
+          <button type="button"
             onClick={dismissFall}
             className="px-8 py-4 bg-white text-red-900 rounded-2xl text-lg font-bold"
           >
@@ -233,14 +233,14 @@ export default function EmergencySystem() {
 
       {/* DILO URGENCIA — only shows when actively holding (triggered from /emergency page) */}
       {holding && (
-        <div className="fixed inset-0 z-[9998] bg-red-900/90 flex flex-col items-center justify-center p-6">
+        <div role="alert" aria-live="assertive" className="fixed inset-0 z-[9998] bg-red-900/90 flex flex-col items-center justify-center p-6">
           <div className="relative w-32 h-32 mb-4">
-            <svg className="w-full h-full -rotate-90" viewBox="0 0 44 44">
+            <svg className="w-full h-full -rotate-90" viewBox="0 0 44 44" aria-hidden="true">
               <circle cx="22" cy="22" r="20" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="2" />
               <circle cx="22" cy="22" r="20" fill="none" stroke="white" strokeWidth="3"
                 strokeDasharray={`${holdProgress * 1.26} 126`} strokeLinecap="round" />
             </svg>
-            <span className="absolute inset-0 flex items-center justify-center text-4xl">🚨</span>
+            <span className="absolute inset-0 flex items-center justify-center text-4xl" aria-hidden="true">🚨</span>
           </div>
           <p className="text-white text-lg font-bold">Enviando alerta...</p>
           <p className="text-white/60 text-sm mt-1">Suelta para cancelar</p>
