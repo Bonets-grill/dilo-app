@@ -20,6 +20,8 @@ const EXPECTED_CRONS: Record<string, string> = {
   "friendly": "10:00, 15:00, 20:00",
   "trading-learn": "7:00 L-V",
   "trading-snapshot": "22:00 L-V",
+  "trading-strategy": "7:00 L-V",
+  "trading-sniper": "*/15 kill zones L-V",
   "price-check": "10:00",
   "proactive": "10:00, 13:00, 18:00, 21:00",
 };
@@ -60,7 +62,7 @@ export async function GET() {
     const cronLogs = logsByName[cronName];
 
     // Skip trading crons on weekends
-    if (isWeekend && (cronName === "trading-learn" || cronName === "trading-snapshot")) {
+    if (isWeekend && (cronName === "trading-learn" || cronName === "trading-snapshot" || cronName === "trading-strategy" || cronName === "trading-sniper")) {
       continue;
     }
 
