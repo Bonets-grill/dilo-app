@@ -43,7 +43,15 @@ function isInKillZone(): { inZone: boolean; zone: string } {
  * 4. Logs to cron_logs
  */
 export async function GET() {
-  const today = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const day = now.getUTCDay(); // 0=Sun, 6=Sat
+
+  // WEEKEND GUARD — forex markets close Friday 22:00 UTC, reopen Sunday 22:00 UTC
+  if (day === 0 || day === 6) {
+    return NextResponse.json({ ok: true, skipped: true, reason: "Weekend — forex markets closed" });
+  }
+
+  const today = now.toISOString().slice(0, 10);
   let signalsGenerated = 0;
   let marketsAnalyzed = 0;
 
@@ -208,6 +216,19 @@ export async function GET() {
       const patternScore = Math.min(20, fxPatternsDetected);
       const consistencyScore = marketsAnalyzed >= 5 ? 10 : marketsAnalyzed * 2;
       forexLearningScore = Math.round(Math.min(100, dataScore + signalScore + patternScore + consistencyScore));
+
+      // HIGH-WATER MARK: score NEVER drops below previous maximum
+      const { data: prevForexMax } = await supabase
+        .from("trading_learning_stats")
+        .select("learning_score")
+        .eq("market_type", "forex")
+        .order("learning_score", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (prevForexMax && forexLearningScore < prevForexMax.learning_score) {
+        forexLearningScore = prevForexMax.learning_score;
+      }
 
       // Insert forex stats row (separate from stocks row which uses date unique)
       // Use delete+insert to avoid conflict with stocks' onConflict:"date"

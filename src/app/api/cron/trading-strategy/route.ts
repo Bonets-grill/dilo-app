@@ -21,7 +21,13 @@ const WATCHLIST = ["AAPL", "NVDA", "TSLA", "AMZN", "MSFT", "META", "GOOGL", "SPY
  * 3. This plan is used by the Sniper Agent to check alignment before entering
  */
 export async function GET() {
-  const today = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const day = now.getUTCDay();
+  if (day === 0 || day === 6) {
+    return NextResponse.json({ ok: true, skipped: true, reason: "Weekend — markets closed" });
+  }
+
+  const today = now.toISOString().slice(0, 10);
   const startTime = Date.now();
 
   try {

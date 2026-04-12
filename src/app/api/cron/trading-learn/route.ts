@@ -27,7 +27,15 @@ const supabase = createClient(
  * 5. Updates learning_stats (the progress bar)
  */
 export async function GET() {
-  const today = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const day = now.getUTCDay(); // 0=Sun, 6=Sat
+
+  // WEEKEND GUARD — markets are closed, running would reset score to near-zero
+  if (day === 0 || day === 6) {
+    return NextResponse.json({ ok: true, skipped: true, reason: "Weekend — markets closed" });
+  }
+
+  const today = now.toISOString().slice(0, 10);
   let dataPoints = 0;
   let patternsDetected = 0;
   let marketsAnalyzed = 0;
@@ -135,7 +143,6 @@ export async function GET() {
                   (signal.side || "BUY") as "BUY" | "SELL",
                   signal.confidence || 60,
                 );
-                console.log(`[Trading Learn] Filters for ${sym}: adj=${filterResult.confidenceAdjustment}, filters=${filterResult.filtersApplied.join(",")}`);
               } catch (filterErr) {
                 console.error(`[Trading Learn] Filter error for ${sym}:`, filterErr);
                 filterResult = { confidenceAdjustment: 0, filtersApplied: ["filter_error"], context: ["Filtros no disponibles"], blocked: false };
@@ -314,7 +321,21 @@ export async function GET() {
     const signalScore = totalSignals > 0 ? Math.min(30, winRate * 0.5) : 0; // Max 30 from win rate
     const patternScore = Math.min(20, patternsDetected); // Max 20 from patterns today
     const consistencyScore = marketsAnalyzed >= 5 ? 10 : marketsAnalyzed * 2; // Max 10 from coverage
-    const learningScore = Math.round(Math.min(100, dataScore + signalScore + patternScore + consistencyScore));
+    let learningScore = Math.round(Math.min(100, dataScore + signalScore + patternScore + consistencyScore));
+
+    // HIGH-WATER MARK: score NEVER drops below previous maximum
+    // This prevents rogue cron triggers or bad data days from resetting progress
+    const { data: previousStats } = await supabase
+      .from("trading_learning_stats")
+      .select("learning_score")
+      .order("learning_score", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const previousMax = previousStats?.learning_score || 0;
+    if (learningScore < previousMax) {
+      learningScore = previousMax;
+    }
 
     await supabase.from("trading_learning_stats").upsert({
       date: today,
