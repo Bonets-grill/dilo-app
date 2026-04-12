@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import ForexSection, { type ForexData } from "./forex-section";
 import StrategyPanel from "./strategy-panel";
+import MarketTicker from "./market-ticker";
 
 interface DashboardData {
   account: { equity: number; cash: number; buyingPower: number; mode: string };
@@ -224,6 +225,9 @@ export default function TradingPage() {
 
         {/* ===== STOCKS TAB ===== */}
         {tab === "stocks" && <>
+
+        {/* Live Market Quotes — real-time prices from Finnhub */}
+        <MarketTicker />
 
         {/* Session Status (if profile exists) */}
         {session && (
