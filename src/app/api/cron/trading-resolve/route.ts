@@ -19,6 +19,11 @@ const supabase = createClient(
  * Separate from trading-learn to avoid touching locked files.
  */
 export async function GET() {
+  const day = new Date().getUTCDay();
+  if (day === 0 || day === 6) {
+    return NextResponse.json({ ok: true, skipped: true, reason: "Weekend — markets closed" });
+  }
+
   let resolved = 0;
   let expired = 0;
 

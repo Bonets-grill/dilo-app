@@ -24,7 +24,13 @@ const ENGINE_KEY = process.env.TRADING_ENGINE_KEY || "dev-secret";
  * where the Strategy Agent found a clear HTF bias.
  */
 export async function GET() {
-  const today = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const day = now.getUTCDay();
+  if (day === 0 || day === 6) {
+    return NextResponse.json({ ok: true, skipped: true, reason: "Weekend — markets closed" });
+  }
+
+  const today = now.toISOString().slice(0, 10);
   const startTime = Date.now();
 
   let signalsGenerated = 0;
