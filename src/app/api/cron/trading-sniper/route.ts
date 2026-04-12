@@ -66,10 +66,55 @@ export async function GET() {
       return NextResponse.json({ error: "Engine unavailable" }, { status: 503 });
     }
 
+    // 2b. Load wisdom for all tradeable symbols
+    const tradeableSymbols = plans.map((p: { symbol: string }) => p.symbol);
+    let wisdomMap: Record<string, Array<{ insight: string; confidence_adjustment: number; category: string }>> = {};
+    try {
+      const { data: wisdomEntries } = await supabase
+        .from("trading_wisdom")
+        .select("symbol, insight, confidence_adjustment, category")
+        .eq("active", true)
+        .in("symbol", tradeableSymbols);
+
+      if (wisdomEntries) {
+        for (const w of wisdomEntries) {
+          if (!wisdomMap[w.symbol]) wisdomMap[w.symbol] = [];
+          wisdomMap[w.symbol].push({ insight: w.insight, confidence_adjustment: w.confidence_adjustment || 0, category: w.category });
+        }
+      }
+    } catch { /* wisdom is optional */ }
+
     // 3. Check each tradeable symbol
     for (const plan of plans) {
       try {
         symbolsChecked++;
+
+        // CEREBRO 1: Quick regime check for this symbol
+        let regimeAdj = 0;
+        let regimeAligned = true;
+        try {
+          const regimeRes = await fetch(`${ENGINE_URL}/regime/check-signal?symbol=${plan.symbol}&side=${plan.trade_direction === "LONG_ONLY" ? "BUY" : "SELL"}&timeframe=1d&period=3mo`, {
+            method: "POST",
+            headers: { "X-API-Key": ENGINE_KEY },
+            signal: AbortSignal.timeout(10000),
+          });
+          if (regimeRes.ok) {
+            const regime = await regimeRes.json();
+            regimeAdj = regime.confidence_adjustment || 0;
+            regimeAligned = regime.signal_aligned !== false;
+          }
+        } catch { /* regime check is optional */ }
+
+        // CEREBRO 5: Wisdom adjustment for this symbol
+        const symbolWisdom = wisdomMap[plan.symbol] || [];
+        const wisdomAdj = symbolWisdom.reduce((sum, w) => sum + w.confidence_adjustment, 0);
+        const avoidWisdom = symbolWisdom.filter(w => w.category === "avoid");
+
+        // If wisdom says AVOID and regime is not aligned, skip entirely
+        if (avoidWisdom.length > 0 && !regimeAligned) {
+          skipped++;
+          continue;
+        }
 
         // Call sniper endpoint
         const sniperRes = await fetch(`${ENGINE_URL}/strategy/sniper`, {
@@ -106,6 +151,15 @@ export async function GET() {
 
         // 5. Save signal to trading_signal_log
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // Apply Cerebro 1 (regime) + Cerebro 5 (wisdom) adjustments
+        const baseConfidence = confluence?.confidence || signal.confidence || 0;
+        const adjustedConfidence = Math.max(10, Math.min(95, baseConfidence + regimeAdj + wisdomAdj));
+        const allReasons = [
+          ...(signal.reasoning || []),
+          ...(regimeAdj !== 0 ? [`Regime: ${regimeAligned ? "aligned" : "counter-trend"} (${regimeAdj > 0 ? "+" : ""}${regimeAdj})`] : []),
+          ...symbolWisdom.map(w => `Wisdom: ${w.insight}`),
+        ];
+
         await (supabase.from("trading_signal_log") as any).insert({
           symbol: signal.symbol,
           side: signal.side,
@@ -113,11 +167,11 @@ export async function GET() {
           stop_loss: signal.stop_loss,
           take_profit: signal.take_profit,
           setup_type: signal.setup_type || "mtf_confluence",
-          confidence: confluence?.confidence || signal.confidence || 0,
-          reasoning: signal.reasoning || [],
+          confidence: adjustedConfidence,
+          reasoning: allReasons,
           source: "dilo_strategy_v2",
           market_type: "stocks",
-          filters_applied: confluence?.active_factors || [],
+          filters_applied: [...(confluence?.active_factors || []), "regime_check", "wisdom_check"],
         });
 
         signalsGenerated++;
