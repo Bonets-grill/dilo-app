@@ -71,6 +71,14 @@
     {
       "path": "/api/cron/trading-emotional-check",
       "schedule": "*/30 8-18 * * 1-5"
+    },
+    {
+      "path": "/api/cron/trading-strategy",
+      "schedule": "0 7 * * 1-5"
+    },
+    {
+      "path": "/api/cron/trading-sniper",
+      "schedule": "*/15 8-10,14-16 * * 1-5"
     }
   ]
 }

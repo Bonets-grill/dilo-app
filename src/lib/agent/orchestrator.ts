@@ -28,56 +28,121 @@ export interface AgentResult {
 
 // ── STEP 1: Orchestrator decides which agents to spawn ──
 
-// ── LEVEL 1: Domain Router (5 domains only) ──
-const DOMAIN_ROUTER_PROMPT = `Classify the user's message into exactly ONE domain. Look at conversation history for context.
+// ── DETERMINISTIC PRE-ROUTER: Skip LLM for obvious domains ──
+// Saves 2 LLM calls per request when keywords clearly match a domain+agent
+
+interface PreRouteResult {
+  domain: string;
+  agent: string;
+}
+
+const PRE_ROUTES: Array<{ pattern: RegExp; domain: string; agent: string }> = [
+  // FOREX — very specific patterns, no ambiguity
+  { pattern: /\b(EUR\/USD|GBP\/JPY|USD\/JPY|EUR\/GBP|GBP\/USD|AUD\/USD|USD\/CHF|USD\/CAD|NZD\/USD|XAU\/USD|forex|IG Markets|par(?:es)?\s+de\s+divisa)/i, domain: "trading", agent: "forex" },
+  // TRADING — ticker symbols and trading-specific terms
+  { pattern: /\b(mi\s+portfolio|mis\s+posiciones|trading_|market_|place\s+order|compra\s+\d+\s+acciones|vende\s+\d+|señal\s+(?:de|para)\s+\w{1,5}|sweep|liquidez|SMC|kill\s+zone)\b/i, domain: "trading", agent: "" },
+  { pattern: /\b(AAPL|NVDA|TSLA|AMZN|MSFT|META|GOOGL|SPY|QQQ|NFLX|AMD|INTC)\b/, domain: "trading", agent: "trader_market" },
+  { pattern: /\b(mi\s+(?:win\s+rate|rendimiento|performance|P&L))\b/i, domain: "trading", agent: "trader_portfolio" },
+  { pattern: /\b(FOMO|revenge\s+trading|tilt|estado\s+emocional\s+(?:de\s+)?trading)\b/i, domain: "trading", agent: "trader_emotions" },
+  // NUTRITION — food logging, meal plans
+  { pattern: /\b(desayun[eéo]|almor[cz]|cen[eéo]|com[ií]\s|nutrition_|macro|kcal|calor[ií]as\s+(?:de|del|hoy)|plan\s+(?:de\s+)?comida|dieta|(?:registr|log)\s+comida)\b/i, domain: "health", agent: "nutri_tracker" },
+  { pattern: /\b(receta|lista\s+de\s+compra|meal\s+plan|plan\s+nutricional|nutrition_setup|nutrition_plan)\b/i, domain: "health", agent: "nutri_planner" },
+  // WELLNESS — emotional state
+  { pattern: /\b(me\s+siento\s+(?:mal|triste|ansios|estresad|agobiad)|ansiedad|medit|respira(?:ción|r)\s+guiada|wellness_|bienestar\s+emocional|gratitud|grounding)\b/i, domain: "health", agent: "wellness" },
+  // ENTERTAINMENT
+  { pattern: /\b(pel[ií]cula|series?\b|qu[eé]\s+ver\s+(?:hoy|esta)|cine|cartelera|netflix|hbo|disney|entertainment_)\b/i, domain: "knowledge", agent: "entertainment" },
+  // WEATHER
+  { pattern: /\b(clima|tiempo\s+(?:en|para)|lluev[ea]|temperatura|pron[oó]stico|weather|niev[ae]|paraguas)\b/i, domain: "knowledge", agent: "knowledge" },
+  // NEWS
+  { pattern: /\b(noticia|headlines|titular|[uú]ltima\s+hora|qu[eé]\s+pas[aoó]\s+(?:en|con|hoy))\b/i, domain: "knowledge", agent: "news" },
+  // GMAIL
+  { pattern: /\b(email|correo|gmail|inbox|bandeja|gmail_)\b/i, domain: "communication", agent: "communication" },
+  // CALENDAR
+  { pattern: /\b(calendario|agenda|evento|cita|meeting|reuni[oó]n|calendar_)\b/i, domain: "communication", agent: "communication" },
+  // WHATSAPP
+  { pattern: /\b(whatsapp|manda\s+(?:un\s+)?mensaje|env[ií]a\s+(?:un\s+)?mensaje|lee\s+mis\s+mensajes)\b/i, domain: "communication", agent: "whatsapp" },
+  // EXPENSES
+  { pattern: /\b(gast[eéo]|mis\s+gastos|cu[aá]nto\s+gast|presupuesto|suscripcion|recordatorio)\b/i, domain: "finances", agent: "finance" },
+];
+
+function preRoute(message: string): PreRouteResult | null {
+  const lower = message.toLowerCase();
+  for (const route of PRE_ROUTES) {
+    if (route.pattern.test(lower) || route.pattern.test(message)) {
+      return { domain: route.domain, agent: route.agent };
+    }
+  }
+  return null;
+}
+
+// ── LEVEL 1: Domain Router (5 domains only) — used when pre-router has no match ──
+const DOMAIN_ROUTER_PROMPT = `Classify the user's message into exactly ONE domain.
 
 Domains:
-- trading: stocks, portfolio, P&L, positions, signals, buy/sell, market analysis, forex, gold, EUR/USD, AAPL, TSLA, broker, trading emotions
-- health: nutrition, diet, calories, food logging, meal plan, weight, water, stress, anxiety, mood, meditation, breathing, wellness, exercise
-- knowledge: weather, Wikipedia, calculations, currency conversion, movies, TV shows, news, headlines, general knowledge questions
-- finances: expenses, spending, budget, reminders, subscriptions, price comparison, shopping, gas stations, restaurants
-- communication: email, gmail, calendar, whatsapp, send message, contacts, image generation, greetings, small talk
+- trading: stocks, portfolio, P&L, positions, signals, buy/sell, market analysis, forex, gold, broker, trading emotions
+- health: nutrition, diet, calories, food logging, meal plan, weight, water, stress, anxiety, mood, meditation, breathing, wellness
+- knowledge: weather, Wikipedia, calculations, currency conversion, movies, TV shows, news, headlines, general knowledge
+- finances: expenses, spending, budget, reminders, subscriptions, price comparison, shopping
+- communication: email, gmail, calendar, whatsapp, send message, image generation, greetings, casual chat
+
+CRITICAL disambiguation examples:
+- "cómo va Cuba" → knowledge (it's news/geography, NOT a stock ticker)
+- "qué pasa en el mundo" → knowledge (news)
+- "qué tiempo hace" → knowledge (weather)
+- "cuánto es 45+30" → knowledge (calculation)
+- "me siento mal" → health (wellness)
+- "gasté 20 en café" → finances
+- "hola qué tal" → communication (greeting)
+- "analiza AAPL" → trading (stock ticker)
+- "mi portfolio" → trading
 
 If user says "más", "otro", "sí", "continúa" → use SAME domain as previous message.
-Respond with ONLY the domain name, nothing else.`;
+Respond with ONLY the domain name.`;
 
 // ── LEVEL 2: Sub-agent Router (per domain) ──
 const SUB_ROUTERS: Record<string, string> = {
-  trading: `Pick the best agent for this trading request:
-- trader_portfolio: portfolio, positions, P&L, performance, risk, rules, profile
-- trader_signals: generate signal, check sweeps, memory, insights, kill zone
-- trader_orders: buy/sell orders, journal, calendar
-- trader_market: analyze stock, scan opportunities, compare, earnings
-- trader_emotions: emotional state, tilt, FOMO, revenge, weekly report
-- forex: forex pairs, EUR/USD, GBP/JPY, XAU/USD, gold, IG Markets
+  trading: `Pick the best agent. Examples after each agent:
+- trader_portfolio: portfolio, positions, P&L, performance, risk, rules, profile. Ex: "mi portfolio", "mis posiciones", "mi rendimiento"
+- trader_signals: generate signal, check sweeps, memory, insights. Ex: "señal para AAPL", "hay manipulación?"
+- trader_orders: buy/sell orders, journal, calendar. Ex: "compra 10 AAPL", "mi calendario de trading"
+- trader_market: analyze stock, scan opportunities, compare, earnings. Ex: "analiza Tesla", "qué compro?", "earnings esta semana"
+- trader_emotions: emotional state, tilt, FOMO, revenge, weekly report. Ex: "cómo estoy emocionalmente", "reporte semanal"
+- forex: forex pairs (EUR/USD, GBP/JPY), gold (XAU/USD), IG Markets. Ex: "analiza EUR/USD", "precio del oro"
+IMPORTANT: Individual stock tickers (AAPL, TSLA) → trader_market, NOT forex.
 Respond with ONLY the agent name.`,
 
   health: `Pick the best agent:
-- nutri_tracker: log food/water/weight, daily progress
-- nutri_planner: meal plans, recipes, shopping list, nutrition setup
-- nutri_coach: motivation, habits, emotional eating, accountability
-- wellness: stress, anxiety, mood, meditation, breathing, mental health
+- nutri_tracker: log food/water/weight, daily progress. Ex: "desayuné huevos", "bebí agua", "peso 78"
+- nutri_planner: meal plans, recipes, shopping list, nutrition setup. Ex: "plan de comida", "receta saludable"
+- nutri_coach: motivation, habits, emotional eating. Ex: "no puedo con la dieta", "cómo voy?"
+- wellness: stress, anxiety, mood, meditation, breathing, mental health. Ex: "me siento ansioso", "quiero meditar"
 Respond with ONLY the agent name.`,
 
   knowledge: `Pick the best agent:
-- knowledge: weather, Wikipedia, calculations, currency conversion
-- entertainment: movies, TV shows, recommendations, actors
-- news: headlines, current events, noticias
+- knowledge: weather, Wikipedia, calculations, currency conversion, general questions. Ex: "qué tiempo hace", "quién fue Einstein", "convierte 100 USD a EUR"
+- entertainment: movies, TV shows, recommendations, actors. Ex: "recomienda una película", "qué ver en Netflix"
+- news: headlines, current events, what's happening. Ex: "noticias de hoy", "qué pasa en Ucrania"
 Respond with ONLY the agent name.`,
 
-  finances: `Pick the best agent:
-- finance: expenses, spending, budget, reminders, shopping, price comparison
-Respond with ONLY: finance`,
+  finances: `Respond with ONLY: finance`,
 
   communication: `Pick the best agent:
-- whatsapp: send WhatsApp message, schedule message, read messages, search contacts
-- communication: email, gmail, calendar, events, agenda
-- general: greetings, small talk, image generation, casual chat
+- whatsapp: send/read WhatsApp messages, search contacts. Ex: "manda mensaje a Juan", "lee mis mensajes"
+- communication: email, gmail, calendar, events, agenda. Ex: "lee mi correo", "crea evento mañana"
+- general: greetings, small talk, image generation, casual conversation. Ex: "hola", "genera una imagen", "cómo estás"
 Respond with ONLY the agent name.`,
 };
 
 export async function planAgents(userMessage: string, recentMessages?: { role: string; content: string }[]): Promise<AgentSpec[]> {
   try {
+    // ── STEP 0: Deterministic pre-router (no LLM needed for obvious intents) ──
+    const preResult = preRoute(userMessage);
+
+    if (preResult && preResult.agent) {
+      // Both domain and agent are clear — skip both LLM calls
+      return [{ role: preResult.agent, task: userMessage }];
+    }
+
     // Build context from recent messages
     const contextMessages: OpenAI.ChatCompletionMessageParam[] = [];
     if (recentMessages && recentMessages.length > 0) {
@@ -86,20 +151,28 @@ export async function planAgents(userMessage: string, recentMessages?: { role: s
       }
     }
 
-    // ── LEVEL 1: Pick domain (5 options — fast, accurate) ──
-    const domainRes = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      max_tokens: 20,
-      temperature: 0,
-      messages: [
-        { role: "system", content: DOMAIN_ROUTER_PROMPT },
-        ...contextMessages,
-        { role: "user", content: userMessage },
-      ],
-    });
-    const domain = (domainRes.choices[0]?.message?.content || "communication").trim().toLowerCase();
-    const validDomains = ["trading", "health", "knowledge", "finances", "communication"];
-    const safeDomain = validDomains.includes(domain) ? domain : "communication";
+    // ── LEVEL 1: Pick domain ──
+    let safeDomain: string;
+
+    if (preResult) {
+      // Pre-router knows the domain but not the agent — skip Level 1 LLM
+      safeDomain = preResult.domain;
+    } else {
+      // No keyword match — use LLM to classify domain
+      const domainRes = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        max_tokens: 20,
+        temperature: 0,
+        messages: [
+          { role: "system", content: DOMAIN_ROUTER_PROMPT },
+          ...contextMessages,
+          { role: "user", content: userMessage },
+        ],
+      });
+      const domain = (domainRes.choices[0]?.message?.content || "communication").trim().toLowerCase();
+      const validDomains = ["trading", "health", "knowledge", "finances", "communication"];
+      safeDomain = validDomains.includes(domain) ? domain : "communication";
+    }
 
     // ── LEVEL 2: Pick specific agent within domain ──
     const subRouterPrompt = SUB_ROUTERS[safeDomain];
@@ -114,7 +187,16 @@ export async function planAgents(userMessage: string, recentMessages?: { role: s
     });
     const agentRole = (agentRes.choices[0]?.message?.content || "general").trim().toLowerCase().replace(/[^a-z_]/g, "");
 
-    return [{ role: agentRole, task: userMessage }];
+    // Validate agent exists in definitions
+    const validAgents = [
+      "trader_portfolio", "trader_signals", "trader_orders", "trader_market",
+      "trader_emotions", "forex", "knowledge", "entertainment", "news",
+      "nutri_tracker", "nutri_planner", "nutri_coach", "wellness",
+      "whatsapp", "communication", "finance", "general",
+    ];
+    const safeAgent = validAgents.includes(agentRole) ? agentRole : "general";
+
+    return [{ role: safeAgent, task: userMessage }];
   } catch {
     return [{ role: "general", task: userMessage }];
   }
@@ -295,11 +377,17 @@ export async function executeAgent(
   const tools = definition.getTools();
   const toolsCalled: string[] = [];
 
-  // Build messages: system prompt + last 8 conversation messages for context + the task
-  // More context = agents can see previous tool results (persistence)
+  // Build messages: agent's own system prompt + last 8 user/assistant messages for context
+  // IMPORTANT: Filter out system messages — agents have their OWN focused prompt.
+  // Leaking the massive route.ts system prompt (110+ lines, all tool instructions)
+  // confuses agents and causes wrong tool selection.
+  const contextMessages = conversationHistory
+    .filter(m => m.role !== "system")
+    .slice(-8);
+
   const messages: OpenAI.ChatCompletionMessageParam[] = [
     { role: "system", content: definition.systemPrompt },
-    ...conversationHistory.slice(-8),
+    ...contextMessages,
     { role: "user", content: spec.task },
   ];
 
