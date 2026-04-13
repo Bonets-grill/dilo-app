@@ -150,16 +150,59 @@ export async function GET() {
         const confluence = result.confluence;
 
         // 5. Save signal to trading_signal_log
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         // Apply Cerebro 1 (regime) + Cerebro 5 (wisdom) adjustments
         const baseConfidence = confluence?.confidence || signal.confidence || 0;
-        const adjustedConfidence = Math.max(10, Math.min(95, baseConfidence + regimeAdj + wisdomAdj));
+        let adjustedConfidence = Math.max(10, Math.min(95, baseConfidence + regimeAdj + wisdomAdj));
         const allReasons = [
           ...(signal.reasoning || []),
           ...(regimeAdj !== 0 ? [`Regime: ${regimeAligned ? "aligned" : "counter-trend"} (${regimeAdj > 0 ? "+" : ""}${regimeAdj})`] : []),
           ...symbolWisdom.map(w => `Wisdom: ${w.insight}`),
         ];
+        const allFilters = [...(confluence?.active_factors || []), "regime_check", "wisdom_check"];
 
+        // ── CABLE 1: Extract ML features ──
+        let mlFeatures = null;
+        try {
+          const { extractMLFeatures } = await import("@/lib/trading/ml-client");
+          mlFeatures = await extractMLFeatures({
+            symbol: signal.symbol,
+            side: signal.side,
+            entry_price: signal.entry_price,
+            confluence_score: confluence?.score || 0,
+            confluence_grade: confluence?.grade || "?",
+            active_factors: confluence?.active_factors || [],
+            atr: plan.atr || 0,
+            swing_high: plan.swing_high || 0,
+            swing_low: plan.swing_low || 0,
+            adx: plan.regime_confidence || 0,
+            setup_type: signal.setup_type || "mtf_confluence",
+          });
+        } catch { /* ML features extraction is optional */ }
+
+        // ── CABLE 3: ML Prediction (if model exists) ──
+        if (mlFeatures) {
+          try {
+            const { predictSignalQuality } = await import("@/lib/trading/ml-client");
+            const mlPrediction = await predictSignalQuality(mlFeatures);
+
+            if (mlPrediction.model_available) {
+              allFilters.push("ml_meta_label");
+              allReasons.push(`ML: ${mlPrediction.reason}`);
+
+              if (!mlPrediction.take) {
+                // ML says skip this signal
+                allReasons.push("ML BLOCKED: model says skip");
+                adjustedConfidence = Math.max(10, adjustedConfidence - 20);
+              } else {
+                // ML confirms signal — boost confidence
+                const mlBoost = Math.round((mlPrediction.confidence - 0.5) * 20);
+                adjustedConfidence = Math.max(10, Math.min(95, adjustedConfidence + mlBoost));
+              }
+            }
+          } catch { /* ML prediction is optional */ }
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (supabase.from("trading_signal_log") as any).insert({
           symbol: signal.symbol,
           side: signal.side,
@@ -171,7 +214,8 @@ export async function GET() {
           reasoning: allReasons,
           source: "dilo_strategy_v2",
           market_type: "stocks",
-          filters_applied: [...(confluence?.active_factors || []), "regime_check", "wisdom_check"],
+          filters_applied: allFilters,
+          ml_features: mlFeatures, // Cable 1: stored for future training
         });
 
         signalsGenerated++;

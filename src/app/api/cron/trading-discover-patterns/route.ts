@@ -322,11 +322,36 @@ export async function GET() {
       insightsCreated++;
     }
 
+    // ── CABLE 2: Train ML Model (weekly, needs 100+ resolved signals with features) ──
+    let mlTrainResult: { trained: boolean; reason?: string; overall_accuracy?: number } = { trained: false, reason: "skipped" };
+    try {
+      // Get resolved signals WITH ml_features
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: resolvedWithFeatures } = await (supabase.from("trading_signal_log") as any)
+        .select("outcome, ml_features")
+        .not("outcome", "is", null)
+        .not("ml_features", "is", null)
+        .in("outcome", ["win", "loss"]);
+
+      if (resolvedWithFeatures && resolvedWithFeatures.length >= 100) {
+        const { trainMLModel } = await import("@/lib/trading/ml-client");
+        mlTrainResult = await trainMLModel(resolvedWithFeatures);
+      } else {
+        mlTrainResult = {
+          trained: false,
+          reason: `Need 100 signals with features, have ${resolvedWithFeatures?.length || 0}`,
+        };
+      }
+    } catch (err) {
+      mlTrainResult = { trained: false, reason: (err as Error).message };
+    }
+
     const resultData = {
       patterns_updated: patternsUpdated,
       insights_created: insightsCreated,
       wisdom_generated: wisdomGenerated,
       total_signals_analyzed: allSignals.length,
+      ml_training: mlTrainResult,
     };
 
     const { logCronResult } = await import("@/lib/cron/logger");
