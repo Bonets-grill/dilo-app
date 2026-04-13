@@ -14,7 +14,6 @@ const TINK_API = "https://api.tink.com/api/v1";
 async function getClientToken(scope: string): Promise<string | null> {
   const clientId = process.env.TINK_CLIENT_ID;
   const clientSecret = process.env.TINK_CLIENT_SECRET;
-  console.log("[Tink] ENV check — ID exists:", !!clientId, "Secret exists:", !!clientSecret);
   if (!clientId || !clientSecret) {
     console.error("[Tink] Missing TINK_CLIENT_ID or TINK_CLIENT_SECRET");
     return null;
@@ -49,7 +48,6 @@ export async function createTinkUser(diloUserId: string): Promise<string | null>
     if (!res.ok) {
       // User already exists is OK
       const err = await res.text();
-      console.log("[Tink] Create user response:", res.status, err);
       return diloUserId; // Continue anyway — user likely already exists
     }
     const data = await res.json();
@@ -62,7 +60,6 @@ export async function generateBankConnectionLink(diloUserId: string, redirectUrl
   try {
   // First ensure Tink user exists
   const tinkUser = await createTinkUser(diloUserId);
-  console.log("[Tink] User created/exists:", tinkUser);
 
   // Get authorization grant for this user
   const token = await getClientToken("authorization:grant");

@@ -144,7 +144,7 @@ export default function SettingsPage() {
         <h2 className="text-lg font-semibold">{t("title")}</h2>
 
         {/* Skills */}
-        <button onClick={goToStore} className="w-full flex items-center justify-between p-3.5 rounded-xl bg-[var(--accent)]/10 border border-[var(--accent)]/30">
+        <button type="button" onClick={goToStore} className="w-full flex items-center justify-between p-3.5 rounded-xl bg-[var(--accent)]/10 border border-[var(--accent)]/30">
           <div className="flex items-center gap-3">
             <Sparkles size={18} className="text-[var(--accent)]" />
             <div className="text-left">
@@ -166,7 +166,7 @@ export default function SettingsPage() {
             {alpacaConnected && !alpacaSuccess ? (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-green-400">{t("brokerConnected")}</span>
-                <button onClick={() => setAlpacaConnected(false)} className="text-xs text-[var(--dim)] underline">{t("changeKeys")}</button>
+                <button type="button" onClick={() => setAlpacaConnected(false)} className="text-xs text-[var(--dim)] underline">{t("changeKeys")}</button>
               </div>
             ) : (
               <>
@@ -177,7 +177,7 @@ export default function SettingsPage() {
                   className="w-full bg-[var(--bg1)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-white placeholder-[var(--dim)] focus:outline-none focus:border-white/30" />
                 {alpacaError && <p className="text-xs text-red-400">{alpacaError}</p>}
                 {alpacaSuccess && <p className="text-xs text-green-400">{t("connectedOk")}</p>}
-                <button onClick={saveAlpacaKeys} disabled={alpacaSaving}
+                <button type="button" onClick={saveAlpacaKeys} disabled={alpacaSaving}
                   className="w-full py-2 rounded-lg bg-[var(--accent)] text-white text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2">
                   {alpacaSaving ? <><Loader2 size={14} className="animate-spin" /> {t("verifying")}</> : t("connectBroker")}
                 </button>
@@ -246,7 +246,7 @@ export default function SettingsPage() {
           </div>
           <div className="divide-y divide-[var(--border)]">
             {locales.map((loc) => (
-              <button
+              <button type="button"
                 key={loc}
                 onClick={() => changeLanguage(loc)}
                 className={`w-full px-3.5 py-2.5 text-left text-sm flex items-center justify-between hover:bg-[var(--bg3)] transition ${locale === loc ? "text-white" : "text-[var(--muted)]"}`}
@@ -260,18 +260,18 @@ export default function SettingsPage() {
 
         {/* Theme & Currency */}
         <div className="rounded-xl bg-[var(--bg2)] border border-[var(--border)] divide-y divide-[var(--border)]">
-          <button onClick={toggleTheme} className="w-full flex items-center justify-between px-3.5 py-2.5">
+          <button type="button" onClick={toggleTheme} className="w-full flex items-center justify-between px-3.5 py-2.5">
             <div className="flex items-center gap-3">
               {theme === "dark" ? <Moon size={16} className="text-[var(--dim)]" /> : <Sun size={16} className="text-yellow-400" />}
               <span className="text-sm">{t("theme")}</span>
             </div>
             <span className="text-sm text-[var(--dim)]">{theme === "dark" ? t("dark") : t("light")}</span>
           </button>
-          <button onClick={() => setShowCurrencyPicker(!showCurrencyPicker)} className="w-full flex items-center justify-between px-3.5 py-2.5">
+          <button type="button" onClick={() => setShowCurrencyPicker(!showCurrencyPicker)} className="w-full flex items-center justify-between px-3.5 py-2.5">
             <div className="flex items-center gap-3"><CreditCard size={16} className="text-[var(--dim)]" /><span className="text-sm">{t("currency")}</span></div>
             <span className="text-sm text-[var(--dim)]">{currency}</span>
           </button>
-          <button onClick={toggleEasyMode} className="w-full flex items-center justify-between px-3.5 py-2.5 border-t border-[var(--border)]">
+          <button type="button" onClick={toggleEasyMode} className="w-full flex items-center justify-between px-3.5 py-2.5 border-t border-[var(--border)]">
             <div className="flex items-center gap-3">
               <Eye size={16} className={easyMode ? "text-[var(--accent)]" : "text-[var(--dim)]"} />
               <span className="text-sm">{t("easyMode")}</span>
@@ -281,7 +281,7 @@ export default function SettingsPage() {
           {showCurrencyPicker && (
             <div className="px-2 py-2 grid grid-cols-2 gap-1.5">
               {CURRENCIES.map(c => (
-                <button key={c.code} onClick={() => changeCurrency(c.code)}
+                <button type="button" key={c.code} onClick={() => changeCurrency(c.code)}
                   className={`px-3 py-2 rounded-lg text-left text-sm flex items-center justify-between ${currency === c.code ? "bg-[var(--accent)]/15 text-[var(--accent)]" : "bg-[var(--bg3)] text-[var(--muted)]"}`}>
                   <span>{c.symbol} {c.code}</span>
                   {currency === c.code && <Check size={12} />}
@@ -331,13 +331,13 @@ export default function SettingsPage() {
           <Link href="/legal" className="flex items-center gap-3 px-3.5 py-2.5">
             <Shield size={16} className="text-[var(--dim)]" /><span className="text-sm">{t("privacy")}</span>
           </Link>
-          <button onClick={async () => {
+          <button type="button" onClick={async () => {
             if (!userId) return;
             window.open(`/api/user/export?userId=${userId}`, "_blank");
           }} className="w-full flex items-center gap-3 px-3.5 py-2.5 text-left">
             <Info size={16} className="text-[var(--dim)]" /><span className="text-sm">{t("exportData")}</span>
           </button>
-          <button onClick={async () => {
+          <button type="button" onClick={async () => {
             if (!userId) return;
             if (!confirm(t("deleteConfirm"))) return;
             if (!confirm(t("deleteConfirmFinal"))) return;
@@ -354,7 +354,7 @@ export default function SettingsPage() {
           </button>
         </div>
 
-        <button onClick={async () => {
+        <button type="button" onClick={async () => {
           const supabase = (await import("@/lib/supabase/client")).createBrowserSupabase();
           await supabase.auth.signOut();
           window.location.href = `/${locale}/login`;

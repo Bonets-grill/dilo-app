@@ -8,13 +8,11 @@ export async function POST(req: NextRequest) {
       const { chat, text, from } = update.message;
       const chatId = chat.id;
 
-      console.log(`[Telegram] Message from ${from?.first_name} (${chatId}): ${text}`);
 
       if (text === "/start") {
         // In production: link telegram chat_id to user account
         // The user would send /start with a token from the PWA: /start TOKEN
         // We verify the token and link the telegram_id to the user
-        console.log(`[Telegram] User wants to link account: chatId=${chatId}`);
       }
 
       // In production: process message through agent core
@@ -22,7 +20,6 @@ export async function POST(req: NextRequest) {
     }
 
     if (update.callback_query) {
-      console.log(`[Telegram] Callback query: ${update.callback_query.data}`);
     }
 
     return NextResponse.json({ status: "ok" });

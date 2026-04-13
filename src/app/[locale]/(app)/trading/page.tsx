@@ -171,7 +171,7 @@ export default function TradingPage() {
       <div className="h-full flex flex-col items-center justify-center gap-3 px-6 text-center">
         <AlertTriangle size={32} className="text-yellow-500" />
         <p className="text-sm text-[var(--dim)]">{t("errorLoading")}</p>
-        <button onClick={fetchDashboard} className="text-sm text-[var(--accent)] underline">{t("retry")}</button>
+        <button type="button" onClick={fetchDashboard} className="text-sm text-[var(--accent)] underline">{t("retry")}</button>
       </div>
     );
   }
@@ -194,7 +194,7 @@ export default function TradingPage() {
                 </span>
               )}
               {lastUpdate && (
-                <button onClick={tab === "stocks" ? fetchDashboard : fetchForex} className="flex items-center gap-1 hover:text-white transition-colors">
+                <button type="button" onClick={tab === "stocks" ? fetchDashboard : fetchForex} className="flex items-center gap-1 hover:text-white transition-colors">
                   <RefreshCw size={12} />
                   {lastUpdate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                 </button>
@@ -203,13 +203,13 @@ export default function TradingPage() {
           </div>
           {/* Acciones / Forex switcher */}
           <div className="flex rounded-xl bg-[var(--bg2)] border border-[var(--border)] p-1">
-            <button
+            <button type="button"
               onClick={() => setTab("stocks")}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-all ${tab === "stocks" ? "bg-[var(--card)] text-white shadow-sm" : "text-[var(--dim)]"}`}
             >
               <BarChart3 size={14} /> {t("stocks")}
             </button>
-            <button
+            <button type="button"
               onClick={() => setTab("forex")}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition-all ${tab === "forex" ? "bg-[var(--card)] text-white shadow-sm" : "text-[var(--dim)]"}`}
             >

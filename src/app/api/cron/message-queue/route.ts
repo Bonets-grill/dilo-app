@@ -8,7 +8,6 @@ export async function GET() {
   //   - Update status = 'sent', sent_at = now()
   //   - On failure: increment retry_count, status = 'failed' if retry_count >= 3
 
-  console.log("[Cron] Message queue check executed at:", new Date().toISOString());
 
   return NextResponse.json({
     status: "ok",

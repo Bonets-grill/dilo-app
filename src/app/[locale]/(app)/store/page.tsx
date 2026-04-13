@@ -87,7 +87,7 @@ export default function StorePage() {
             </p>
             <p className="text-xs text-green-400 mt-1">{t("savings", { percent: pack.discount })}</p>
             <p className="text-xs text-gray-600 mt-1">{pack.skills} skills</p>
-            <button className="mt-3 w-full px-3 py-2 rounded-xl bg-purple-600 text-white text-sm font-medium hover:bg-purple-500 transition">
+            <button type="button" className="mt-3 w-full px-3 py-2 rounded-xl bg-purple-600 text-white text-sm font-medium hover:bg-purple-500 transition">
               {t("activate")}
             </button>
           </div>
@@ -110,7 +110,7 @@ export default function StorePage() {
               <span className="text-sm text-purple-400 font-semibold">
                 €{skill.priceEur}{t("perMonth")}
               </span>
-              <button className="px-3 py-1.5 rounded-lg bg-purple-600 text-white text-xs font-medium hover:bg-purple-500 transition">
+              <button type="button" className="px-3 py-1.5 rounded-lg bg-purple-600 text-white text-xs font-medium hover:bg-purple-500 transition">
                 {t("activate")}
               </button>
             </div>

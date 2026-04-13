@@ -68,7 +68,6 @@ export async function GET(req: NextRequest) {
 
     await supabase.from("users").update({ preferences: prefs }).eq("id", userId);
 
-    console.log("[OAuth] Google tokens saved for user:", userId);
     return new Response(null, { status: 302, headers: { Location: "/es/chat?oauth=success" } });
   } catch (err) {
     console.error("[OAuth] Error:", err);

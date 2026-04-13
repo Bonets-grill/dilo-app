@@ -1,0 +1,5 @@
+<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#0a0a0a"/>
+  <text x="600" y="280" text-anchor="middle" font-family="system-ui" font-size="72" font-weight="bold" fill="white">DILO</text>
+  <text x="600" y="360" text-anchor="middle" font-family="system-ui" font-size="28" fill="#888">Tu secretario personal con IA</text>
+</svg>

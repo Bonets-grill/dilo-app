@@ -175,7 +175,6 @@ export default function ChatPage() {
 
     try {
       const instanceName = `dilo_${userId?.slice(0, 8)}`;
-      console.log("[DILO] Sending WhatsApp:", { to: pendingSend.to, message: pendingSend.message.slice(0, 50), instanceName });
 
       const res = await fetch("/api/evolution", {
         method: "POST",
@@ -183,7 +182,6 @@ export default function ChatPage() {
         body: JSON.stringify({ action: "send", instanceName, to: pendingSend.to, text: pendingSend.message }),
       });
       const data = await res.json();
-      console.log("[DILO] Send result:", data);
 
       if (data.success) {
         setMsgs(p => p.map(m => m.id === confirmId ? { ...m, content: `✅ Mensaje enviado a ${pendingSend!.to}` } : m));
@@ -348,14 +346,14 @@ export default function ChatPage() {
       <div className="flex flex-col h-full">
         <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
           <h2 className="text-sm font-semibold">{t("history")}</h2>
-          <button onClick={() => setShowHistory(false)} className="text-xs text-[var(--muted)]">✕</button>
+          <button type="button" onClick={() => setShowHistory(false)} className="text-xs text-[var(--muted)]">✕</button>
         </div>
         <div className="flex-1 overflow-y-auto">
-          <button onClick={newChat} className="w-full flex items-center gap-3 px-4 py-3 text-left border-b border-[var(--border)] hover:bg-[var(--bg2)]">
+          <button type="button" onClick={newChat} className="w-full flex items-center gap-3 px-4 py-3 text-left border-b border-[var(--border)] hover:bg-[var(--bg2)]">
             <Plus size={16} className="text-[var(--muted)]" /><span className="text-sm">{t("newChat")}</span>
           </button>
           {convList.map(c => (
-            <button key={c.id} onClick={() => loadConversation(c.id)} className={`w-full flex items-center gap-3 px-4 py-3 text-left border-b border-[var(--border)] hover:bg-[var(--bg2)] ${c.id === convId ? "bg-[var(--bg2)]" : ""}`}>
+            <button type="button" key={c.id} onClick={() => loadConversation(c.id)} className={`w-full flex items-center gap-3 px-4 py-3 text-left border-b border-[var(--border)] hover:bg-[var(--bg2)] ${c.id === convId ? "bg-[var(--bg2)]" : ""}`}>
               <MessageCircle size={14} className="text-[var(--dim)] flex-shrink-0" />
               <span className="text-sm text-[#ccc] truncate">{c.title || "Chat"}</span>
             </button>
@@ -368,11 +366,11 @@ export default function ChatPage() {
   return (
     <div className="flex flex-col h-full relative">
       <div className="flex-shrink-0 flex items-center justify-between px-4 py-2 border-b border-[var(--border)]">
-        <button onClick={() => setShowHistory(true)} className="text-xs text-[var(--muted)] flex items-center gap-1.5">
+        <button type="button" onClick={() => setShowHistory(true)} className="text-xs text-[var(--muted)] flex items-center gap-1.5">
           <MessageCircle size={14} /> {t("history")}
         </button>
         <span className="text-sm font-semibold">DILO</span>
-        <button onClick={newChat} className="text-xs text-[var(--muted)] flex items-center gap-1.5">
+        <button type="button" onClick={newChat} className="text-xs text-[var(--muted)] flex items-center gap-1.5">
           <Plus size={14} /> {t("newChat")}
         </button>
       </div>
@@ -413,7 +411,7 @@ export default function ChatPage() {
                         modal.className = "fixed inset-0 z-[999] bg-black/95 flex flex-col items-center justify-center p-4";
                         modal.onclick = () => modal.remove();
                         const src = m.content.replace("__IMAGE__", "");
-                        modal.innerHTML = `<img src="${src}" alt="Full" class="max-w-full max-h-[80vh] rounded-xl object-contain" /><a href="${src}" download="dilo-enhanced.png" class="mt-4 px-6 py-2.5 rounded-xl bg-white text-black text-sm font-medium" onclick="event.stopPropagation()">⬇ ${t("download")}</a><button class="mt-2 text-sm text-gray-400" onclick="this.parentElement.remove()">${t("close")}</button>`;
+                        modal.innerHTML = `<img src="${src}" alt="Full" class="max-w-full max-h-[80vh] rounded-xl object-contain" /><a href="${src}" download="dilo-enhanced.png" class="mt-4 px-6 py-2.5 rounded-xl bg-white text-black text-sm font-medium" onclick="event.stopPropagation()">⬇ ${t("download")}</a><button type="button" class="mt-2 text-sm text-gray-400" onclick="this.parentElement.remove()">${t("close")}</button>`;
                         document.body.appendChild(modal);
                       }}
                     />
@@ -446,7 +444,7 @@ export default function ChatPage() {
                                 modal.innerHTML = `
                                   <img src="${src}" alt="Full" class="max-w-full max-h-[80vh] rounded-xl object-contain" />
                                   <a href="${src}" download="dilo-image.png" class="mt-4 px-6 py-2.5 rounded-xl bg-white text-black text-sm font-medium" onclick="event.stopPropagation()">⬇ ${t("download")}</a>
-                                  <button class="mt-2 text-sm text-gray-400" onclick="this.parentElement.remove()">${t("close")}</button>
+                                  <button type="button" class="mt-2 text-sm text-gray-400" onclick="this.parentElement.remove()">${t("close")}</button>
                                 `;
                                 document.body.appendChild(modal);
                               }}
@@ -457,10 +455,10 @@ export default function ChatPage() {
                     </div>
                     {pendingSend && idx >= msgs.length - 2 && !busy && (
                       <div className="flex gap-2 mt-3">
-                        <button onClick={confirmSend} className="px-4 py-2 rounded-xl bg-green-600 text-white text-sm font-medium hover:bg-green-500 transition">
+                        <button type="button" onClick={confirmSend} className="px-4 py-2 rounded-xl bg-green-600 text-white text-sm font-medium hover:bg-green-500 transition">
                           👍 {t("yes")}
                         </button>
-                        <button onClick={cancelSend} className="px-4 py-2 rounded-xl bg-[var(--bg3)] text-[var(--muted)] text-sm font-medium hover:bg-[var(--border)] transition">
+                        <button type="button" onClick={cancelSend} className="px-4 py-2 rounded-xl bg-[var(--bg3)] text-[var(--muted)] text-sm font-medium hover:bg-[var(--border)] transition">
                           👎 {t("cancel")}
                         </button>
                       </div>
@@ -484,16 +482,16 @@ export default function ChatPage() {
             onClick={e => e.stopPropagation()}
             onTouchEnd={e => e.stopPropagation()}
           >
-            <button onClick={ctxCopy} className="w-full flex items-center gap-3 px-4 py-3.5 text-left text-[15px] text-white active:bg-white/10 border-b border-white/5">
+            <button type="button" onClick={ctxCopy} className="w-full flex items-center gap-3 px-4 py-3.5 text-left text-[15px] text-white active:bg-white/10 border-b border-white/5">
               <Copy size={18} className="text-[#8e8e93]" /> {t("copy")}
             </button>
-            <button onClick={ctxReply} className="w-full flex items-center gap-3 px-4 py-3.5 text-left text-[15px] text-white active:bg-white/10 border-b border-white/5">
+            <button type="button" onClick={ctxReply} className="w-full flex items-center gap-3 px-4 py-3.5 text-left text-[15px] text-white active:bg-white/10 border-b border-white/5">
               <Reply size={18} className="text-[#8e8e93]" /> {t("reply")}
             </button>
-            <button onClick={ctxConsult} className="w-full flex items-center gap-3 px-4 py-3.5 text-left text-[15px] text-white active:bg-white/10 border-b border-white/5">
+            <button type="button" onClick={ctxConsult} className="w-full flex items-center gap-3 px-4 py-3.5 text-left text-[15px] text-white active:bg-white/10 border-b border-white/5">
               <Search size={18} className="text-[#8e8e93]" /> {t("consult")}
             </button>
-            <button onClick={ctxShare} className="w-full flex items-center gap-3 px-4 py-3.5 text-left text-[15px] text-white active:bg-white/10">
+            <button type="button" onClick={ctxShare} className="w-full flex items-center gap-3 px-4 py-3.5 text-left text-[15px] text-white active:bg-white/10">
               <ArrowUp size={18} className="text-[#8e8e93]" /> {t("share")}
             </button>
           </div>
@@ -513,7 +511,7 @@ export default function ChatPage() {
           <div className="max-w-2xl mx-auto">
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-[12px] text-[var(--dim)] font-medium">{t("audioTranscription")}</span>
-              <button onClick={() => setVoicePreview(null)} className="p-1 rounded-full hover:bg-[var(--bg3)]">
+              <button type="button" onClick={() => setVoicePreview(null)} className="p-1 rounded-full hover:bg-[var(--bg3)]">
                 <X size={14} className="text-[var(--dim)]" />
               </button>
             </div>
@@ -521,11 +519,11 @@ export default function ChatPage() {
               rows={5}
               className="w-full bg-[var(--bg1)] rounded-xl border border-[var(--border)] px-3 py-2 text-[15px] text-white resize-none leading-7 max-h-[280px] focus:outline-none focus:border-white/30" />
             <div className="flex gap-2 mt-1.5 mb-0.5 justify-end">
-              <button onClick={() => { const txt = voicePreview || ""; setVoicePreview(null); setInput(txt); setTimeout(() => { if (taRef.current) { taRef.current.style.height = "auto"; taRef.current.style.height = Math.min(taRef.current.scrollHeight, 100) + "px"; taRef.current.focus(); taRef.current.setSelectionRange(txt.length, txt.length); } }, 50); }}
+              <button type="button" onClick={() => { const txt = voicePreview || ""; setVoicePreview(null); setInput(txt); setTimeout(() => { if (taRef.current) { taRef.current.style.height = "auto"; taRef.current.style.height = Math.min(taRef.current.scrollHeight, 100) + "px"; taRef.current.focus(); taRef.current.setSelectionRange(txt.length, txt.length); } }, 50); }}
                 className="px-3 py-1.5 rounded-full text-[12px] font-medium bg-[var(--bg3)] text-white flex items-center gap-1.5">
                 <Pencil size={12} /> {t("editMore")}
               </button>
-              <button onClick={() => { const text = voicePreview || ""; setVoicePreview(null); setInput(text); setTimeout(() => send(text), 50); }}
+              <button type="button" onClick={() => { const text = voicePreview || ""; setVoicePreview(null); setInput(text); setTimeout(() => send(text), 50); }}
                 className="px-4 py-1.5 rounded-full text-[12px] font-medium bg-white text-black flex items-center gap-1.5">
                 <ArrowUp size={12} /> {t("send")}
               </button>
@@ -536,7 +534,7 @@ export default function ChatPage() {
 
       {/* FAB — New Chat */}
       {msgs.length > 0 && !busy && voicePreview === null && (
-        <button
+        <button type="button"
           onClick={newChat}
           className="absolute right-4 bottom-[72px] w-12 h-12 rounded-full bg-[var(--accent)] shadow-lg shadow-black/40 flex items-center justify-center z-50 active:scale-95 transition-transform"
         >
@@ -546,7 +544,7 @@ export default function ChatPage() {
 
       <div className={`flex-shrink-0 px-3 py-1.5 border-t border-[var(--border)] ${voicePreview !== null ? "hidden" : ""}`}>
         <div className="flex items-end gap-2 max-w-2xl mx-auto">
-          <button onClick={() => fileRef.current?.click()} disabled={enhancing} className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 mb-0.5 bg-[var(--bg3)] ${enhancing ? "opacity-40" : ""}`}>
+          <button type="button" onClick={() => fileRef.current?.click()} disabled={enhancing} className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 mb-0.5 bg-[var(--bg3)] ${enhancing ? "opacity-40" : ""}`}>
             <ImagePlus size={16} className="text-white" />
           </button>
           <div className="flex-1 flex items-end bg-[var(--bg2)] rounded-2xl border border-[var(--border)] px-3 py-1.5">
@@ -557,9 +555,9 @@ export default function ChatPage() {
               className="flex-1 bg-transparent text-[14px] text-white placeholder-[var(--dim)] resize-none leading-6 max-h-[100px] focus:outline-none disabled:opacity-50" />
           </div>
           {hasText ? (
-            <button onClick={() => send()} disabled={busy} className="w-9 h-9 rounded-full bg-white flex items-center justify-center flex-shrink-0 disabled:opacity-30 mb-0.5"><ArrowUp size={18} className="text-black" /></button>
+            <button type="button" onClick={() => send()} disabled={busy} className="w-9 h-9 rounded-full bg-white flex items-center justify-center flex-shrink-0 disabled:opacity-30 mb-0.5"><ArrowUp size={18} className="text-black" /></button>
           ) : (
-            <button onClick={toggleRec} disabled={transcribing} className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 mb-0.5 ${rec ? "bg-red-500 animate-pulse" : "bg-[var(--bg3)]"} ${transcribing ? "opacity-40" : ""}`}>
+            <button type="button" onClick={toggleRec} disabled={transcribing} className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 mb-0.5 ${rec ? "bg-red-500 animate-pulse" : "bg-[var(--bg3)]"} ${transcribing ? "opacity-40" : ""}`}>
               {rec ? <Square size={12} className="text-white" /> : <Mic size={16} className="text-white" />}
             </button>
           )}

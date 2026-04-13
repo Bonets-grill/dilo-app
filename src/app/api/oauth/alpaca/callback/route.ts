@@ -64,7 +64,6 @@ export async function GET(req: NextRequest) {
 
     await supabase.from("users").update({ preferences: prefs }).eq("id", userId);
 
-    console.log("[Alpaca OAuth] Tokens saved for user:", userId);
     return new Response(null, { status: 302, headers: { Location: "/es/chat?oauth=alpaca_success" } });
   } catch (err) {
     console.error("[Alpaca OAuth] Error:", err);

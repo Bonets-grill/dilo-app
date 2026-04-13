@@ -86,7 +86,7 @@ export default function ForexSection({ data, loading, error, onRetry, t }: Props
         <Globe size={32} className="mx-auto text-[var(--dim)]" />
         <p className="text-sm font-medium">{t("forexUnavailable")}</p>
         <p className="text-xs text-[var(--dim)]">{t("forexUnavailableDesc")}</p>
-        <button onClick={onRetry} className="text-xs text-[var(--accent)] underline mt-2">{t("retry")}</button>
+        <button type="button" onClick={onRetry} className="text-xs text-[var(--accent)] underline mt-2">{t("retry")}</button>
       </div>
     );
   }
@@ -96,7 +96,7 @@ export default function ForexSection({ data, loading, error, onRetry, t }: Props
       <div className="rounded-xl bg-[var(--card)] border border-[var(--border)] p-6 text-center space-y-2">
         <AlertTriangle size={24} className="mx-auto text-yellow-500" />
         <p className="text-sm text-[var(--dim)]">{t("forexErrorLoading")}</p>
-        <button onClick={onRetry} className="text-xs text-[var(--accent)] underline">{t("retry")}</button>
+        <button type="button" onClick={onRetry} className="text-xs text-[var(--accent)] underline">{t("retry")}</button>
       </div>
     );
   }

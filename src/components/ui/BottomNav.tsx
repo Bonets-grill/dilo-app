@@ -56,7 +56,7 @@ export default function BottomNav() {
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold">{t("more")}</h3>
-              <button onClick={() => setShowMore(false)} className="p-1.5 rounded-full bg-[var(--bg2)]">
+              <button type="button" onClick={() => setShowMore(false)} className="p-1.5 rounded-full bg-[var(--bg2)]">
                 <X size={14} className="text-[var(--dim)]" />
               </button>
             </div>
@@ -105,7 +105,7 @@ export default function BottomNav() {
             );
           })}
           {/* More button */}
-          <button
+          <button type="button"
             onClick={() => setShowMore(!showMore)}
             className={`flex-1 flex flex-col items-center justify-center gap-0.5 ${
               extraActive || showMore ? "text-white" : "text-[var(--dim)]"
