@@ -46,6 +46,7 @@ export async function executeSignal(signal: {
   confidence: number;
   setup_type?: string;
   reasoning?: string[];
+  size_multiplier?: number; // From enhanced_risk (0.0-1.0); default 1.0
 }): Promise<ExecutionResult> {
   const fail = (reason: string): ExecutionResult => ({ executed: false, reason });
 
@@ -94,14 +95,15 @@ export async function executeSignal(signal: {
       return fail(`Already traded ${signal.symbol} today`);
     }
 
-    // 7. Calculate position size (risk-based)
-    const riskAmount = equity * RISK_PCT; // $500 on $100K
+    // 7. Calculate position size (risk-based, scaled by enhanced_risk multiplier)
+    const sizeMultiplier = Math.max(0, Math.min(1, signal.size_multiplier ?? 1.0));
+    const riskAmount = equity * RISK_PCT * sizeMultiplier; // Scaled by drawdown/equity-curve tier
     const slDistance = Math.abs(signal.entry_price - signal.stop_loss);
 
     if (slDistance <= 0) return fail("Invalid SL distance");
 
     const rawQty = Math.floor(riskAmount / slDistance);
-    if (rawQty <= 0) return fail("Position size too small");
+    if (rawQty <= 0) return fail(`Position size too small (size_multiplier=${sizeMultiplier})`);
 
     // Cap by buying power
     const cost = rawQty * signal.entry_price;

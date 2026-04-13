@@ -346,12 +346,111 @@ export async function GET() {
       mlTrainResult = { trained: false, reason: (err as Error).message };
     }
 
+    // ── SMART AUDITOR (professional pattern audit + learning score v2) ──
+    let auditResult: { status?: string; overall?: { win_rate?: number }; recommendations?: string[]; mfe_mae?: unknown } = { status: "skipped" };
+    let learningScoreV2: { score?: number; breakdown?: unknown } = {};
+    try {
+      const engineUrl = process.env.TRADING_ENGINE_URL || "http://localhost:8000";
+      const engineKey = process.env.TRADING_ENGINE_KEY || "dev-secret";
+
+      // Pull enriched signals (with mfe/mae/entry_hour_utc/entry_day_of_week)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: enrichedSignals } = await (supabase.from("trading_signal_log") as any)
+        .select("symbol, outcome, pnl, entry_hour_utc, entry_day_of_week, setup_type, filters_applied, mfe, mae")
+        .not("outcome", "is", null)
+        .in("outcome", ["win", "loss", "expired"]);
+
+      if (enrichedSignals && enrichedSignals.length >= 5) {
+        const auditRes = await fetch(`${engineUrl}/audit/patterns`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-api-key": engineKey },
+          body: JSON.stringify({ resolved_signals: enrichedSignals }),
+        });
+        if (auditRes.ok) {
+          auditResult = await auditRes.json();
+
+          // Persist top recommendations as insights
+          if (Array.isArray(auditResult.recommendations)) {
+            for (const rec of auditResult.recommendations.slice(0, 5)) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              await (supabase.from("trading_insights") as any).insert({
+                week_start: weekStart,
+                insight_type: "auditor_recommendation",
+                title: "Recomendación del auditor",
+                description: rec,
+                data: { source: "smart_auditor" },
+                actionable: true,
+              }).catch(() => {});
+              insightsCreated++;
+            }
+          }
+
+          // Persist MFE/MAE analysis as an insight
+          if (auditResult.mfe_mae && typeof auditResult.mfe_mae === "object" && !("status" in (auditResult.mfe_mae as object))) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (supabase.from("trading_insights") as any).insert({
+              week_start: weekStart,
+              insight_type: "mfe_mae_analysis",
+              title: "Optimización SL/TP (MFE/MAE)",
+              description: (auditResult.mfe_mae as { recommendation?: string }).recommendation || "MFE/MAE calculado",
+              data: auditResult.mfe_mae,
+              actionable: true,
+            }).catch(() => {});
+            insightsCreated++;
+          }
+        }
+
+        // Learning score v2 (6 components)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { count: knowledgeCount } = await (supabase.from("trading_wisdom") as any)
+          .select("*", { count: "exact", head: true });
+        const uniquePatterns = patternsUpdated;
+        const marketsAnalyzed = new Set(enrichedSignals.map((s: { symbol: string }) => s.symbol)).size;
+        const maeTrades = enrichedSignals.filter((s: { mae: number | null }) => s.mae != null).length;
+        const winRate = auditResult.overall?.win_rate || 0;
+
+        const scoreRes = await fetch(`${engineUrl}/audit/learning-score`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-api-key": engineKey },
+          body: JSON.stringify({
+            total_knowledge: knowledgeCount || 0,
+            total_signals: enrichedSignals.length,
+            win_rate: winRate,
+            unique_patterns: uniquePatterns,
+            markets_analyzed: marketsAnalyzed,
+            mae_optimization_trades: maeTrades,
+            parameter_adjustments: 0,
+          }),
+        });
+        if (scoreRes.ok) {
+          learningScoreV2 = await scoreRes.json();
+          // Store v2 score alongside legacy (does not overwrite v1)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase.from("trading_insights") as any).insert({
+            week_start: weekStart,
+            insight_type: "learning_score_v2",
+            title: `Learning Score v2: ${learningScoreV2.score}/100`,
+            description: "Score profesional con 6 componentes (data, signals, patterns, consistency, MAE, adaptation)",
+            data: learningScoreV2,
+            actionable: false,
+          }).catch(() => {});
+          insightsCreated++;
+        }
+      } else {
+        auditResult = { status: "not_enough_enriched_signals" };
+      }
+    } catch (err) {
+      auditResult = { status: `audit_error: ${(err as Error).message}` };
+    }
+
     const resultData = {
       patterns_updated: patternsUpdated,
       insights_created: insightsCreated,
       wisdom_generated: wisdomGenerated,
       total_signals_analyzed: allSignals.length,
       ml_training: mlTrainResult,
+      audit: auditResult,
+      learning_score_v2: learningScoreV2,
     };
 
     const { logCronResult } = await import("@/lib/cron/logger");
