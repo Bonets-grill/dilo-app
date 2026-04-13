@@ -176,6 +176,28 @@ export async function GET() {
 
         signalsGenerated++;
 
+        // 5b. AUTO-EXECUTE on Alpaca (paper trading)
+        let execResult: { executed: boolean; reason: string; orderId?: string; qty?: number } = { executed: false, reason: "skipped" };
+        if (adjustedConfidence >= 60) {
+          try {
+            const { executeSignal } = await import("@/lib/trading/auto-executor");
+            execResult = await executeSignal({
+              symbol: signal.symbol,
+              side: signal.side,
+              entry_price: signal.entry_price,
+              stop_loss: signal.stop_loss,
+              take_profit: signal.take_profit,
+              confidence: adjustedConfidence,
+              setup_type: signal.setup_type,
+              reasoning: allReasons,
+            });
+          } catch (execErr) {
+            execResult = { executed: false, reason: `Exec error: ${(execErr as Error).message}` };
+          }
+        } else {
+          execResult = { executed: false, reason: `Confidence ${adjustedConfidence}% < 60% minimum` };
+        }
+
         // 6. Alert via WhatsApp if signal generated
         try {
           const { data: channel } = await supabase
@@ -193,14 +215,17 @@ export async function GET() {
               const side = signal.side === "BUY" ? "COMPRA" : "VENTA";
               const grade = confluence?.grade || "?";
               const score = confluence?.score || 0;
+              const execStatus = execResult.executed
+                ? `✅ EJECUTADO: ${execResult.qty} acciones (orden ${execResult.orderId?.slice(0, 8)})`
+                : `⏸️ No ejecutado: ${execResult.reason}`;
               const msg = `🎯 *DILO Sniper — ${signal.symbol}*\n\n` +
                 `${side} @ $${signal.entry_price}\n` +
                 `SL: $${signal.stop_loss}\n` +
                 `TP: $${signal.take_profit}\n` +
                 `Confluencia: ${grade} (${score}pts)\n` +
-                `Confianza: ${confluence?.confidence || signal.confidence}%\n\n` +
-                `Factores: ${(confluence?.active_factors || []).slice(0, 5).join(", ")}\n\n` +
-                `_Señal automática v2. La decisión final es tuya._`;
+                `Confianza: ${adjustedConfidence}%\n\n` +
+                `${execStatus}\n\n` +
+                `Factores: ${(confluence?.active_factors || []).slice(0, 5).join(", ")}`;
 
               await fetch(`${EVO_URL}/message/sendText/${channel.instance_name}`, {
                 method: "POST",
