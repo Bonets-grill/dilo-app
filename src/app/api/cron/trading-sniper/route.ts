@@ -66,6 +66,70 @@ export async function GET() {
       return NextResponse.json({ error: "Engine unavailable" }, { status: 503 });
     }
 
+    // 2c. Build risk_context (Alpaca account, positions, recent P&L) for enhanced risk validation
+    type RiskCtx = {
+      equity: number;
+      peak_equity: number;
+      open_positions: Array<{ symbol: string; side: string; risk_pct: number; risk_amount: number }>;
+      recent_pnls: number[];
+      risk_per_trade_pct: number;
+      risk_amount: number;
+    };
+    let riskContext: RiskCtx | null = null;
+    try {
+      const MARIO_USER_ID = "def038c9-19dc-45cf-93d3-60b6fc65887f";
+      const { getAlpacaKeys } = await import("@/lib/oauth/alpaca");
+      const auth = await getAlpacaKeys(MARIO_USER_ID);
+      if (auth) {
+        const { getAccount, getPositions } = await import("@/lib/alpaca/client");
+        const [account, positions] = await Promise.all([
+          getAccount(auth),
+          getPositions(auth),
+        ]);
+
+        const equity = parseFloat(account.equity);
+        const riskPerTradePct = 1.0;
+        const riskAmount = (equity * riskPerTradePct) / 100;
+
+        // Peak equity from portfolio_history (fallback to current if unavailable)
+        let peakEquity = equity;
+        try {
+          const { getPortfolioHistory } = await import("@/lib/alpaca/client");
+          const history = await getPortfolioHistory(auth, { period: "3M", timeframe: "1D" });
+          if (history?.equity?.length) {
+            peakEquity = Math.max(...history.equity.filter((v: number) => v > 0));
+          }
+        } catch { /* peak_equity best-effort */ }
+
+        // Map open positions → risk_amount estimate (cost_basis as proxy)
+        const openPositions = positions.map((p) => ({
+          symbol: p.symbol,
+          side: p.side === "long" ? "BUY" : "SELL",
+          risk_pct: riskPerTradePct,
+          risk_amount: Math.abs(parseFloat(p.cost_basis)) * 0.02, // ~2% of position at risk (conservative)
+        }));
+
+        // Recent P&Ls from last 20 resolved signals
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: recentSignals } = await (supabase.from("trading_signal_log") as any)
+          .select("pnl")
+          .not("outcome", "is", null)
+          .not("pnl", "is", null)
+          .order("resolved_at", { ascending: false })
+          .limit(20);
+        const recentPnls = (recentSignals || []).map((s: { pnl: number }) => s.pnl).reverse();
+
+        riskContext = {
+          equity,
+          peak_equity: peakEquity,
+          open_positions: openPositions,
+          recent_pnls: recentPnls,
+          risk_per_trade_pct: riskPerTradePct,
+          risk_amount: riskAmount,
+        };
+      }
+    } catch { /* risk_context is optional — sniper will run without enhanced checks */ }
+
     // 2b. Load wisdom for all tradeable symbols
     const tradeableSymbols = plans.map((p: { symbol: string }) => p.symbol);
     let wisdomMap: Record<string, Array<{ insight: string; confidence_adjustment: number; category: string }>> = {};
@@ -129,6 +193,7 @@ export async function GET() {
             htf_interval: "1d",
             ltf_period: "5d",
             ltf_interval: "15m",
+            risk_context: riskContext,
           }),
           signal: AbortSignal.timeout(30000), // 30s per symbol
         });
@@ -148,6 +213,10 @@ export async function GET() {
 
         const signal = result.signal;
         const confluence = result.confluence;
+        const enhancedRisk = result.enhanced_risk as
+          | { passed: boolean; blocked_by: string[]; size_multiplier: number }
+          | null
+          | undefined;
 
         // 5. Save signal to trading_signal_log
         // Apply Cerebro 1 (regime) + Cerebro 5 (wisdom) adjustments
@@ -159,6 +228,16 @@ export async function GET() {
           ...symbolWisdom.map(w => `Wisdom: ${w.insight}`),
         ];
         const allFilters = [...(confluence?.active_factors || []), "regime_check", "wisdom_check"];
+
+        // Enhanced risk reasoning + filters
+        if (enhancedRisk) {
+          allFilters.push("enhanced_risk");
+          if (!enhancedRisk.passed) {
+            allReasons.push(`Enhanced risk BLOCKED by: ${enhancedRisk.blocked_by.join(", ")}`);
+          } else if (enhancedRisk.size_multiplier < 1.0) {
+            allReasons.push(`Enhanced risk: size reduced to ${Math.round(enhancedRisk.size_multiplier * 100)}%`);
+          }
+        }
 
         // ── CABLE 1: Extract ML features ──
         let mlFeatures = null;
@@ -222,7 +301,9 @@ export async function GET() {
 
         // 5b. AUTO-EXECUTE on Alpaca (paper trading)
         let execResult: { executed: boolean; reason: string; orderId?: string; qty?: number } = { executed: false, reason: "skipped" };
-        if (adjustedConfidence >= 60) {
+        if (enhancedRisk && !enhancedRisk.passed) {
+          execResult = { executed: false, reason: `Enhanced risk blocked: ${enhancedRisk.blocked_by.join(", ")}` };
+        } else if (adjustedConfidence >= 60) {
           try {
             const { executeSignal } = await import("@/lib/trading/auto-executor");
             execResult = await executeSignal({
@@ -234,6 +315,7 @@ export async function GET() {
               confidence: adjustedConfidence,
               setup_type: signal.setup_type,
               reasoning: allReasons,
+              size_multiplier: enhancedRisk?.size_multiplier ?? 1.0,
             });
           } catch (execErr) {
             execResult = { executed: false, reason: `Exec error: ${(execErr as Error).message}` };
