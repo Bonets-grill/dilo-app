@@ -32,7 +32,7 @@ export default function AdminSkillsPage() {
             <div className="flex items-center gap-4">
               <span className="text-sm text-purple-400">{s.price}/mo</span>
               <span className="text-xs text-gray-600">0 users</span>
-              <button className="px-3 py-1 rounded-lg bg-white/5 text-xs text-gray-400 hover:bg-white/10">Edit</button>
+              <button type="button" className="px-3 py-1 rounded-lg bg-white/5 text-xs text-gray-400 hover:bg-white/10">Edit</button>
             </div>
           </div>
         ))}

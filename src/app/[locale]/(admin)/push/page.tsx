@@ -10,7 +10,6 @@ export default function AdminPushPage() {
   function handleSend() {
     if (!title || !body) return;
     // In production: POST /api/push { title, body, target: 'all' }
-    console.log("Push notification:", { title, body });
     setSent(true);
     setTimeout(() => setSent(false), 3000);
   }
@@ -53,7 +52,7 @@ export default function AdminPushPage() {
             <option value="premium">Premium / Skills</option>
           </select>
         </div>
-        <button
+        <button type="button"
           onClick={handleSend}
           disabled={!title || !body}
           className="px-6 py-3 rounded-xl bg-purple-600 text-white font-medium hover:bg-purple-500 transition disabled:opacity-40"

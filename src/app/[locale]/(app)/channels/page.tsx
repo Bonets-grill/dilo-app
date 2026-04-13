@@ -144,9 +144,9 @@ export default function ChannelsPage() {
               </div>
             </div>
             {waStatus === "connected" ? (
-              <button onClick={disconnectWhatsApp} className="px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 text-xs font-medium">{t("disconnect")}</button>
+              <button type="button" onClick={disconnectWhatsApp} className="px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 text-xs font-medium">{t("disconnect")}</button>
             ) : waStatus === "disconnected" ? (
-              <button onClick={connectWhatsApp} className="px-3 py-1.5 rounded-lg bg-green-600 text-white text-xs font-medium">{t("connect")}</button>
+              <button type="button" onClick={connectWhatsApp} className="px-3 py-1.5 rounded-lg bg-green-600 text-white text-xs font-medium">{t("connect")}</button>
             ) : null}
           </div>
 
@@ -204,7 +204,7 @@ export default function ChannelsPage() {
                 <p className="text-xs text-[var(--dim)]">{t("disconnected")}</p>
               </div>
             </div>
-            <button className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium">{t("connect")}</button>
+            <button type="button" className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium">{t("connect")}</button>
           </div>
           <p className="text-xs text-[var(--dim)]">{t("telegramInstructions")}</p>
         </div>

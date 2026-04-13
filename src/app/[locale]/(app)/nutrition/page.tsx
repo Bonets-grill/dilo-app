@@ -156,7 +156,7 @@ export default function NutritionPage() {
     return (
       <div className="h-full flex flex-col items-center justify-center gap-3">
         <p className="text-[var(--dim)]">{t("title")}</p>
-        <button onClick={fetchData} className="text-sm text-blue-400">{t("title")}</button>
+        <button type="button" onClick={fetchData} className="text-sm text-blue-400">{t("title")}</button>
       </div>
     );
   }
@@ -287,14 +287,14 @@ export default function NutritionPage() {
 
       {/* Quick Actions */}
       <div className="px-4 grid grid-cols-3 gap-2 mb-4">
-        <button
+        <button type="button"
           onClick={() => setShowFoodForm(true)}
           className="flex flex-col items-center gap-1 p-3 rounded-xl bg-[var(--card)] border border-[var(--border)]"
         >
           <Plus size={20} className="text-green-400" />
           <span className="text-[10px] text-[var(--dim)]">{t("addFood")}</span>
         </button>
-        <button
+        <button type="button"
           onClick={() => setShowPlan(true)}
           className="flex flex-col items-center gap-1 p-3 rounded-xl bg-[var(--card)] border border-[var(--border)]"
         >
@@ -318,7 +318,7 @@ export default function NutritionPage() {
           <div className="w-full max-w-lg bg-[var(--bg)] border-t border-[var(--border)] rounded-t-2xl p-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold">{t("addFood")}</h3>
-              <button onClick={() => setShowFoodForm(false)}>
+              <button type="button" onClick={() => setShowFoodForm(false)}>
                 <X size={18} className="text-[var(--dim)]" />
               </button>
             </div>
@@ -396,15 +396,13 @@ export default function NutritionPage() {
                 </div>
 
                 <div className="flex gap-2 pt-1">
-                  <button
-                    type="button"
+                  <button type="button"
                     onClick={() => setShowFoodForm(false)}
                     className="flex-1 py-2.5 rounded-xl border border-[var(--border)] text-sm text-[var(--dim)]"
                   >
                     {t("cancel")}
                   </button>
-                  <button
-                    type="submit"
+                  <button type="submit"
                     disabled={formSaving}
                     className="flex-1 py-2.5 rounded-xl bg-green-600 text-sm font-medium text-white disabled:opacity-50"
                   >
@@ -423,7 +421,7 @@ export default function NutritionPage() {
           <div className="w-full max-w-lg bg-[var(--bg)] border-t border-[var(--border)] rounded-t-2xl p-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold">{t("planTitle")}</h3>
-              <button onClick={() => setShowPlan(false)}>
+              <button type="button" onClick={() => setShowPlan(false)}>
                 <X size={18} className="text-[var(--dim)]" />
               </button>
             </div>
@@ -446,7 +444,7 @@ export default function NutritionPage() {
                     </div>
                   )}
                 </div>
-                <button
+                <button type="button"
                   onClick={() => setShowPlan(false)}
                   className="w-full py-2.5 rounded-xl border border-[var(--border)] text-sm text-[var(--dim)] mt-2"
                 >
@@ -463,7 +461,7 @@ export default function NutritionPage() {
                 >
                   {t("createPlan")}
                 </Link>
-                <button
+                <button type="button"
                   onClick={() => setShowPlan(false)}
                   className="mt-3 block mx-auto px-6 py-2 rounded-xl border border-[var(--border)] text-sm text-[var(--dim)]"
                 >

@@ -207,7 +207,7 @@ export default function ChangePinPage() {
     <main className="flex items-center justify-center min-h-dvh px-6">
       <div className="w-full max-w-sm">
         {/* Back button */}
-        <button onClick={() => router.push("/settings")} className="flex items-center gap-1 text-[var(--dim)] text-sm mb-8">
+        <button type="button" onClick={() => router.push("/settings")} className="flex items-center gap-1 text-[var(--dim)] text-sm mb-8">
           <ArrowLeft size={16} />
           <span>{t("back")}</span>
         </button>

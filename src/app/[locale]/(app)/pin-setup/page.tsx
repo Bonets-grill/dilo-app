@@ -169,7 +169,7 @@ export default function PinSetupPage() {
         </div>
 
         {/* Skip */}
-        <button
+        <button type="button"
           onClick={() => router.push("/chat")}
           className="w-full text-center text-xs text-[var(--dim)] mt-8 py-2"
         >

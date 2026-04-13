@@ -37,7 +37,6 @@ export async function POST(req: NextRequest) {
       const instanceName = body.instance || body.instanceName || "";
 
       if (!fromMe && text) {
-        console.log(`[WA IN] From ${pushName} (${phone}): ${text}`);
 
         // Find user by instance name pattern dilo_XXXXXXXX
         const shortId = instanceName.replace("dilo_", "");
@@ -109,7 +108,6 @@ export async function POST(req: NextRequest) {
                   { endpoint: sub.endpoint, keys: sub.keys as { p256dh: string; auth: string } },
                   payload
                 );
-                console.log(`[Push] Sent to user ${userId}`);
               } catch (e) {
                 console.error("[Push] Failed:", e);
                 // Remove invalid subscription

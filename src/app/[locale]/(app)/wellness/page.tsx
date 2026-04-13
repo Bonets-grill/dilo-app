@@ -190,7 +190,7 @@ export default function WellnessPage() {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-4 gap-3">
         <p className="text-[var(--dim)]">{t("title")}</p>
-        <button onClick={fetchDashboard} className="text-sm text-blue-400 underline">
+        <button type="button" onClick={fetchDashboard} className="text-sm text-blue-400 underline">
           {t("startExercise")}
         </button>
       </div>
@@ -341,7 +341,7 @@ export default function WellnessPage() {
           {data.available_modules.map((mod) => {
             const IconComp = MODULE_ICONS[mod.type] || Heart;
             return (
-              <button
+              <button type="button"
                 key={mod.id}
                 onClick={() => startModule(mod.id)}
                 className="text-left bg-[var(--card)] rounded-xl p-3 border border-[var(--border)] flex items-center gap-3 active:scale-[0.98] transition-transform"
@@ -380,7 +380,7 @@ export default function WellnessPage() {
                 </span>
               )}
             </div>
-            <button onClick={closeExercise}>
+            <button type="button" onClick={closeExercise}>
               <X size={20} className="text-[var(--dim)]" />
             </button>
           </div>
@@ -426,7 +426,7 @@ export default function WellnessPage() {
                   </div>
                 )}
 
-                <button
+                <button type="button"
                   onClick={closeExercise}
                   className="mt-4 px-8 py-3 rounded-xl bg-pink-600 text-sm font-medium text-white"
                 >
@@ -474,7 +474,7 @@ export default function WellnessPage() {
                       const label = opt[locale] || opt.es;
                       const isSelected = inputValue === label;
                       return (
-                        <button
+                        <button type="button"
                           key={idx}
                           onClick={() => setInputValue(label)}
                           className={`px-3 py-2 rounded-xl text-sm border transition-all ${
@@ -491,7 +491,7 @@ export default function WellnessPage() {
                 )}
 
                 {/* Action button */}
-                <button
+                <button type="button"
                   onClick={handleStepSubmit}
                   disabled={currentStep.type !== "info" && !inputValue.trim()}
                   className="w-full py-3 rounded-xl bg-pink-600 text-sm font-medium text-white disabled:opacity-40 flex items-center justify-center gap-2"
