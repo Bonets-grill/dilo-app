@@ -16,6 +16,7 @@ import { getAlpacaKeys } from "@/lib/oauth/alpaca";
 import { getAccount, getPositions, placeOrder, type AlpacaAuth } from "@/lib/alpaca/client";
 import { createClient } from "@supabase/supabase-js";
 import { createHash } from "crypto";
+import { isTradingHalted } from "@/lib/trading/halt";
 
 function deterministicClientOrderId(
   symbol: string,
@@ -65,6 +66,10 @@ export async function executeSignal(signal: {
   const fail = (reason: string): ExecutionResult => ({ executed: false, reason });
 
   try {
+    // 0. Global kill switch — TRADING_HALT=1 aborts everything
+    const halt = isTradingHalted();
+    if (halt.halted) return fail(`HALTED: ${halt.reason}`);
+
     // 1. Get Alpaca keys
     const keys = await getAlpacaKeys(MARIO_USER_ID);
     if (!keys) return fail("No Alpaca keys found");
