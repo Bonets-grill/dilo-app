@@ -178,6 +178,10 @@ export interface OrderRequest {
   time_in_force: "day" | "gtc" | "ioc" | "fok";
   limit_price?: string;
   stop_price?: string;
+  client_order_id?: string;
+  order_class?: "simple" | "bracket" | "oco" | "oto";
+  take_profit?: { limit_price: string };
+  stop_loss?: { stop_price: string; limit_price?: string };
 }
 
 export async function placeOrder(auth: AlpacaAuth, order: OrderRequest): Promise<AlpacaOrder> {

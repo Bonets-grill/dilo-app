@@ -15,6 +15,20 @@
 import { getAlpacaKeys } from "@/lib/oauth/alpaca";
 import { getAccount, getPositions, placeOrder, type AlpacaAuth } from "@/lib/alpaca/client";
 import { createClient } from "@supabase/supabase-js";
+import { createHash } from "crypto";
+
+function deterministicClientOrderId(
+  symbol: string,
+  side: string,
+  entry: number,
+  sl: number,
+  tp: number,
+): string {
+  const day = new Date().toISOString().slice(0, 10);
+  const material = `${symbol}|${side}|${entry}|${sl}|${tp}|${day}`;
+  const hash = createHash("sha256").update(material).digest("hex").slice(0, 24);
+  return `dilo-${hash}`;
+}
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -111,40 +125,27 @@ export async function executeSignal(signal: {
 
     if (qty <= 0) return fail("Not enough buying power");
 
-    // 8. Place bracket order (entry + SL + TP)
+    // 8. Place native bracket order (entry + SL + TP atomic, idempotent)
     const side = signal.side.toUpperCase() === "BUY" ? "buy" : "sell";
+    const clientOrderId = deterministicClientOrderId(
+      signal.symbol,
+      side,
+      signal.entry_price,
+      signal.stop_loss,
+      signal.take_profit,
+    );
 
     const order = await placeOrder(auth, {
       symbol: signal.symbol,
       qty: String(qty),
       side: side as "buy" | "sell",
-      type: "market", // Market order for immediate fill
-      time_in_force: "day",
+      type: "market",
+      time_in_force: "gtc",
+      order_class: "bracket",
+      take_profit: { limit_price: String(signal.take_profit) },
+      stop_loss: { stop_price: String(signal.stop_loss) },
+      client_order_id: clientOrderId,
     });
-
-    // 9. Place stop loss order
-    try {
-      await placeOrder(auth, {
-        symbol: signal.symbol,
-        qty: String(qty),
-        side: side === "buy" ? "sell" : "buy",
-        type: "stop",
-        time_in_force: "gtc",
-        stop_price: String(signal.stop_loss),
-      });
-    } catch { /* SL order failed — will need manual management */ }
-
-    // 10. Place take profit order
-    try {
-      await placeOrder(auth, {
-        symbol: signal.symbol,
-        qty: String(qty),
-        side: side === "buy" ? "sell" : "buy",
-        type: "limit",
-        time_in_force: "gtc",
-        limit_price: String(signal.take_profit),
-      });
-    } catch { /* TP order failed — will need manual management */ }
 
     return {
       executed: true,
