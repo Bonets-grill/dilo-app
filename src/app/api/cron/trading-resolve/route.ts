@@ -94,12 +94,18 @@ export async function GET() {
         let pnl = 0;
 
         if (sig.side === "BUY") {
-          if (currentPrice >= sig.take_profit) { outcome = "win"; pnl = sig.take_profit - sig.entry_price; }
-          else if (currentPrice <= sig.stop_loss) { outcome = "loss"; pnl = sig.stop_loss - sig.entry_price; }
+          const hitTP = highPrice >= sig.take_profit;
+          const hitSL = lowPrice > 0 && lowPrice <= sig.stop_loss;
+          if (hitTP && hitSL) { outcome = "ambiguous"; pnl = 0; }
+          else if (hitTP || currentPrice >= sig.take_profit) { outcome = "win"; pnl = sig.take_profit - sig.entry_price; }
+          else if (hitSL || currentPrice <= sig.stop_loss) { outcome = "loss"; pnl = sig.stop_loss - sig.entry_price; }
           else { pnl = currentPrice - sig.entry_price; }
         } else {
-          if (currentPrice <= sig.take_profit) { outcome = "win"; pnl = sig.entry_price - sig.take_profit; }
-          else if (currentPrice >= sig.stop_loss) { outcome = "loss"; pnl = sig.entry_price - sig.stop_loss; }
+          const hitTP = lowPrice > 0 && lowPrice <= sig.take_profit;
+          const hitSL = highPrice >= sig.stop_loss;
+          if (hitTP && hitSL) { outcome = "ambiguous"; pnl = 0; }
+          else if (hitTP || currentPrice <= sig.take_profit) { outcome = "win"; pnl = sig.entry_price - sig.take_profit; }
+          else if (hitSL || currentPrice >= sig.stop_loss) { outcome = "loss"; pnl = sig.entry_price - sig.stop_loss; }
           else { pnl = sig.entry_price - currentPrice; }
         }
 
