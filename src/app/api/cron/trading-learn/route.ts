@@ -131,7 +131,7 @@ export async function GET() {
               .limit(1);
 
             const signal = smc.signal as { side?: string; entry_price?: number; stop_loss?: number; take_profit?: number; confidence?: number; setup_type?: string; reasoning?: string[] } | null;
-            if (signal && signal.entry_price && signal.stop_loss && signal.take_profit && (signal.confidence || 0) >= 60 && (!existingSignal || existingSignal.length === 0)) {
+            if (signal && signal.entry_price && signal.stop_loss && signal.take_profit && (signal.confidence || 0) >= 75 && (!existingSignal || existingSignal.length === 0)) {
               // Apply intelligence filters before saving signal
               // Small delay to avoid Finnhub rate limiting (30 calls/sec limit)
               await new Promise(r => setTimeout(r, 1500));
