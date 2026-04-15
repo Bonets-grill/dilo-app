@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import createIntlMiddleware from "next-intl/middleware";
 import { createServerClient } from "@supabase/ssr";
 import { routing } from "./i18n/routing";
+import { limitLLM, limitImage, rateLimitResponse } from "./lib/rate-limit";
 
 const intlMiddleware = createIntlMiddleware(routing);
 
@@ -13,12 +14,27 @@ const BLOCKED_PATHS = new Set([
   "/vercel.json", "/.file-locks", "/CLAUDE.md", "/AGENTS.md",
 ]);
 
+// LLM-cost endpoints that need rate limiting (skipped for cron which authenticates via header)
+const LLM_PATHS = /^\/api\/(chat|journal|transcribe|skills\/)/;
+const IMG_PATHS = /^\/api\/(enhance-image)/;
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Block sensitive files
   if (BLOCKED_PATHS.has(pathname) || /^\/.env(\..+)?$/.test(pathname)) {
     return new NextResponse(null, { status: 404 });
+  }
+
+  // Rate limit LLM endpoints (cost bomb + DoS protection)
+  if (LLM_PATHS.test(pathname) || IMG_PATHS.test(pathname)) {
+    const userId = request.cookies.get("sb-access-token")?.value
+      || request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+      || request.headers.get("x-real-ip")
+      || "anon";
+    const result = IMG_PATHS.test(pathname) ? await limitImage(userId) : await limitLLM(userId);
+    if (!result.ok) return rateLimitResponse(result);
+    return NextResponse.next();
   }
 
   // Skip intl middleware for auth callback (it's a route handler, not a page)
@@ -75,6 +91,12 @@ export const config = {
     "/.file-locks",
     "/CLAUDE.md",
     "/AGENTS.md",
+    // Rate-limited LLM endpoints
+    "/api/chat/:path*",
+    "/api/journal/:path*",
+    "/api/transcribe/:path*",
+    "/api/skills/:path*",
+    "/api/enhance-image/:path*",
     // All pages (existing pattern)
     "/((?!api|_next|icons|.*\\..*).*)"],
 };
