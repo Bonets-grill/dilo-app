@@ -174,10 +174,31 @@ export default function ChatPage() {
       const found = [...msgs].reverse().find(m => m.role === "user" && m.content.startsWith("__IMAGE__"));
       return found ? found.content.replace("__IMAGE__", "") : null;
     })();
-    const editIntent = text && /\b(cambia|cambiar|modifica|modificar|edita|editar|haz|hacer|quita|quitar|añade|añadir|pon|poner|convierte|convertir|transforma|transformar|sin\s+(cambiar|modificar|tocar)|m[aá]s\s+definidos?|mejora|mejorar)\b/i.test(text);
+    // Detección de intención: stems de verbos en todas las conjugaciones
+    // mejores/mejora/mejorar/mejorando, cambia/cambies/cambiar, etc.
+    const questionIntent = text && /\b(qu[eé]\s+(es|hay|ves|dice|pone|significa)|anal[ií]z|descri[bp]|lee|traduc|explic|identific|cu[aá]nt[oa]s?)\w*/i.test(text);
+    const editIntent = text && !questionIntent && imgBase64;
 
-    // EDIT: imagen + texto de edición → gpt-image-1
-    if (imgBase64 && text && editIntent) {
+    // IMAGEN + TEXTO: si hay imagen adjunta y el usuario escribió algo
+    if (imgBase64 && text) {
+      if (questionIntent) {
+        // PREGUNTA sobre la imagen → GPT-4o-mini vision
+        try {
+          setMsgs(p => p.map(m => m.id === aId ? { ...m, content: t("analyzingImage") + " 🔍" } : m));
+          const r = await fetch("/api/ocr", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ imageUrl: imgBase64, prompt: text }),
+          });
+          const d = await r.json();
+          const answer = d.text || t("imageError");
+          setMsgs(p => p.map(m => m.id === aId ? { ...m, content: answer } : m));
+        } catch {
+          setMsgs(p => p.map(m => m.id === aId ? { ...m, content: "Error al analizar." } : m));
+        } finally { setBusy(false); }
+        return;
+      }
+      // EDICIÓN — todo lo demás con imagen + texto es intent de editar
       try {
         setMsgs(p => p.map(m => m.id === aId ? { ...m, content: t("generatingImage") + " 🎨" } : m));
         const r = await fetch("/api/image-edit", {
@@ -197,7 +218,7 @@ export default function ChatPage() {
       return;
     }
 
-    // ANALYZE: imagen sin texto (o texto genérico tipo "qué ves") → OCR/vision
+    // SOLO IMAGEN sin texto → auto-analiza
     if (img && !text) {
       try {
         setMsgs(p => p.map(m => m.id === aId ? { ...m, content: t("analyzingImage") + " 🔍" } : m));

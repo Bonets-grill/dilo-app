@@ -13,12 +13,18 @@ const MAX_BASE64_CHARS = 4_000_000; // ~3 MB
  * Body: { imageUrl: string (base64 data URL or https URL) }
  */
 export async function POST(req: NextRequest) {
-  const { imageUrl } = await req.json();
+  const { imageUrl, prompt: customPrompt } = await req.json();
   if (!imageUrl) return NextResponse.json({ error: "Missing imageUrl" }, { status: 400 });
 
   const isBase64 = imageUrl.startsWith("data:");
   const size = imageUrl.length;
   const detail: "low" | "high" | "auto" = isBase64 && size > MAX_BASE64_CHARS ? "low" : "auto";
+
+  // Si el caller pasa un prompt custom (ej: pregunta del usuario sobre la
+  // imagen), se usa ese. Si no, el prompt genérico de análisis.
+  const systemText = customPrompt
+    ? `El usuario adjuntó una imagen y pregunta: "${String(customPrompt).slice(0, 500)}". Responde en español, directo y útil.`
+    : `Analiza esta imagen de forma completa y útil. Sigue estas reglas:`;
 
   try {
     const response = await openai.chat.completions.create({
@@ -30,7 +36,7 @@ export async function POST(req: NextRequest) {
           content: [
             {
               type: "text",
-              text: `Analiza esta imagen de forma completa y útil. Sigue estas reglas:
+              text: customPrompt ? systemText : `Analiza esta imagen de forma completa y útil. Sigue estas reglas:
 
 1. Si hay TEXTO visible (documento, recibo, captura de pantalla, cartel, menú): extrae TODO el texto de forma legible.
 2. Si hay NÚMEROS o PRECIOS: destácalos claramente.
