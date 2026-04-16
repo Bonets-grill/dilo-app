@@ -6,15 +6,27 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// Evolution v2: el campo `id` en contactos es un ULID interno (cmnqz2eh…),
-// NO el teléfono. El JID real vive en remoteJid/owner/jid. Devolvemos null
-// si no hay dígitos válidos para filtrar ese contacto del resultado.
-function extractEvoPhone(c: Record<string, unknown>): string | null {
-  const candidates = [c.remoteJid, c.owner, c.jid, c.phoneNumber, c.number, c.id];
-  for (const raw of candidates) {
-    if (!raw) continue;
-    const m = String(raw).match(/^(\d{8,15})(?:@.*)?$/);
-    if (m) return m[1];
+// Evolution v2: el `id` del contacto es un ULID interno (cmnqz2eh…). El JID
+// real está en remoteJid con sufijo @s.whatsapp.net (sendable) o @lid
+// (linked ID — NO sendable, Baileys suele rechazar envíos). Devolvemos null
+// si no hay dígitos válidos.
+function extractEvoPhone(c: Record<string, unknown>): { phone: string; sendable: boolean } | null {
+  const candidates = [
+    { v: c.remoteJid, isJid: true },
+    { v: c.owner, isJid: true },
+    { v: c.jid, isJid: true },
+    { v: c.phoneNumber, isJid: false },
+    { v: c.number, isJid: false },
+    { v: c.id, isJid: true },
+  ];
+  for (const { v, isJid } of candidates) {
+    if (!v) continue;
+    const s = String(v);
+    const m = s.match(/^(\d{8,15})(@(.+))?$/);
+    if (!m) continue;
+    const suffix = m[3] || "";
+    const sendable = !isJid || !suffix || suffix === "s.whatsapp.net" || suffix === "c.us";
+    return { phone: m[1], sendable };
   }
   return null;
 }
@@ -186,19 +198,35 @@ export async function POST(req: NextRequest) {
         const list: Record<string, unknown>[] = Array.isArray(raw) ? raw
           : Array.isArray(raw?.contacts) ? raw.contacts
           : Array.isArray(raw?.data) ? raw.data : [];
-        const matches = list
-          .filter((c) => {
-            const names = [c.pushName, c.name, c.profileName, c.verifiedName, c.shortName]
-              .filter(Boolean).map((v) => String(v).toLowerCase()).join(" ");
-            return names.includes(q);
+
+        // Multi-word AND semantics
+        const words = q.split(/\s+/).filter(Boolean);
+
+        const scored = list
+          .map((c) => {
+            const name = String(c.pushName || c.name || c.profileName || c.verifiedName || "").trim();
+            if (!name) return null;
+            const low = name.toLowerCase();
+            if (!words.every((w) => low.includes(w))) return null;
+            const ext = extractEvoPhone(c);
+            if (!ext) return null;
+            return { name, phone: ext.phone, sendable: ext.sendable };
           })
-          .map((c) => ({
-            name: c.pushName || c.profileName || c.name || c.verifiedName || "Sin nombre",
-            phone: extractEvoPhone(c),
-          }))
-          .filter((c): c is { name: string; phone: string } => Boolean(c.phone))
-          .slice(0, 5);
-        return NextResponse.json({ result: JSON.stringify({ found: matches.length, contacts: matches }) });
+          .filter((x): x is { name: string; phone: string; sendable: boolean } => x !== null);
+
+        // Ranking: exact > startsWith > contains, sendable > lid
+        const ranked = scored
+          .map((c) => {
+            const n = c.name.toLowerCase();
+            let score = n === q ? 100 : n.startsWith(q) ? 50 : 10;
+            if (c.sendable) score += 5;
+            return { c, score };
+          })
+          .sort((a, b) => b.score - a.score || a.c.name.localeCompare(b.c.name))
+          .map((x) => x.c)
+          .slice(0, 8);
+
+        return NextResponse.json({ result: JSON.stringify({ found: ranked.length, contacts: ranked }) });
       } catch (err) {
         return NextResponse.json({ result: JSON.stringify({ error: "WhatsApp not connected", detail: String(err).slice(0, 120) }) });
       }
