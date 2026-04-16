@@ -1216,7 +1216,12 @@ ${userFacts}${journalKnowledge}`;
     "suscripciones", "electricidad", "farmacia", "seguros",
     "telefonia", "ayudas_publicas",
   ]);
-  const isCoreIntent = CORE_INTENTS.has(intent.type);
+  // Personal info queries like "recuerda mi próxima cita", "cuándo es mi X",
+  // "mi próxima cita con …" should also bypass expert/executor so the LLM can
+  // use calendar_list / list_reminders / memory tools cleanly.
+  const PERSONAL_QUERY_RE = /\b(recu[eé]rda(?:me)?\s+(mi|mis|nuestra)|cu[aá]ndo\s+(es|tengo)\s+mi|mi\s+pr[oó]xima\s+(cita|reuni[oó]n)|tengo\s+(cita|reuni[oó]n)\s+con)/i;
+  const isPersonalQuery = PERSONAL_QUERY_RE.test(lastMsgContent || "");
+  const isCoreIntent = CORE_INTENTS.has(intent.type) || isPersonalQuery;
 
   // ─── EXECUTOR DETECTION (keyword match → focused tool set) ───
   let executorContext = "";

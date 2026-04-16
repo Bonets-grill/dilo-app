@@ -89,18 +89,24 @@ export function detectIntent(text: string): RouteResult {
     return { type: "expense_query", data: { period } };
   }
 
-  // REMINDER: "recuérdame en 5 minutos", "ponme un recordatorio", "recuerda hacer X",
-  // "agéndame una cita para...", "apúntame la cita del dentista"
-  // But NOT "avísame cuando baje" (that's a price alert)
-  const reminderVerbs = /(?:recu[eé]rda(?:me)?|recordatorio|alarma|remind\s+me|ag[eé]nd[aá](?:me)?|ap[uú]nta(?:me)?|anota(?:me)?|ponme\s+un|pon\s+una|crea\s+(?:un|una)\s+(?:recordatorio|cita|alarma))/i;
+  // REMINDER CREATE: "recuérdame en 5 minutos", "ponme un recordatorio", "recuerda hacer X",
+  // "agéndame una cita para...", "apúntame la cita del dentista".
+  //
+  // Negative lookahead: "recuerda" seguido de "mi/mis/cuándo/dónde/qué/cuál" es
+  // una QUERY ("recuerda mi cita con X" = "dime cuándo es mi cita"), NO create.
+  // Esas caen al flow normal donde el LLM puede usar calendar_list / memory.
+  // But NOT "avísame cuando baje" (that's a price alert).
+  const reminderVerbs = /(?:recu[eé]rda(?:me)?(?!\s+(mi|mis|cu[aá]ndo|d[oó]nde|qu[eé]|cu[aá]l|nuestr[ao]))|recordatorio|alarma|remind\s+me|ag[eé]nd[aá]me|ap[uú]nta(?:me)?|anota(?:me)?|ponme\s+un|pon\s+una|crea\s+(?:un|una)\s+(?:recordatorio|cita|alarma))/i;
   if (reminderVerbs.test(lower)
     || (/avisame/i.test(lower) && !/(?:baj[ea]|precio|cuesta|oferta)/i.test(lower))) {
     return { type: "reminder" }; // Complex — needs LLM to parse time
   }
 
   // REMINDER QUERY: "qué recordatorios tengo", "cuáles son mis recordatorios", "dime mis recordatorios"
+  // Strict: solo si menciona "recordatorio" y es pregunta. Queries sobre citas
+  // de calendario ("cuándo es mi próxima cita") se dejan al flow normal con
+  // calendar_list disponible.
   if (/recordatorio/i.test(lower) && /(?:tengo|cuales|que|mis|pendientes|ver|mostrar|lista|dime|show|list|what|my)/i.test(lower)) {
-    // But NOT if it's creating a reminder ("recuérdame", "ponme un recordatorio")
     if (!/(?:recuerdame|recordatorio\s+(?:de|para|a\s+las)|ponme|crea|pon\s+un|set|create|remind\s+me)/i.test(lower)) {
       return { type: "reminder_query" };
     }
