@@ -70,10 +70,22 @@ for (const cat of CATEGORIES) {
 agents.sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
 fs.writeFileSync(OUT, JSON.stringify(agents, null, 2));
 
+// Static meta file (without system_prompt) — served from CDN edge, ~5x faster
+const META_OUT = path.join(process.cwd(), "public/experts-meta.json");
+const meta = agents.map(({ system_prompt: _sp, ...rest }) => rest);
 const byCat = {};
 for (const a of agents) byCat[a.category] = (byCat[a.category] || 0) + 1;
+const categories = Object.entries(byCat)
+  .map(([category, count]) => ({ category, count }))
+  .sort((a, b) => a.category.localeCompare(b.category));
+fs.writeFileSync(
+  META_OUT,
+  JSON.stringify({ experts: meta, total: meta.length, categories })
+);
 
 console.log(`Total agents: ${agents.length}`);
 for (const [c, n] of Object.entries(byCat).sort()) console.log(`  ${c}: ${n}`);
 console.log(`\nWrote: ${OUT}`);
-console.log(`Size: ${(fs.statSync(OUT).size / 1024).toFixed(1)} KB`);
+console.log(`  Size: ${(fs.statSync(OUT).size / 1024).toFixed(1)} KB`);
+console.log(`Wrote: ${META_OUT}`);
+console.log(`  Size: ${(fs.statSync(META_OUT).size / 1024).toFixed(1)} KB (client-served)`);
