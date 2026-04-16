@@ -1249,7 +1249,20 @@ ${userFacts}${journalKnowledge}`;
       if (lastUser && lastUser.length > 10 && lastUser.length < 2000) {
         const { routeToExperts, expertContextBlock } = await import("@/lib/experts/router");
         const matches = await routeToExperts(lastUser, { topK: 3, minScore: 0.38 });
-        if (matches.length > 0) expertContext = expertContextBlock(matches, 4500);
+        if (matches.length > 0) {
+          expertContext = expertContextBlock(matches, 4500);
+        } else {
+          // No match in the 437 pre-loaded experts → try the dynamic catalog
+          // (previously discovered). If still nothing, generate a new expert
+          // on the fly so future users benefit from the cache.
+          const { findDynamicExpert, discoverExpert, dynamicExpertBlock } =
+            await import("@/lib/experts/discover");
+          let dyn = await findDynamicExpert(lastUser);
+          if (!dyn) {
+            dyn = await discoverExpert(lastUser, userId || null);
+          }
+          if (dyn) expertContext = dynamicExpertBlock(dyn);
+        }
       }
     } catch (e) {
       console.error("[expert-router] non-fatal:", e);
