@@ -405,7 +405,7 @@ export default function DMPage() {
           <div className="w-8 h-8 rounded-full bg-[var(--accent)]/20 flex items-center justify-center text-xs font-bold text-[var(--accent)]">
             {getInitials(chatWith.name)}
           </div>
-          <span className="text-sm font-semibold flex-1">{chatWith.name}</span>
+          <span className="text-sm font-semibold flex-1">{chatWith.name} <span className="text-[9px] text-[var(--dim)] font-normal ml-1">v1057</span></span>
           <button type="button" onClick={togglePTT}
             className={`p-2 rounded-lg transition-colors ${pttActive ? "bg-green-500/20 text-green-400" : "text-[var(--dim)]"}`}>
             <Mic size={18} />
@@ -495,10 +495,11 @@ export default function DMPage() {
               <button type="button" onClick={() => imgRef.current?.click()} className="w-9 h-9 rounded-full bg-[var(--bg2)] border border-[var(--border)] text-[var(--dim)] flex items-center justify-center flex-shrink-0">
                 <ImagePlus size={16} />
               </button>
-              <button type="button" onClick={requestSuggestions} disabled={suggestLoading || messages.length === 0}
-                className="w-9 h-9 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center flex-shrink-0 disabled:opacity-30"
+              <button type="button" onClick={requestSuggestions} disabled={suggestLoading}
+                className="h-9 px-3 rounded-full bg-purple-600 text-white flex items-center gap-1.5 flex-shrink-0 disabled:opacity-50 active:scale-95 transition"
                 aria-label="Sugerir respuesta con IA">
                 {suggestLoading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                <span className="text-[11px] font-medium">IA</span>
               </button>
               <input
                 value={msgInput}
