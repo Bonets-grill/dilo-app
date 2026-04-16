@@ -12,6 +12,9 @@ export default function ChannelsPage() {
   const [instanceName, setInstanceName] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [mode, setMode] = useState<"qr" | "code">("qr");
+  const [phone, setPhone] = useState("");
+  const [pairCode, setPairCode] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createBrowserSupabase();
@@ -105,6 +108,47 @@ export default function ChannelsPage() {
     }
   }
 
+  async function connectByCode() {
+    if (!instanceName) return;
+    const num = phone.replace(/\D/g, "");
+    if (num.length < 8) {
+      setError("Introduce un número válido con prefijo país (ej: 34612345678)");
+      return;
+    }
+    setError("");
+    setWaStatus("connecting");
+    setPairCode(null);
+
+    try {
+      // Ensure instance exists (idempotent — if already created, Evolution returns 403/conflict which we ignore)
+      await fetch("/api/evolution", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "create", instanceName }),
+      });
+
+      const res = await fetch("/api/evolution", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "pair", instanceName, phoneNumber: num }),
+      });
+      const data = await res.json();
+      const code: string | undefined = data?.pairingCode || data?.code;
+      if (code && !code.startsWith("2@")) {
+        // Evolution returns format like "ABCD-1234" — normalize to XXXX-XXXX
+        const clean = code.replace(/[^A-Z0-9]/gi, "").toUpperCase();
+        const formatted = clean.length === 8 ? `${clean.slice(0,4)}-${clean.slice(4)}` : code;
+        setPairCode(formatted);
+      } else {
+        setError("No se pudo obtener el código. Intenta de nuevo.");
+        setWaStatus("disconnected");
+      }
+    } catch {
+      setError("Error al conectar. Intenta de nuevo.");
+      setWaStatus("disconnected");
+    }
+  }
+
   async function disconnectWhatsApp() {
     if (!instanceName) return;
     await fetch("/api/evolution", {
@@ -114,6 +158,7 @@ export default function ChannelsPage() {
     });
     setWaStatus("disconnected");
     setQrCode(null);
+    setPairCode(null);
   }
 
   return (
@@ -143,53 +188,103 @@ export default function ChannelsPage() {
                 </div>
               </div>
             </div>
-            {waStatus === "connected" ? (
+            {waStatus === "connected" && (
               <button type="button" onClick={disconnectWhatsApp} className="px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 text-xs font-medium">{t("disconnect")}</button>
-            ) : waStatus === "disconnected" ? (
-              <button type="button" onClick={connectWhatsApp} className="px-3 py-1.5 rounded-lg bg-green-600 text-white text-xs font-medium">{t("connect")}</button>
-            ) : null}
+            )}
           </div>
 
-          {/* QR Code */}
-          {qrCode && waStatus === "connecting" && (
-            <div className="mt-4 flex flex-col items-center">
-              {qrCode.startsWith("data:") ? (
-                <img src={qrCode} alt="QR" className="w-56 h-56 rounded-lg bg-white p-2" />
+          {waStatus !== "connected" && (
+            <>
+              {/* Mode tabs: QR vs pairing code */}
+              <div className="flex gap-2 mb-3 p-1 bg-[var(--bg3)] rounded-lg">
+                <button
+                  type="button"
+                  onClick={() => { setMode("qr"); setPairCode(null); setError(""); }}
+                  className={`flex-1 py-1.5 rounded-md text-xs font-medium transition ${mode === "qr" ? "bg-[var(--bg2)] text-white shadow" : "text-[var(--dim)]"}`}
+                >
+                  QR
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setMode("code"); setQrCode(null); setError(""); }}
+                  className={`flex-1 py-1.5 rounded-md text-xs font-medium transition ${mode === "code" ? "bg-[var(--bg2)] text-white shadow" : "text-[var(--dim)]"}`}
+                >
+                  Código
+                </button>
+              </div>
+
+              {mode === "qr" ? (
+                <>
+                  {waStatus === "disconnected" && (
+                    <button type="button" onClick={connectWhatsApp} className="w-full py-2.5 rounded-lg bg-green-600 text-white text-xs font-medium">
+                      {t("connect")}
+                    </button>
+                  )}
+                  {qrCode && waStatus === "connecting" && (
+                    <div className="mt-4 flex flex-col items-center">
+                      {qrCode.startsWith("data:") ? (
+                        <img src={qrCode} alt="QR" className="w-56 h-56 rounded-lg bg-white p-2" />
+                      ) : (
+                        <div className="w-56 h-56 rounded-lg bg-white p-3 flex items-center justify-center">
+                          <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCode)}`} alt="QR" className="w-full h-full" />
+                        </div>
+                      )}
+                      <p className="text-xs text-[var(--dim)] mt-3 text-center">{t("scanInstructions")}</p>
+                    </div>
+                  )}
+                  <p className="text-[10px] text-[var(--dim)] mt-3 leading-relaxed">
+                    💡 Escanea el QR desde un PC o tablet. Si solo tienes el móvil, usa la pestaña <b>Código</b> →
+                  </p>
+                </>
               ) : (
-                <div className="w-56 h-56 rounded-lg bg-white p-3 flex items-center justify-center">
-                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCode)}`} alt="QR" className="w-full h-full" />
-                </div>
+                <>
+                  {!pairCode ? (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-[11px] text-[var(--dim)] block mb-1.5">Número con prefijo país (sin +)</label>
+                        <input
+                          type="tel"
+                          inputMode="numeric"
+                          placeholder="34612345678"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          className="w-full px-3 py-2.5 rounded-lg bg-[var(--bg3)] border border-[var(--border)] text-sm outline-none focus:border-green-500"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={connectByCode}
+                        disabled={waStatus === "connecting"}
+                        className="w-full py-2.5 rounded-lg bg-green-600 text-white text-xs font-medium disabled:opacity-50"
+                      >
+                        {waStatus === "connecting" ? "Pidiendo código..." : "Obtener código"}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="rounded-lg bg-green-500/10 border border-green-500/30 p-4 text-center">
+                        <p className="text-[10px] text-[var(--dim)] mb-2">Tu código de vinculación</p>
+                        <p className="text-3xl font-black tracking-[0.3em] text-green-400 font-mono">{pairCode}</p>
+                      </div>
+                      <ol className="text-[11px] text-[var(--muted)] leading-relaxed space-y-1 list-decimal list-inside">
+                        <li>Abre WhatsApp en tu móvil</li>
+                        <li>Ve a <b>Ajustes → Dispositivos vinculados → Vincular un dispositivo</b></li>
+                        <li>Toca <b>Vincular con número de teléfono</b></li>
+                        <li>Introduce el código de arriba</li>
+                      </ol>
+                      <button
+                        type="button"
+                        onClick={() => { setPairCode(null); setWaStatus("disconnected"); }}
+                        className="w-full py-2 rounded-lg bg-[var(--bg3)] text-[var(--muted)] text-xs"
+                      >
+                        Pedir otro código
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
-              <p className="text-xs text-[var(--dim)] mt-3 text-center">{t("scanInstructions")}</p>
-            </div>
+            </>
           )}
-
-          {waStatus === "disconnected" && !qrCode && (
-            <p className="text-xs text-[var(--dim)]">{t("scanInstructions")}</p>
-          )}
-
-          <div className="mt-3 pt-3 border-t border-[var(--border)]">
-            <p className="text-[10px] text-[var(--dim)] leading-relaxed">
-              💡 Escanea el QR desde un PC o tablet. Si solo tienes el móvil, usa la opción de WhatsApp Cloud abajo — los mensajes salen desde el número de DILO.
-            </p>
-          </div>
-        </div>
-
-        {/* WhatsApp Cloud API (sin QR) */}
-        <div className="rounded-xl bg-[var(--bg2)] border border-[var(--border)] p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                <span className="text-lg">☁️</span>
-              </div>
-              <div>
-                <p className="text-sm font-medium">WhatsApp Cloud</p>
-                <p className="text-xs text-[var(--dim)]">Sin QR — mensajes desde número DILO</p>
-              </div>
-            </div>
-            <span className="px-2 py-1 rounded text-[10px] bg-yellow-500/10 text-yellow-400">Próximamente</span>
-          </div>
-          <p className="text-xs text-[var(--dim)] leading-relaxed">Los mensajes se envían desde el número oficial de DILO. No necesitas escanear QR. Solo pon tu número y listo.</p>
         </div>
 
         {/* Telegram */}
