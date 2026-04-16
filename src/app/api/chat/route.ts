@@ -979,12 +979,14 @@ Dime qué necesitas y empezamos.`;
 
   const lang = locale.split("-")[0] || "es";
   const langName = langNames[lang] || "español";
-  // Time context for the LLM: include UTC iso, user's local time, and timezone
-  // so "mañana a las 10:30" gets converted to the right ISO with offset.
-  const nowDate = new Date();
-  const userTz = req.headers.get("x-vercel-ip-timezone") || "Europe/Madrid";
-  const localNow = nowDate.toLocaleString("sv-SE", { timeZone: userTz });
-  const now = `${nowDate.toISOString()} (UTC) | Hora local del usuario: ${localNow} (${userTz}). Cuando el usuario diga horas relativas ('mañana', 'a las 10:30'), conviértelas desde SU timezone local y genera un ISO 8601 CON offset (ej: 2026-04-17T10:30:00+02:00). NUNCA uses solo 'Z' para horas declaradas en local.`;
+  // Time context for the LLM: resolved via users.preferences.timezone,
+  // falling back to IP header, then Europe/Madrid.
+  const { getUserTimezone } = await import("@/lib/user/timezone");
+  const { timezone: userTz, localTimeLabel, nowIso } = await getUserTimezone(
+    userId,
+    req.headers.get("x-vercel-ip-timezone")
+  );
+  const now = `${nowIso} (UTC) | Hora local del usuario: ${localTimeLabel} (${userTz}). Cuando el usuario diga horas relativas ('mañana', 'a las 10:30'), conviértelas desde SU timezone local y genera un ISO 8601 CON offset apropiado al timezone (ej: Europe/Madrid en verano = +02:00, Atlantic/Canary en verano = +01:00, Europe/London en verano = +01:00). NUNCA uses solo 'Z' para horas declaradas en local.`;
 
   // Load what DILO knows about this user — legacy facts.ts + new Mem0-style
   // retrieval from memory_facts (semantic + temporal).

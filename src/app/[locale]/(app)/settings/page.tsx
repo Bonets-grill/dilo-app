@@ -10,6 +10,7 @@ import { Link } from "@/i18n/navigation";
 import { createBrowserSupabase } from "@/lib/supabase/client";
 import MemorySettings from "@/components/MemorySettings";
 import GoogleConnectCard from "@/components/GoogleConnectCard";
+import TimezoneSettings from "@/components/TimezoneSettings";
 
 const CURRENCIES = [
   { code: "EUR", symbol: "€", name: "Euro" },
@@ -114,6 +115,9 @@ export default function SettingsPage() {
           </div>
           <ChevronRight size={16} className="text-[var(--dim)]" />
         </button>
+
+        {/* Timezone */}
+        <TimezoneSettings userId={userId} />
 
         {/* Google (Gmail + Calendar) */}
         <GoogleConnectCard userId={userId} />
