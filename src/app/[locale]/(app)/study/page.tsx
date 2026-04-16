@@ -255,7 +255,7 @@ export default function StudyPage() {
     } finally { setChatBusy(false); }
   }
 
-  // ── TTS con cache + iOS unlock ──
+  // ── TTS con cache persistente (Cache API) + iOS unlock ──
   async function playTts(msgId: string, text: string) {
     if (ttsPlaying === msgId) {
       audioRef.current?.pause();
@@ -263,35 +263,49 @@ export default function StudyPage() {
       return;
     }
 
-    // iOS Safari: unlock audio context synchronously from user tap
-    if (!audioRef.current) {
-      audioRef.current = new Audio();
-    }
+    if (!audioRef.current) audioRef.current = new Audio();
     const audio = audioRef.current;
     audio.pause();
-
     setTtsPlaying(msgId);
 
     try {
-      // Cache check — same text = same audio
-      const cacheKey = text.slice(0, 200);
-      let blobUrl = ttsCacheRef.current.get(cacheKey);
+      // Cache key: hash simple del texto (primeros 200 chars)
+      const cacheKey = `/tts-cache/${btoa(unescape(encodeURIComponent(text.slice(0, 200)))).slice(0, 60)}`;
 
-      if (!blobUrl) {
+      let blob: Blob | undefined;
+
+      // 1) Buscar en Cache API (persiste entre sesiones)
+      if (typeof caches !== "undefined") {
+        try {
+          const cache = await caches.open("dilo-tts-v1");
+          const cached = await cache.match(cacheKey);
+          if (cached) blob = await cached.blob();
+        } catch {}
+      }
+
+      // 2) Si no hay cache, fetch del servidor
+      if (!blob) {
         const r = await fetch("/api/tts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text }),
         });
         if (!r.ok) { setTtsPlaying(null); return; }
-        const blob = await r.blob();
-        blobUrl = URL.createObjectURL(blob);
-        ttsCacheRef.current.set(cacheKey, blobUrl);
+        blob = await r.blob();
+
+        // Guardar en Cache API para siempre
+        if (typeof caches !== "undefined") {
+          try {
+            const cache = await caches.open("dilo-tts-v1");
+            await cache.put(cacheKey, new Response(blob.slice()));
+          } catch {}
+        }
       }
 
-      audio.src = blobUrl;
-      audio.onended = () => setTtsPlaying(null);
-      audio.onerror = () => setTtsPlaying(null);
+      const url = URL.createObjectURL(blob);
+      audio.src = url;
+      audio.onended = () => { setTtsPlaying(null); URL.revokeObjectURL(url); };
+      audio.onerror = () => { setTtsPlaying(null); URL.revokeObjectURL(url); };
       await audio.play().catch(() => setTtsPlaying(null));
     } catch {
       setTtsPlaying(null);
