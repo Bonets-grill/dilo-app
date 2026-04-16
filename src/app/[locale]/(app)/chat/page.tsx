@@ -2,7 +2,7 @@
 
 import { useTranslations, useLocale } from "next-intl";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ArrowUp, Mic, Square, Plus, MessageCircle, ImagePlus, X, Pencil, Copy, Reply, Search } from "lucide-react";
+import { ArrowUp, Mic, Square, Plus, MessageCircle, ImagePlus, X, Pencil, Copy, Reply, Search, Sparkles, Loader2 } from "lucide-react";
 import ShareMenu from "@/components/ui/ShareMenu";
 import ReactMarkdown from "react-markdown";
 import { createBrowserSupabase } from "@/lib/supabase/client";
@@ -16,6 +16,8 @@ export default function ChatPage() {
   const locale = useLocale();
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
+  const [suggestLoading, setSuggestLoading] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [rec, setRec] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
@@ -102,6 +104,29 @@ export default function ChatPage() {
     setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
   }, []);
   useEffect(scrollDown, [msgs, scrollDown]);
+
+  async function requestSuggestions() {
+    if (suggestLoading || !userId) return;
+    setSuggestLoading(true);
+    setSuggestions([]);
+    try {
+      const payload = {
+        userId,
+        messages: msgs.map((m) => ({ role: m.role, content: m.content })),
+      };
+      const res = await fetch("/api/chat/suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      setSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []);
+    } catch (e) {
+      console.error("[chat] suggest failed:", e);
+    } finally {
+      setSuggestLoading(false);
+    }
+  }
   useEffect(() => { if (voicePreview !== null) voiceRef.current?.focus(); }, [voicePreview]);
 
   function onInput(v: string) {
@@ -544,9 +569,30 @@ export default function ChatPage() {
           paddingRight: "calc(12px + env(safe-area-inset-right))",
         }}
       >
+        {suggestions.length > 0 && (
+          <div className="max-w-2xl mx-auto mb-2 flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+            {suggestions.map((s, i) => (
+              <button key={i} type="button"
+                onClick={() => { setInput(s); setSuggestions([]); if (taRef.current) { taRef.current.style.height = "auto"; taRef.current.style.height = Math.min(taRef.current.scrollHeight, 100) + "px"; taRef.current.focus(); } }}
+                style={{ flexShrink: 0, maxWidth: "85%", textAlign: "left", fontSize: "12px", color: "#fff", backgroundColor: "rgba(139,92,246,0.15)", border: "1px solid rgba(139,92,246,0.35)", borderRadius: "16px", padding: "8px 12px", cursor: "pointer" }}>
+                {s}
+              </button>
+            ))}
+            <button type="button" onClick={() => setSuggestions([])}
+              style={{ flexShrink: 0, width: "28px", height: "28px", borderRadius: "50%", backgroundColor: "var(--bg2)", border: "1px solid var(--border)", color: "var(--dim)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+              <X size={12} />
+            </button>
+          </div>
+        )}
         <div className="flex items-end gap-2 max-w-2xl mx-auto">
           <button type="button" onClick={() => fileRef.current?.click()} disabled={enhancing} className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 mb-0.5 bg-[var(--bg3)] ${enhancing ? "opacity-40" : ""}`}>
             <ImagePlus size={16} className="text-white" />
+          </button>
+          <button type="button" onClick={requestSuggestions} disabled={suggestLoading}
+            style={{ backgroundColor: "#8b5cf6", color: "#ffffff", height: "36px", padding: "0 12px", borderRadius: "18px", flexShrink: 0, display: "flex", alignItems: "center", gap: "6px", border: "none", cursor: "pointer", fontSize: "12px", fontWeight: 600, marginBottom: "2px" }}
+            aria-label="Sugerir próximas preguntas">
+            {suggestLoading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+            <span>IA ✨</span>
           </button>
           <div className="flex-1 min-w-0 flex items-end bg-[var(--bg2)] rounded-2xl border border-[var(--border)] px-3 py-1.5">
             <textarea ref={taRef} value={input} onChange={e => onInput(e.target.value)}
