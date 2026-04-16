@@ -4,7 +4,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { localeNames, localeFlags, locales } from "@/i18n/config";
 import type { Locale } from "@/i18n/config";
-import { Globe, Moon, Sun, CreditCard, Shield, Info, LogOut, ChevronRight, Sparkles, TrendingUp, Check, Loader2, AlertTriangle, Eye } from "lucide-react";
+import { Globe, Moon, Sun, CreditCard, Shield, Info, LogOut, ChevronRight, Sparkles, AlertTriangle, Eye, Check } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link } from "@/i18n/navigation";
 import { createBrowserSupabase } from "@/lib/supabase/client";
@@ -25,19 +25,7 @@ export default function SettingsPage() {
   const locale = useLocale() as Locale;
   const router = useRouter();
 
-  // Alpaca API keys state
-  const [alpacaKeyId, setAlpacaKeyId] = useState("");
-  const [alpacaSecret, setAlpacaSecret] = useState("");
-  const [alpacaConnected, setAlpacaConnected] = useState(false);
-  const [alpacaPaper, setAlpacaPaper] = useState(true);
-  const [alpacaSaving, setAlpacaSaving] = useState(false);
-  const [alpacaError, setAlpacaError] = useState("");
-  const [alpacaSuccess, setAlpacaSuccess] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-
-  // Learning stats
-  const [learningScore, setLearningScore] = useState(0);
-  const [learningData, setLearningData] = useState<{ total_knowledge: number; total_signals: number; win_rate: number; days_learning: number } | null>(null);
 
   // Theme & Currency & Easy Mode
   const [theme, setTheme] = useState<"dark" | "light">("dark");
@@ -61,14 +49,6 @@ export default function SettingsPage() {
         (supabase.from("users") as any).select("currency").eq("id", uid).single().then(({ data: u }: { data: { currency: string } | null }) => {
           if (u?.currency) setCurrency(u.currency);
         });
-        fetch(`/api/trading/keys?userId=${uid}`).then(r => r.json()).then(d => {
-          setAlpacaConnected(d.connected);
-          setAlpacaPaper(d.paperMode !== false);
-        });
-        fetch(`/api/trading/learning?userId=${uid}`).then(r => r.json()).then(d => {
-          setLearningScore(d.learning_score || 0);
-          setLearningData(d);
-        }).catch(() => {});
       }
     });
   }, []);
@@ -98,44 +78,12 @@ export default function SettingsPage() {
     }
   }
 
-  async function saveAlpacaKeys() {
-    if (!alpacaKeyId.trim() || !alpacaSecret.trim()) { setAlpacaError(t("enterBothKeys")); return; }
-    let uid = userId;
-    if (!uid) {
-      const supabase = createBrowserSupabase();
-      const { data } = await supabase.auth.getUser();
-      uid = data.user?.id || null;
-      if (uid) setUserId(uid);
-    }
-    if (!uid) { setAlpacaError(t("needLogin")); return; }
-    setAlpacaSaving(true); setAlpacaError(""); setAlpacaSuccess(false);
-    try {
-      const res = await fetch("/api/trading/keys", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: uid, keyId: alpacaKeyId.trim(), secretKey: alpacaSecret.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) { setAlpacaError(data.error); }
-      else { setAlpacaConnected(true); setAlpacaPaper(data.paperMode); setAlpacaSuccess(true); setAlpacaKeyId(""); setAlpacaSecret(""); }
-    } catch { setAlpacaError(t("connectionError")); }
-    setAlpacaSaving(false);
-  }
-
   function changeLanguage(newLocale: string) {
     window.location.href = `/${newLocale}/settings`;
   }
 
   function goToStore() {
     router.push("/store");
-  }
-
-  function getLevelLabel(score: number) {
-    if (score < 20) return t("beginner");
-    if (score < 40) return t("learning");
-    if (score < 60) return t("intermediate");
-    if (score < 80) return t("advanced");
-    return t("expert");
   }
 
   return (
@@ -154,89 +102,6 @@ export default function SettingsPage() {
           </div>
           <ChevronRight size={16} className="text-[var(--dim)]" />
         </button>
-
-        {/* Trading / Alpaca Connection */}
-        <div className="rounded-xl bg-[var(--bg2)] border border-[var(--border)] overflow-hidden">
-          <div className="px-3.5 py-2.5 flex items-center gap-3 border-b border-[var(--border)]">
-            <TrendingUp size={16} className="text-[var(--dim)]" />
-            <span className="text-sm flex-1">{t("tradingCopilot")}</span>
-            {alpacaConnected && <span className="text-xs text-green-400 flex items-center gap-1"><Check size={12} /> {alpacaPaper ? "Paper" : "Live"}</span>}
-          </div>
-          <div className="px-3.5 py-3 space-y-2.5">
-            {alpacaConnected && !alpacaSuccess ? (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-green-400">{t("brokerConnected")}</span>
-                <button type="button" onClick={() => setAlpacaConnected(false)} className="text-xs text-[var(--dim)] underline">{t("changeKeys")}</button>
-              </div>
-            ) : (
-              <>
-                <p className="text-xs text-[var(--dim)]">{t("connectAlpacaDesc")}</p>
-                <input value={alpacaKeyId} onChange={e => setAlpacaKeyId(e.target.value)} placeholder={t("apiKeyId")}
-                  className="w-full bg-[var(--bg1)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-white placeholder-[var(--dim)] focus:outline-none focus:border-white/30" />
-                <input value={alpacaSecret} onChange={e => setAlpacaSecret(e.target.value)} placeholder={t("secretKey")} type="password"
-                  className="w-full bg-[var(--bg1)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-white placeholder-[var(--dim)] focus:outline-none focus:border-white/30" />
-                {alpacaError && <p className="text-xs text-red-400">{alpacaError}</p>}
-                {alpacaSuccess && <p className="text-xs text-green-400">{t("connectedOk")}</p>}
-                <button type="button" onClick={saveAlpacaKeys} disabled={alpacaSaving}
-                  className="w-full py-2 rounded-lg bg-[var(--accent)] text-white text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2">
-                  {alpacaSaving ? <><Loader2 size={14} className="animate-spin" /> {t("verifying")}</> : t("connectBroker")}
-                </button>
-                <p className="text-[10px] text-[var(--dim)]">{t("alpacaHelp")} <a href="https://alpaca.markets" target="_blank" rel="noopener" className="underline">alpaca.markets</a> &rarr; Dashboard &rarr; API</p>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* DILO Trading Intelligence */}
-        {alpacaConnected && (
-          <div className="rounded-xl bg-[var(--bg2)] border border-[var(--border)] overflow-hidden">
-            <div className="px-3.5 py-2.5 flex items-center gap-3 border-b border-[var(--border)]">
-              <span className="text-base">🧠</span>
-              <span className="text-sm flex-1">{t("tradingIntelligence")}</span>
-              <span className="text-xs text-[var(--accent)] font-medium">{learningScore}%</span>
-            </div>
-            <div className="px-3.5 py-3 space-y-3">
-              <div>
-                <div className="flex justify-between text-[10px] text-[var(--dim)] mb-1">
-                  <span>{t("knowledgeLevel")}</span>
-                  <span>{getLevelLabel(learningScore)}</span>
-                </div>
-                <div className="w-full h-2.5 bg-[var(--bg1)] rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-1000"
-                    style={{
-                      width: `${learningScore}%`,
-                      background: learningScore < 30 ? "#ef4444" : learningScore < 60 ? "#f59e0b" : learningScore < 80 ? "#3b82f6" : "#10b981",
-                    }}
-                  />
-                </div>
-              </div>
-
-              {learningData && (
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="bg-[var(--bg1)] rounded-lg px-2.5 py-2 text-center">
-                    <p className="text-[18px] font-bold text-white">{learningData.total_knowledge}</p>
-                    <p className="text-[9px] text-[var(--dim)]">{t("dataAnalyzed")}</p>
-                  </div>
-                  <div className="bg-[var(--bg1)] rounded-lg px-2.5 py-2 text-center">
-                    <p className="text-[18px] font-bold text-white">{learningData.total_signals}</p>
-                    <p className="text-[9px] text-[var(--dim)]">{t("signalsGenerated")}</p>
-                  </div>
-                  <div className="bg-[var(--bg1)] rounded-lg px-2.5 py-2 text-center">
-                    <p className="text-[18px] font-bold" style={{ color: learningData.win_rate >= 55 ? "#10b981" : learningData.win_rate >= 40 ? "#f59e0b" : "#ef4444" }}>{learningData.win_rate}%</p>
-                    <p className="text-[9px] text-[var(--dim)]">{t("winRate")}</p>
-                  </div>
-                  <div className="bg-[var(--bg1)] rounded-lg px-2.5 py-2 text-center">
-                    <p className="text-[18px] font-bold text-white">{learningData.days_learning}</p>
-                    <p className="text-[9px] text-[var(--dim)]">{t("daysLearning")}</p>
-                  </div>
-                </div>
-              )}
-
-              <p className="text-[9px] text-[var(--dim)]">{t("learningDesc")}</p>
-            </div>
-          </div>
-        )}
 
         {/* Language selector */}
         <div className="rounded-xl bg-[var(--bg2)] border border-[var(--border)] overflow-hidden">

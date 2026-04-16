@@ -13,7 +13,7 @@ const supabase = createClient(
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
-import { EXTENDED_TOOLS, ALL_TRADING_TOOLS, FOREX_TOOLS, TRADING_MEMORY_TOOLS, KNOWLEDGE_TOOLS, ENTERTAINMENT_TOOLS, TRADING_EMOTIONAL_TOOLS, executeExtendedTool } from "@/lib/skills";
+import { EXTENDED_TOOLS, KNOWLEDGE_TOOLS, ENTERTAINMENT_TOOLS, executeExtendedTool } from "@/lib/skills";
 import { planAgents, getAgentDefinition, executeAgent, synthesize } from "@/lib/agent/orchestrator";
 
 // Tool definitions for OpenAI function calling (base — trading added dynamically)
@@ -633,124 +633,6 @@ export async function POST(req: NextRequest) {
     // User is connected — fall through to LLM which has gmail_* and calendar_* tools
   }
 
-  // ── TRADING CONNECT ──
-  if (intent.type === "trading_connect") {
-    if (!userId) {
-      let cid = await saveMsg("user", lastMsgContent, conversationId);
-      const response = "Necesitas iniciar sesión para conectar tu broker.";
-      cid = await saveMsg("assistant", response, cid);
-      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
-    }
-    const { hasAlpacaConnection } = await import("@/lib/oauth/alpaca");
-    const connected = await hasAlpacaConnection(userId);
-    if (!connected) {
-      let cid = await saveMsg("user", lastMsgContent, conversationId);
-      const response = `Para conectar tu cuenta de trading, necesitas tus API keys de Alpaca.\n\n**Pasos:**\n1. Crea una cuenta gratis en [alpaca.markets](https://alpaca.markets) (incluye $100K virtuales para practicar)\n2. Ve a tu Dashboard → API\n3. Copia tu API Key ID y Secret Key\n4. Ve a tu **Perfil** en DILO y pégalas\n\nUna vez conectado, podré ver tu portfolio, analizar tu rendimiento, y ayudarte con la gestión de riesgo.`;
-      cid = await saveMsg("assistant", response, cid);
-      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
-    }
-    let cid = await saveMsg("user", lastMsgContent, conversationId);
-    const response = "Tu broker ya está conectado. Puedes preguntarme por tu portfolio, rendimiento, o pedirme que analice tu riesgo.";
-    cid = await saveMsg("assistant", response, cid);
-    return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
-  }
-
-  // ── TRADING (portfolio, performance, etc.) ──
-  if (intent.type === "trading") {
-    if (!userId) {
-      let cid = await saveMsg("user", lastMsgContent, conversationId);
-      const response = "Necesitas iniciar sesión para acceder a tu trading.";
-      cid = await saveMsg("assistant", response, cid);
-      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
-    }
-    const { hasAlpacaConnection } = await import("@/lib/oauth/alpaca");
-    const connected = await hasAlpacaConnection(userId);
-    if (!connected) {
-      let cid = await saveMsg("user", lastMsgContent, conversationId);
-      const response = `Para acceder a tu trading, primero configura tus API keys de Alpaca en tu **Perfil**.\n\nSi no tienes cuenta, crea una gratis en [alpaca.markets](https://alpaca.markets).`;
-      cid = await saveMsg("assistant", response, cid);
-      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
-    }
-    // Connected — fall through to LLM which has trading_* tools
-  }
-
-  // ── TRADING PORTFOLIO (direct execution — bypasses LLM) ──
-  if (intent.type === "trading_portfolio") {
-    let cid = await saveMsg("user", lastMsgContent, conversationId);
-    if (!userId) {
-      const response = "Necesitas iniciar sesión para ver tu portfolio.";
-      cid = await saveMsg("assistant", response, cid);
-      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
-    }
-    const { getAlpacaKeys } = await import("@/lib/oauth/alpaca");
-    const keys = await getAlpacaKeys(userId);
-    if (!keys) {
-      const response = "Configura tus API keys de Alpaca en tu **Perfil** para ver tu portfolio.";
-      cid = await saveMsg("assistant", response, cid);
-      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
-    }
-    const { executeTrading } = await import("@/lib/skills/trading");
-    const response = await executeTrading("trading_portfolio", {}, keys, userId);
-    cid = await saveMsg("assistant", response, cid);
-    return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
-  }
-
-  // ── TRADING CALENDAR (direct execution) ──
-  if (intent.type === "trading_calendar") {
-    let cid = await saveMsg("user", lastMsgContent, conversationId);
-    if (!userId) {
-      const response = "Necesitas iniciar sesión para ver tu calendario de trading.";
-      cid = await saveMsg("assistant", response, cid);
-      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
-    }
-    const { executeTradingCalendar } = await import("@/lib/skills/trading-calendar");
-    const response = await executeTradingCalendar("trading_calendar", {}, userId);
-    cid = await saveMsg("assistant", response, cid);
-    return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
-  }
-
-  // ── MARKET SCAN (direct execution — bypasses LLM tool selection) ──
-  if (intent.type === "market_scan") {
-    let cid = await saveMsg("user", lastMsgContent, conversationId);
-    if (!userId) {
-      const response = "Necesitas iniciar sesión para acceder al análisis de mercado.";
-      cid = await saveMsg("assistant", response, cid);
-      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
-    }
-    const { hasAlpacaConnection } = await import("@/lib/oauth/alpaca");
-    const connected = await hasAlpacaConnection(userId);
-    if (!connected) {
-      const response = `Para acceder al análisis de mercado, primero configura tus API keys de Alpaca en tu **Perfil**.`;
-      cid = await saveMsg("assistant", response, cid);
-      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
-    }
-    const { executeMarketAnalysis } = await import("@/lib/skills/market-analysis");
-    const response = await executeMarketAnalysis("market_scan_opportunities", {});
-    cid = await saveMsg("assistant", response, cid);
-    return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
-  }
-
-  // ── MARKET ANALYZE (direct execution — bypasses LLM tool selection) ──
-  if (intent.type === "market_analyze" && intent.data?.symbol) {
-    let cid = await saveMsg("user", lastMsgContent, conversationId);
-    if (!userId) {
-      const response = "Necesitas iniciar sesión para acceder al análisis de mercado.";
-      cid = await saveMsg("assistant", response, cid);
-      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
-    }
-    const { hasAlpacaConnection } = await import("@/lib/oauth/alpaca");
-    const connected = await hasAlpacaConnection(userId);
-    if (!connected) {
-      const response = `Para acceder al análisis de mercado, primero configura tus API keys de Alpaca en tu **Perfil**.`;
-      cid = await saveMsg("assistant", response, cid);
-      return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
-    }
-    const { executeMarketAnalysis } = await import("@/lib/skills/market-analysis");
-    const response = await executeMarketAnalysis("market_analyze_stock", { symbol: intent.data.symbol });
-    cid = await saveMsg("assistant", response, cid);
-    return new Response(response, { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" } });
-  }
-
   // ── SUSCRIPCIONES (manual — el usuario dice qué paga) ──
   if (intent.type === "suscripciones") {
     let cid = await saveMsg("user", lastMsgContent, conversationId);
@@ -1233,25 +1115,10 @@ REGLAS DE NEGOCIO:
 - "ideas para ganar dinero" / "side hustle" → USA business_earn_ideas OBLIGATORIAMENTE.
 ${userFacts}${journalKnowledge}`;
 
-  // Build tools list — trading tools per connection type
-  let userTools = [...baseTools, ...FOREX_TOOLS, ...TRADING_MEMORY_TOOLS, ...KNOWLEDGE_TOOLS, ...ENTERTAINMENT_TOOLS, ...TRADING_EMOTIONAL_TOOLS]; // All tools always available
-  let tradingProfilePrompt = "";
-  if (userId) {
-    const { hasAlpacaConnection } = await import("@/lib/oauth/alpaca");
-    const hasAlpaca = await hasAlpacaConnection(userId);
-    if (hasAlpaca) {
-      userTools = [...baseTools, ...ALL_TRADING_TOOLS, ...FOREX_TOOLS, ...TRADING_MEMORY_TOOLS, ...KNOWLEDGE_TOOLS, ...ENTERTAINMENT_TOOLS, ...TRADING_EMOTIONAL_TOOLS];
-
-      // Load personalized trading profile if exists
-      const { getTradingProfile, generateTradingPrompt, resetDailyCounters } = await import("@/lib/trading/profile");
-      const profile = await getTradingProfile(userId);
-      if (profile?.onboarding_complete) {
-        const today = new Date().toISOString().slice(0, 10);
-        if (profile.last_reset_date !== today) await resetDailyCounters(userId);
-        tradingProfilePrompt = "\n\n" + generateTradingPrompt(profile);
-      }
-    }
-  }
+  // Build tools list — trading removed (DILO is a personal assistant, not a
+  // trading platform). Cost protection + scope focus.
+  const userTools = [...baseTools, ...KNOWLEDGE_TOOLS, ...ENTERTAINMENT_TOOLS];
+  const tradingProfilePrompt = "";
 
   // ─── EXPERT ROUTING (embeddings → top-1 specialist injected into system prompt) ───
   // Graceful: if this fails for any reason, the chat continues as before.
