@@ -1,21 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { BookOpen, Play, Square, Loader2, GraduationCap } from "lucide-react";
+import {
+  BookOpen, Play, Square, Loader2, GraduationCap, Camera, FileText, MessageCircle, X,
+} from "lucide-react";
 
 const SUBJECTS = [
-  "Matemáticas",
-  "Lengua",
-  "Historia",
-  "Geografía",
-  "Inglés",
-  "Ciencias",
-  "Física",
-  "Química",
-  "Biología",
-  "Tecnología",
-  "Arte",
-  "Otra",
+  "Matemáticas", "Lengua", "Historia", "Geografía", "Inglés",
+  "Ciencias", "Física", "Química", "Biología", "Tecnología", "Arte", "Otra",
 ];
 
 interface Session {
@@ -26,6 +18,13 @@ interface Session {
   wall_seconds: number;
 }
 
+interface Material {
+  id: string;
+  summary: string;
+  ocr_text: string;
+  created_at: string;
+}
+
 export default function StudyPage() {
   const [subject, setSubject] = useState("Matemáticas");
   const [session, setSession] = useState<Session | null>(null);
@@ -33,10 +32,11 @@ export default function StudyPage() {
   const [stopping, setStopping] = useState(false);
   const [elapsedActive, setElapsedActive] = useState(0);
   const [elapsedWall, setElapsedWall] = useState(0);
+  const [materials, setMaterials] = useState<Material[]>([]);
+  const [uploading, setUploading] = useState(false);
   const interactedRef = useRef(false);
-  const tickRef = useRef<NodeJS.Timeout | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
-  // Recuperar sesión abierta al cargar
   useEffect(() => {
     fetch("/api/study/start", {
       method: "POST",
@@ -56,7 +56,6 @@ export default function StudyPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Heartbeat cada 30s mientras hay sesión abierta
   useEffect(() => {
     if (!session) return;
     async function beat() {
@@ -71,23 +70,16 @@ export default function StudyPage() {
         const d = await r.json();
         if (typeof d?.active_seconds === "number") setElapsedActive(d.active_seconds);
         if (typeof d?.wall_seconds === "number") setElapsedWall(d.wall_seconds);
-      } catch { /* network flap ok, cron cerrará si queda zombi */ }
+      } catch {}
     }
-    // Primer beat inmediato, luego cada 30s
     const id = setInterval(beat, 30_000);
-    tickRef.current = id;
-    // Contador local segundo a segundo para UX fluida (se resincroniza con cada heartbeat)
     const localTick = setInterval(() => {
       setElapsedWall((w) => w + 1);
       if (interactedRef.current) setElapsedActive((a) => a + 1);
     }, 1000);
-    return () => {
-      clearInterval(id);
-      clearInterval(localTick);
-    };
+    return () => { clearInterval(id); clearInterval(localTick); };
   }, [session, subject]);
 
-  // Marcar interacción en cualquier tap/scroll/key
   useEffect(() => {
     function mark() { interactedRef.current = true; }
     window.addEventListener("click", mark);
@@ -102,14 +94,11 @@ export default function StudyPage() {
     };
   }, []);
 
-  // Cerrar sesión al cerrar pestaña / ir a background (best-effort)
   useEffect(() => {
     if (!session) return;
     function onHide() {
       if (document.visibilityState === "hidden") {
-        // beacon: no promise, dispara y sigue
-        const body = JSON.stringify({ sessionId: session!.id });
-        navigator.sendBeacon?.("/api/study/stop", new Blob([body], { type: "application/json" }));
+        navigator.sendBeacon?.("/api/study/stop", new Blob([JSON.stringify({ sessionId: session!.id })], { type: "application/json" }));
       }
     }
     document.addEventListener("visibilitychange", onHide);
@@ -129,11 +118,9 @@ export default function StudyPage() {
         setSession(d.session);
         setElapsedActive(d.session.active_seconds || 0);
         setElapsedWall(d.session.wall_seconds || 0);
-        interactedRef.current = true; // arrancar cuenta activa
+        interactedRef.current = true;
       }
-    } finally {
-      setStarting(false);
-    }
+    } finally { setStarting(false); }
   }
 
   async function stop() {
@@ -148,9 +135,32 @@ export default function StudyPage() {
       setSession(null);
       setElapsedActive(0);
       setElapsedWall(0);
-    } finally {
-      setStopping(false);
-    }
+      setMaterials([]);
+    } finally { setStopping(false); }
+  }
+
+  async function uploadMaterial(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !session) return;
+    e.target.value = "";
+    setUploading(true);
+    try {
+      const reader = new FileReader();
+      const base64: string = await new Promise((res) => {
+        reader.onload = () => res(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+      const r = await fetch("/api/study/upload-material", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: session.id, imageBase64: base64 }),
+      });
+      const d = await r.json();
+      if (d?.material) {
+        setMaterials((m) => [d.material, ...m]);
+        interactedRef.current = true;
+      }
+    } finally { setUploading(false); }
   }
 
   function fmt(secs: number) {
@@ -160,6 +170,16 @@ export default function StudyPage() {
     if (h > 0) return `${h}h ${m}m`;
     if (m > 0) return `${m}m ${s}s`;
     return `${s}s`;
+  }
+
+  // Link al chat con contexto del material subido
+  function chatLink() {
+    const ctx = materials.map((m) => m.ocr_text).join("\n\n---\n\n");
+    if (!ctx) return "/chat";
+    // Pasar contexto como query param (encoded). El chat puede leerlo.
+    // Si es muy largo solo pasamos el último material.
+    const trimmed = ctx.length > 2000 ? materials[0]?.ocr_text?.slice(0, 2000) || "" : ctx;
+    return `/chat?study_context=${encodeURIComponent(trimmed)}&study_subject=${encodeURIComponent(subject)}`;
   }
 
   return (
@@ -203,12 +223,13 @@ export default function StudyPage() {
             </button>
 
             <p className="text-[11px] text-[var(--dim)] text-center leading-relaxed">
-              DILO cuenta tu tiempo activo mientras interactúas. Si sales o cierras la app, la
-              sesión se cierra sola a los 3 minutos.
+              DILO cuenta tu tiempo activo mientras interactúas. Sube fotos de tus libros o tareas
+              para que te ayude con lo que estás dando en clase.
             </p>
           </>
         ) : (
           <>
+            {/* Status */}
             <div className="rounded-2xl bg-gradient-to-br from-[var(--accent)]/15 to-[var(--accent)]/5 border border-[var(--accent)]/40 p-5 text-center">
               <div className="flex items-center justify-center gap-2 mb-1 text-[var(--accent)]">
                 <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
@@ -227,17 +248,53 @@ export default function StudyPage() {
               </div>
             </div>
 
-            <p className="text-[11px] text-[var(--dim)] text-center leading-relaxed px-2">
-              Interactúa con DILO (mensajes, preguntas, tareas) para que cuente como tiempo
-              activo. Solo dejarlo abierto no cuenta.
-            </p>
+            {/* Material upload */}
+            <div className="rounded-2xl bg-[var(--bg2)] border border-[var(--border)] p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <Camera size={16} className="text-yellow-400" />
+                <h3 className="text-sm font-semibold">Material de estudio</h3>
+              </div>
+              <p className="text-[11px] text-[var(--dim)] leading-relaxed">
+                Sube fotos de tu libro, apuntes o tareas. DILO lee el contenido y te ayuda con
+                ejercicios, explicaciones y preguntas sobre ESO EXACTO.
+              </p>
+              <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={uploadMaterial} />
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                className="w-full py-3 rounded-xl bg-yellow-500/20 text-yellow-400 font-semibold text-xs flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {uploading ? <><Loader2 size={14} className="animate-spin" /> Analizando material...</> : <><Camera size={14} /> Subir foto de libro/tarea</>}
+              </button>
 
+              {/* Uploaded materials */}
+              {materials.length > 0 && (
+                <div className="space-y-2 pt-2 border-t border-[var(--border)]">
+                  {materials.map((m) => (
+                    <div key={m.id} className="rounded-lg bg-[var(--bg3)] p-2.5">
+                      <div className="flex items-start gap-2">
+                        <FileText size={13} className="text-[var(--dim)] mt-0.5 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-medium">{m.summary}</p>
+                          <p className="text-[10px] text-[var(--dim)] mt-1 line-clamp-3">{m.ocr_text.slice(0, 200)}...</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Chat link with study context */}
             <a
-              href="/chat"
-              className="w-full py-3 rounded-xl bg-[var(--bg2)] border border-[var(--border)] text-sm font-medium flex items-center justify-center gap-2"
+              href={chatLink()}
+              className="w-full py-3 rounded-xl bg-green-500/20 border border-green-500/30 text-green-400 text-sm font-semibold flex items-center justify-center gap-2"
             >
-              <BookOpen size={15} />
-              Ir al chat para estudiar
+              <MessageCircle size={15} />
+              {materials.length > 0
+                ? "Chatear sobre este material"
+                : "Ir al chat para estudiar"}
             </a>
 
             <button
