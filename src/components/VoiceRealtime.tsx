@@ -74,14 +74,57 @@ export default function VoiceRealtime({ userId, onClose }: Props) {
       // 3. Data channel for events (status updates, transcripts)
       const dc = pc.createDataChannel("oai-events");
       dcRef.current = dc;
-      dc.onmessage = (ev) => {
+      dc.onmessage = async (ev) => {
         try {
           const msg = JSON.parse(ev.data);
           if (msg.type === "input_audio_buffer.speech_started") setUserSpeaking(true);
           if (msg.type === "input_audio_buffer.speech_stopped") setUserSpeaking(false);
           if (msg.type === "response.audio.delta") setAiSpeaking(true);
           if (msg.type === "response.done") setAiSpeaking(false);
-        } catch { /* ignore */ }
+
+          // ─── FUNCTION CALLING ───
+          // Modelo quiere ejecutar una tool. Ejecutamos server-side y devolvemos
+          // el resultado para que continúe la respuesta.
+          if (msg.type === "response.function_call_arguments.done") {
+            const callId = msg.call_id as string;
+            const name = msg.name as string;
+            let parsedArgs: Record<string, unknown> = {};
+            try { parsedArgs = JSON.parse(msg.arguments as string); } catch { /* ignore */ }
+
+            try {
+              const res = await fetch("/api/voice/execute-tool", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId, toolName: name, args: parsedArgs }),
+              });
+              const data = await res.json();
+              const output = data.result || JSON.stringify({ error: "no_result" });
+
+              // Devolver resultado al modelo como function_call_output
+              dc.send(JSON.stringify({
+                type: "conversation.item.create",
+                item: {
+                  type: "function_call_output",
+                  call_id: callId,
+                  output,
+                },
+              }));
+              // Pedir al modelo que continúe con la respuesta usando el resultado
+              dc.send(JSON.stringify({ type: "response.create" }));
+            } catch (err) {
+              console.error("[voice] execute-tool failed:", err);
+              dc.send(JSON.stringify({
+                type: "conversation.item.create",
+                item: {
+                  type: "function_call_output",
+                  call_id: callId,
+                  output: JSON.stringify({ error: "tool_execution_failed" }),
+                },
+              }));
+              dc.send(JSON.stringify({ type: "response.create" }));
+            }
+          }
+        } catch { /* ignore non-JSON frames */ }
       };
 
       // 4. SDP exchange directly with OpenAI (using ephemeral token)
