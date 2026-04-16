@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { WEB_SEARCH_TOOLS, executeWebSearch } from "./web-search";
+import { WEB_SCRAPE_TOOLS, executeWebScrape } from "./web-scrape";
 import { GMAIL_TOOLS, executeGmail } from "./gmail";
 import { CALENDAR_TOOLS, executeCalendar } from "./google-calendar";
 import { NUTRITION_TOOLS, executeNutritionTool } from "./nutrition";
@@ -15,6 +16,7 @@ import { BUSINESS_ADVISOR_TOOLS, executeBusinessAdvisorTool } from "./business-a
 // Base extended tools (always available)
 export const EXTENDED_TOOLS: OpenAI.ChatCompletionTool[] = [
   ...WEB_SEARCH_TOOLS,
+  ...WEB_SCRAPE_TOOLS,
   ...GMAIL_TOOLS,
   ...CALENDAR_TOOLS,
   ...NUTRITION_TOOLS,
@@ -41,6 +43,11 @@ export async function executeExtendedTool(
   // Web Search
   if (toolName === "web_search") {
     return executeWebSearch(toolName, input);
+  }
+
+  // Web Scrape (Firecrawl)
+  if (toolName === "web_scrape" || toolName === "web_extract") {
+    return executeWebScrape(toolName, input);
   }
 
   // Gmail or Calendar — need Google OAuth token
