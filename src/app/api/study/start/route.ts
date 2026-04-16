@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "missing_subject" }, { status: 400 });
   }
 
-  // Reusar sesión abierta si existe
+  // Reusar sesión abierta si es la MISMA materia
   const { data: existing } = await admin
     .from("study_sessions")
     .select("id, subject, started_at, last_heartbeat, active_seconds, wall_seconds")
@@ -35,7 +35,13 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
 
   if (existing) {
-    return NextResponse.json({ reused: true, session: existing });
+    if (existing.subject === subject.slice(0, 80)) {
+      return NextResponse.json({ reused: true, session: existing });
+    }
+    // Materia diferente → cerrar la sesión vieja
+    await admin.from("study_sessions")
+      .update({ ended_at: new Date().toISOString() })
+      .eq("id", existing.id);
   }
 
   const { data, error } = await admin
