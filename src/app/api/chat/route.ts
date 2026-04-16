@@ -163,6 +163,20 @@ const baseTools: OpenAI.ChatCompletionTool[] = [
   },
 ];
 
+// Evolution v2 devuelve contactos con ULID interno en `id` (ej "cmnqz2eh…"),
+// no el teléfono. El JID de WhatsApp está en remoteJid/owner/jid. Aceptamos
+// también contactos nuevos con sufijo @lid (Linked ID) que siguen siendo
+// dígitos. Devolvemos null si nada válido para filtrar esos resultados.
+function extractEvoPhone(c: Record<string, unknown>): string | null {
+  const candidates = [c.remoteJid, c.owner, c.jid, c.phoneNumber, c.number, c.id];
+  for (const raw of candidates) {
+    if (!raw) continue;
+    const m = String(raw).match(/^(\d{8,15})(?:@.*)?$/);
+    if (m) return m[1];
+  }
+  return null;
+}
+
 // Tool execution (same logic as before)
 async function executeTool(name: string, input: Record<string, unknown>, userId: string): Promise<string> {
   const evoUrl = process.env.EVOLUTION_API_URL!;
@@ -317,8 +331,9 @@ async function executeTool(name: string, input: Record<string, unknown>, userId:
           })
           .slice(0, 10).map((c: Record<string, unknown>) => ({
             name: c.pushName || c.profileName || c.name || c.verifiedName || c.shortName || "Sin nombre",
-            phone: String(c.id || c.remoteJid || c.jid || "").replace("@s.whatsapp.net", ""),
-          }));
+            phone: extractEvoPhone(c),
+          }))
+          .filter((c: { phone: string | null }) => c.phone);
 
         // If no matches with pre-filter, try fetching ALL contacts and searching locally
         if (matches.length === 0) {
