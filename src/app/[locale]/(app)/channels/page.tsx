@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useState, useEffect } from "react";
-import { Smartphone, Send, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { Smartphone, Send, Loader2, CheckCircle2, XCircle, Copy, Check } from "lucide-react";
 import { createBrowserSupabase } from "@/lib/supabase/client";
 
 export default function ChannelsPage() {
@@ -15,6 +15,7 @@ export default function ChannelsPage() {
   const [mode, setMode] = useState<"qr" | "code">("qr");
   const [phone, setPhone] = useState("");
   const [pairCode, setPairCode] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const supabase = createBrowserSupabase();
@@ -120,12 +121,28 @@ export default function ChannelsPage() {
     setPairCode(null);
 
     try {
-      // Ensure instance exists (idempotent — if already created, Evolution returns 403/conflict which we ignore)
-      await fetch("/api/evolution", {
+      // Estado actual. Si ya conectado, saltar.
+      const statusRes = await fetch("/api/evolution", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "create", instanceName }),
+        body: JSON.stringify({ action: "status", instanceName }),
       });
+      const statusData = await statusRes.json();
+      const state = statusData?.instance?.state || statusData?.state;
+
+      if (state === "open") {
+        setWaStatus("connected");
+        return;
+      }
+
+      // Si no existe la instancia, crearla. Si existe pero no abierta, saltar el create.
+      if (!state || state === "unknown" || statusData?.error) {
+        await fetch("/api/evolution", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "create", instanceName }),
+        });
+      }
 
       const res = await fetch("/api/evolution", {
         method: "POST",
@@ -133,19 +150,46 @@ export default function ChannelsPage() {
         body: JSON.stringify({ action: "pair", instanceName, phoneNumber: num }),
       });
       const data = await res.json();
-      const code: string | undefined = data?.pairingCode || data?.code;
-      if (code && !code.startsWith("2@")) {
-        // Evolution returns format like "ABCD-1234" — normalize to XXXX-XXXX
-        const clean = code.replace(/[^A-Z0-9]/gi, "").toUpperCase();
-        const formatted = clean.length === 8 ? `${clean.slice(0,4)}-${clean.slice(4)}` : code;
-        setPairCode(formatted);
-      } else {
-        setError("No se pudo obtener el código. Intenta de nuevo.");
+
+      if (!res.ok) {
+        const detail = typeof data?.error === "string" ? data.error : JSON.stringify(data?.error || data);
+        setError(`Evolution: ${detail.slice(0, 200)}`);
         setWaStatus("disconnected");
+        return;
       }
-    } catch {
-      setError("Error al conectar. Intenta de nuevo.");
+
+      // Solo aceptamos el campo pairingCode — data.code es el QR codificado, no sirve.
+      const raw: string | undefined = data?.pairingCode;
+      if (!raw) {
+        setError("Evolution no devolvió pairingCode. Revisa que el número tenga prefijo país y vuelve a intentar.");
+        setWaStatus("disconnected");
+        return;
+      }
+
+      const clean = raw.replace(/[^A-Z0-9]/gi, "").toUpperCase();
+      const formatted = clean.length === 8 ? `${clean.slice(0, 4)}-${clean.slice(4)}` : raw;
+      setPairCode(formatted);
+    } catch (e) {
+      setError(`Error de red: ${e instanceof Error ? e.message : "unknown"}`);
       setWaStatus("disconnected");
+    }
+  }
+
+  async function copyPairCode() {
+    if (!pairCode) return;
+    const plain = pairCode.replace(/-/g, "");
+    try {
+      await navigator.clipboard.writeText(plain);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard API puede fallar en Capacitor/iframe — fallback al input trick
+      const ta = document.createElement("textarea");
+      ta.value = plain;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch {}
+      document.body.removeChild(ta);
     }
   }
 
@@ -264,13 +308,20 @@ export default function ChannelsPage() {
                     <div className="space-y-3">
                       <div className="rounded-lg bg-green-500/10 border border-green-500/30 p-4 text-center">
                         <p className="text-[10px] text-[var(--dim)] mb-2">Tu código de vinculación</p>
-                        <p className="text-3xl font-black tracking-[0.3em] text-green-400 font-mono">{pairCode}</p>
+                        <p className="text-3xl font-black tracking-[0.3em] text-green-400 font-mono select-all" data-selectable>{pairCode}</p>
                       </div>
+                      <button
+                        type="button"
+                        onClick={copyPairCode}
+                        className={`w-full py-2.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition ${copied ? "bg-green-500/20 text-green-400" : "bg-[var(--accent)] text-white"}`}
+                      >
+                        {copied ? <><Check size={14} /> Copiado</> : <><Copy size={14} /> Copiar código</>}
+                      </button>
                       <ol className="text-[11px] text-[var(--muted)] leading-relaxed space-y-1 list-decimal list-inside">
                         <li>Abre WhatsApp en tu móvil</li>
                         <li>Ve a <b>Ajustes → Dispositivos vinculados → Vincular un dispositivo</b></li>
                         <li>Toca <b>Vincular con número de teléfono</b></li>
-                        <li>Introduce el código de arriba</li>
+                        <li>Pega el código</li>
                       </ol>
                       <button
                         type="button"
