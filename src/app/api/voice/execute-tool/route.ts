@@ -6,6 +6,19 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+// Evolution v2: el campo `id` en contactos es un ULID interno (cmnqz2eh…),
+// NO el teléfono. El JID real vive en remoteJid/owner/jid. Devolvemos null
+// si no hay dígitos válidos para filtrar ese contacto del resultado.
+function extractEvoPhone(c: Record<string, unknown>): string | null {
+  const candidates = [c.remoteJid, c.owner, c.jid, c.phoneNumber, c.number, c.id];
+  for (const raw of candidates) {
+    if (!raw) continue;
+    const m = String(raw).match(/^(\d{8,15})(?:@.*)?$/);
+    if (m) return m[1];
+  }
+  return null;
+}
+
 /**
  * POST /api/voice/execute-tool
  * Body: { userId, toolName, args }
@@ -179,11 +192,12 @@ export async function POST(req: NextRequest) {
               .filter(Boolean).map((v) => String(v).toLowerCase()).join(" ");
             return names.includes(q);
           })
-          .slice(0, 5)
           .map((c) => ({
             name: c.pushName || c.profileName || c.name || c.verifiedName || "Sin nombre",
-            phone: String(c.id || c.remoteJid || c.jid || "").replace("@s.whatsapp.net", ""),
-          }));
+            phone: extractEvoPhone(c),
+          }))
+          .filter((c): c is { name: string; phone: string } => Boolean(c.phone))
+          .slice(0, 5);
         return NextResponse.json({ result: JSON.stringify({ found: matches.length, contacts: matches }) });
       } catch (err) {
         return NextResponse.json({ result: JSON.stringify({ error: "WhatsApp not connected", detail: String(err).slice(0, 120) }) });
