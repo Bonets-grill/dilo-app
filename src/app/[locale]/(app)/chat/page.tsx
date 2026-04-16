@@ -381,7 +381,7 @@ export default function ChatPage() {
             <p className="text-sm text-[var(--dim)]">{t("placeholder")}</p>
           </div>
         ) : (
-          <div className="max-w-2xl mx-auto py-4 space-y-4">
+          <div className="max-w-2xl mx-auto py-4 space-y-4 min-h-full flex flex-col justify-end">
             {msgs.map((m, idx) => m.role === "user" ? (
               <div key={m.id} className={`flex justify-end ${ctxMenu?.msgId === m.id ? "msg-highlight" : ""}`}>
                 {m.content.startsWith("__IMAGE__") ? (
