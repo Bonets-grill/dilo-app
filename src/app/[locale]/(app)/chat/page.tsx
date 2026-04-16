@@ -375,13 +375,13 @@ export default function ChatPage() {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto overscroll-y-contain px-4">
+      <div className="flex-1 overflow-y-auto overscroll-y-contain px-4 flex flex-col">
         {msgs.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex items-center justify-center flex-1">
             <p className="text-sm text-[var(--dim)]">{t("placeholder")}</p>
           </div>
         ) : (
-          <div className="max-w-2xl mx-auto py-4 space-y-4 min-h-full flex flex-col justify-end">
+          <div className="max-w-2xl mx-auto w-full py-4 space-y-4 mt-auto">
             {msgs.map((m, idx) => m.role === "user" ? (
               <div key={m.id} className={`flex justify-end ${ctxMenu?.msgId === m.id ? "msg-highlight" : ""}`}>
                 {m.content.startsWith("__IMAGE__") ? (
