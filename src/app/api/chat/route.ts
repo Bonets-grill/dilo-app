@@ -1193,6 +1193,13 @@ REGLAS DE SCRAPING (Firecrawl):
 - El usuario pide datos estructurados de una web (lista de productos, precios, comparativa) → USA web_extract OBLIGATORIAMENTE con schema_description claro.
 - NO uses web_scrape cuando la información es conocida o genérica — usa tu conocimiento.
 - NO uses web_scrape para búsqueda amplia ("cosas sobre X") — usa web_search.
+
+REGLAS DE BROWSER AUTOMATION (Stagehand + Browserbase):
+- El usuario pide INTERACCIÓN con una web: rellenar formulario, hacer reserva, loguearse, clicar algo, tramitar → USA browser_task con un goal natural.
+- El usuario pide datos de una SPA con JavaScript dinámico donde web_scrape no llega → USA browser_extract con url+query.
+- Antes de una acción compleja, si dudas qué hay en la página → USA browser_observe primero.
+- NO uses browser_* para solo leer contenido estático — usa web_scrape (más barato).
+- NO uses browser_* si el API público de ese servicio existe — busca ese primero.
 ${userFacts}${journalKnowledge}`;
 
   // Build tools list — trading removed (DILO is a personal assistant, not a
