@@ -36,20 +36,21 @@
 
 html, body {
   overscroll-behavior: none;
-  /* Prevent WebView rubber-band without using position: fixed —
-     position: fixed fights with the iOS on-screen keyboard and causes
-     the layout to jump when the textarea gets focus. 100dvh respects
-     the dynamic viewport (shrinks when the keyboard appears),
-     overflow: hidden contains scrolling to inner scrollable children. */
-  height: 100dvh;
-  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   background: var(--bg);
   color: var(--fg);
-  -webkit-tap-highlight-color: transparent;
-  -webkit-text-size-adjust: 100%;
+}
+
+/* App shell (inside (app)/layout) uses this class to lock the viewport
+   so the inner scroll containers (chat messages, settings list) handle
+   scroll and the document itself doesn't rubber-band on iOS Capacitor. */
+.app-scroll-lock {
+  height: 100dvh;
+  overflow: hidden;
 }
 
 ::-webkit-scrollbar { width: 0; }

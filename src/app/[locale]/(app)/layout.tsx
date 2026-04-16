@@ -24,7 +24,7 @@ export default async function AppLayout({
   }
 
   return (
-    <div className="h-dvh flex flex-col bg-[var(--bg)]">
+    <div className="h-dvh flex flex-col bg-[var(--bg)] app-scroll-lock">
       <PushSetup />
       <InstallBanner />
       <div className="flex-shrink-0 h-[env(safe-area-inset-top)]" />
