@@ -172,6 +172,21 @@ async function executeTool(name: string, input: Record<string, unknown>, userId:
   switch (name) {
     case "create_reminder": {
       const { text, due_at, repeat_count = 1 } = input as { text: string; due_at: string; repeat_count?: number };
+      // Validate the datetime actually parses AND is in the future.
+      // Common LLM mistake: pass "2026-04-17T10:30:00Z" when user said "mañana
+      // 10:30 Madrid" → that's 12:30 Madrid = past if now is 18:36. We'd fire
+      // immediately. Reject with clear error so the LLM can retry with offset.
+      const parsed = new Date(due_at).getTime();
+      const nowMs = Date.now();
+      if (isNaN(parsed)) {
+        return JSON.stringify({ error: "invalid_due_at", message: "due_at no es una fecha válida. Usa ISO 8601 con offset timezone." });
+      }
+      if (parsed <= nowMs + 30_000) {
+        return JSON.stringify({
+          error: "due_at_in_past",
+          message: `Esa fecha/hora ya pasó o es en menos de 30 segundos. Ahora mismo son ${new Date().toISOString()}. Asegúrate de incluir el offset de timezone del usuario (ej: '+02:00' para Europe/Madrid en horario de verano) y recalcula.`,
+        });
+      }
       const { data, error } = await supabase.from("reminders").insert({
         user_id: userId, text, due_at, repeat_count, channel: "push", status: "pending", repeat_type: "once",
       }).select("id, text, due_at").single();
@@ -964,7 +979,12 @@ Dime qué necesitas y empezamos.`;
 
   const lang = locale.split("-")[0] || "es";
   const langName = langNames[lang] || "español";
-  const now = new Date().toISOString();
+  // Time context for the LLM: include UTC iso, user's local time, and timezone
+  // so "mañana a las 10:30" gets converted to the right ISO with offset.
+  const nowDate = new Date();
+  const userTz = req.headers.get("x-vercel-ip-timezone") || "Europe/Madrid";
+  const localNow = nowDate.toLocaleString("sv-SE", { timeZone: userTz });
+  const now = `${nowDate.toISOString()} (UTC) | Hora local del usuario: ${localNow} (${userTz}). Cuando el usuario diga horas relativas ('mañana', 'a las 10:30'), conviértelas desde SU timezone local y genera un ISO 8601 CON offset (ej: 2026-04-17T10:30:00+02:00). NUNCA uses solo 'Z' para horas declaradas en local.`;
 
   // Load what DILO knows about this user — legacy facts.ts + new Mem0-style
   // retrieval from memory_facts (semantic + temporal).

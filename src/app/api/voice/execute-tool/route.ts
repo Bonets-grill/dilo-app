@@ -40,6 +40,22 @@ export async function POST(req: NextRequest) {
       if (!text || !due_at) {
         return NextResponse.json({ result: JSON.stringify({ error: "missing_fields" }) });
       }
+      // Validate datetime is valid AND in the future (prevents the classic
+      // "LLM forgot timezone offset → reminder fires immediately" bug).
+      const parsed = new Date(due_at).getTime();
+      if (isNaN(parsed)) {
+        return NextResponse.json({
+          result: JSON.stringify({ error: "invalid_due_at", message: "due_at inválido. Usa ISO 8601 con offset." }),
+        });
+      }
+      if (parsed <= Date.now() + 30_000) {
+        return NextResponse.json({
+          result: JSON.stringify({
+            error: "due_at_in_past",
+            message: `Esa hora ya pasó. Ahora: ${new Date().toISOString()}. Recalcula con el offset del usuario e inténtalo otra vez.`,
+          }),
+        });
+      }
       const { data, error } = await supabase
         .from("reminders")
         .insert({ user_id: userId, text, due_at })
