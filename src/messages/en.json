@@ -290,7 +290,6 @@
     "you": "You",
     "externalChannels": "External channels",
     "walkieTalkie": "Walkie-talkie",
-    "connected": "Connected",
     "receiving": "Receiving...",
     "talking": "TALKING...",
     "holdToTalk": "HOLD TO TALK",
@@ -587,5 +586,15 @@
     "error": "Something went wrong",
     "retry": "Retry",
     "confirm": "Confirm"
+  },
+  "experts": {
+    "title": "Experts",
+    "expertsCount": "experts",
+    "searchPlaceholder": "Search expert…",
+    "all": "All",
+    "loading": "Loading experts…",
+    "empty": "No experts match your search",
+    "startTyping": "Type your question to start",
+    "inputPlaceholder": "Type a message…"
   }
 }

@@ -290,7 +290,6 @@
     "you": "Du",
     "externalChannels": "Externe Kanäle",
     "walkieTalkie": "Walkie-Talkie",
-    "connected": "Verbunden",
     "receiving": "Empfange...",
     "talking": "SPRICHT...",
     "holdToTalk": "HALTEN ZUM SPRECHEN",
@@ -587,5 +586,15 @@
     "error": "Etwas ist schiefgelaufen",
     "retry": "Erneut versuchen",
     "confirm": "Bestätigen"
+  },
+  "experts": {
+    "title": "Experten",
+    "expertsCount": "Experten",
+    "searchPlaceholder": "Experte suchen…",
+    "all": "Alle",
+    "loading": "Experten werden geladen…",
+    "empty": "Keine Experten gefunden",
+    "startTyping": "Schreibe deine Frage, um zu beginnen",
+    "inputPlaceholder": "Nachricht schreiben…"
   }
 }
