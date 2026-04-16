@@ -150,6 +150,117 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // ── WHATSAPP TOOLS ──
+    // Instance name matches channels/page.tsx convention: dilo_<first-8-of-uuid>
+    const instName = `dilo_${userId.slice(0, 8)}`;
+    const evoUrl = process.env.EVOLUTION_API_URL || "";
+    const evoKey = process.env.EVOLUTION_API_KEY || "";
+    const hasEvo = Boolean(evoUrl && evoKey);
+
+    if (toolName === "search_contacts") {
+      if (!hasEvo) {
+        return NextResponse.json({ result: JSON.stringify({ error: "WhatsApp not connected" }) });
+      }
+      const q = String(a.query || "").trim().toLowerCase();
+      if (!q) return NextResponse.json({ result: JSON.stringify({ error: "missing_query" }) });
+      try {
+        const res = await fetch(`${evoUrl}/chat/findContacts/${instName}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: evoKey },
+          body: JSON.stringify({}),
+        });
+        const raw = await res.json().catch(() => []);
+        const list: Record<string, unknown>[] = Array.isArray(raw) ? raw
+          : Array.isArray(raw?.contacts) ? raw.contacts
+          : Array.isArray(raw?.data) ? raw.data : [];
+        const matches = list
+          .filter((c) => {
+            const names = [c.pushName, c.name, c.profileName, c.verifiedName, c.shortName]
+              .filter(Boolean).map((v) => String(v).toLowerCase()).join(" ");
+            return names.includes(q);
+          })
+          .slice(0, 5)
+          .map((c) => ({
+            name: c.pushName || c.profileName || c.name || c.verifiedName || "Sin nombre",
+            phone: String(c.id || c.remoteJid || c.jid || "").replace("@s.whatsapp.net", ""),
+          }));
+        return NextResponse.json({ result: JSON.stringify({ found: matches.length, contacts: matches }) });
+      } catch (err) {
+        return NextResponse.json({ result: JSON.stringify({ error: "WhatsApp not connected", detail: String(err).slice(0, 120) }) });
+      }
+    }
+
+    if (toolName === "send_whatsapp") {
+      if (!hasEvo) {
+        return NextResponse.json({ result: JSON.stringify({ error: "WhatsApp not connected" }) });
+      }
+      const to = String(a.to || "").replace(/\D/g, "");
+      const message = String(a.message || "").trim();
+      const confirmed = Boolean(a.confirmed);
+      if (!to || !message) {
+        return NextResponse.json({ result: JSON.stringify({ error: "missing_fields" }) });
+      }
+      if (!confirmed) {
+        return NextResponse.json({
+          result: JSON.stringify({
+            preview: true,
+            to,
+            message,
+            instruction: "Lee el preview al usuario y pregúntale '¿Lo envío?'. Si dice sí, vuelve a llamar send_whatsapp con confirmed=true.",
+          }),
+        });
+      }
+      try {
+        const res = await fetch(`${evoUrl}/message/sendText/${instName}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", apikey: evoKey },
+          body: JSON.stringify({ number: to, text: message }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          return NextResponse.json({ result: JSON.stringify({ error: "send_failed", detail: data }) });
+        }
+        return NextResponse.json({ result: JSON.stringify({ success: true, sent_to: to }) });
+      } catch (err) {
+        return NextResponse.json({ result: JSON.stringify({ error: "WhatsApp not connected", detail: String(err).slice(0, 120) }) });
+      }
+    }
+
+    if (toolName === "read_whatsapp") {
+      if (!hasEvo) {
+        return NextResponse.json({ result: JSON.stringify({ error: "WhatsApp not connected" }) });
+      }
+      const phone = a.phone ? String(a.phone).replace(/\D/g, "") : null;
+      const limit = Number(a.limit) || 5;
+      try {
+        if (phone) {
+          const res = await fetch(`${evoUrl}/chat/findMessages/${instName}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", apikey: evoKey },
+            body: JSON.stringify({ where: { key: { remoteJid: `${phone}@s.whatsapp.net` } }, limit }),
+          });
+          const data = await res.json().catch(() => []);
+          const msgs = Array.isArray(data) ? data : data?.messages || [];
+          const out = msgs.slice(0, limit).map((m: Record<string, unknown>) => ({
+            from: (m.key as Record<string, unknown>)?.fromMe ? "tú" : (m.pushName || phone),
+            text: ((m.message as Record<string, unknown>)?.conversation || "[media]") as string,
+          }));
+          return NextResponse.json({ result: JSON.stringify({ phone, messages: out }) });
+        }
+        const res = await fetch(`${evoUrl}/chat/findChats/${instName}`, { headers: { apikey: evoKey } });
+        const chats = await res.json().catch(() => []);
+        const summary = Array.isArray(chats)
+          ? chats.slice(0, limit).map((c: Record<string, unknown>) => ({
+              name: c.name || c.id,
+              last: (c.lastMessage as Record<string, unknown>)?.conversation || "",
+            }))
+          : [];
+        return NextResponse.json({ result: JSON.stringify({ chats: summary }) });
+      } catch (err) {
+        return NextResponse.json({ result: JSON.stringify({ error: "WhatsApp not connected", detail: String(err).slice(0, 120) }) });
+      }
+    }
+
     return NextResponse.json({
       result: JSON.stringify({ error: "unsupported_tool", toolName }),
     });

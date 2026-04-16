@@ -79,6 +79,44 @@ export async function POST(req: NextRequest) {
           },
         },
       },
+      {
+        type: "function",
+        name: "search_contacts",
+        description: "Busca un contacto de WhatsApp por nombre. Devuelve nombre y teléfono.",
+        parameters: {
+          type: "object",
+          properties: {
+            query: { type: "string", description: "Nombre o parte del nombre a buscar" },
+          },
+          required: ["query"],
+        },
+      },
+      {
+        type: "function",
+        name: "send_whatsapp",
+        description: "Envía un mensaje de WhatsApp. FLUJO: primero llama con confirmed=false — devuelve el preview, le lees al usuario '¿Se lo mando?'. Si dice sí, vuelves a llamar con confirmed=true.",
+        parameters: {
+          type: "object",
+          properties: {
+            to: { type: "string", description: "Teléfono del destinatario sin + (ej: 34612345678)" },
+            message: { type: "string", description: "Texto a enviar" },
+            confirmed: { type: "boolean", description: "true solo tras confirmación verbal del usuario" },
+          },
+          required: ["to", "message"],
+        },
+      },
+      {
+        type: "function",
+        name: "read_whatsapp",
+        description: "Lee mensajes recientes de WhatsApp. Si pasas phone, lee ese chat; si no, resume los chats abiertos.",
+        parameters: {
+          type: "object",
+          properties: {
+            phone: { type: "string", description: "Teléfono del chat a leer (opcional)" },
+            limit: { type: "number", description: "Cuántos mensajes (default 5)" },
+          },
+        },
+      },
     ];
 
     const res = await fetch("https://api.openai.com/v1/realtime/sessions", {
@@ -94,8 +132,15 @@ export async function POST(req: NextRequest) {
 
 REGLA DURA: si el usuario pide un recordatorio, gasto o similar, USA la tool correspondiente ANTES de confirmar verbalmente. Jamás digas "lo apunto" sin llamar la función. Si la función devuelve error, avísale al usuario.
 
-HORA ACTUAL: ${now.toISOString()} (UTC) | Local del usuario: ${localNow} (${tz}). Cuando el usuario diga hora relativa ("mañana", "en 5 min", "a las 10"), conviértela a ISO 8601 CON offset apropiado al timezone ${tz}. NUNCA uses 'Z' para horas declaradas en local.`,
-        turn_detection: { type: "server_vad" },
+HORA ACTUAL: ${now.toISOString()} (UTC) | Local del usuario: ${localNow} (${tz}). Cuando el usuario diga hora relativa ("mañana", "en 5 min", "a las 10"), conviértela a ISO 8601 CON offset apropiado al timezone ${tz}. NUNCA uses 'Z' para horas declaradas en local.
+
+WHATSAPP: SÍ TIENES ACCESO al WhatsApp del usuario. Usa search_contacts para encontrar números, send_whatsapp para enviar (siempre con flujo de dos pasos: primero confirmed=false para generar preview, el usuario te dice si sí, luego confirmed=true). read_whatsapp para leer conversaciones. Si alguna tool devuelve "WhatsApp not connected", entonces dile al usuario que vaya al menú Más → Canales para conectar.`,
+        turn_detection: {
+          type: "server_vad",
+          threshold: 0.75,
+          prefix_padding_ms: 300,
+          silence_duration_ms: 1200,
+        },
         input_audio_transcription: { model: "whisper-1" },
         tools,
         tool_choice: "auto",
