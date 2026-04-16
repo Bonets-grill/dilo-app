@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useEffect, useState, useMemo } from "react";
-import { Search, Sparkles } from "lucide-react";
+import { Search, Sparkles, ChevronRight } from "lucide-react";
 
 interface ExpertMeta {
   slug: string;
@@ -55,7 +55,8 @@ export default function ExpertsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const locale = (typeof window !== "undefined" ? window.location.pathname.split("/")[1] : "es") as string;
+  const locale =
+    typeof window !== "undefined" ? window.location.pathname.split("/")[1] : "es";
 
   const filtered = useMemo(() => {
     let out = experts;
@@ -75,71 +76,83 @@ export default function ExpertsPage() {
     CATEGORY_LABELS[cat]?.[locale] || CATEGORY_LABELS[cat]?.en || cat;
 
   return (
-    <div className="h-full overflow-y-auto bg-black text-white">
-      <div className="px-4 pt-6 pb-4 sticky top-0 bg-black/95 backdrop-blur z-10 border-b border-gray-900">
-        <div className="flex items-center gap-2 mb-3">
-          <Sparkles className="w-5 h-5 text-purple-400" />
-          <h1 className="text-xl font-bold">{t("title")}</h1>
-          <span className="text-xs text-gray-500 ml-auto">{experts.length} {t("expertsCount")}</span>
+    <div className="h-full overflow-y-auto overscroll-y-contain">
+      <div className="px-4 py-5 max-w-lg mx-auto space-y-4">
+        <div className="flex items-center gap-2">
+          <Sparkles size={20} className="text-[var(--accent)]" />
+          <h1 className="text-xl font-semibold">{t("title")}</h1>
+          <span className="ml-auto text-xs text-[var(--dim)]">
+            {experts.length} {t("expertsCount")}
+          </span>
         </div>
 
-        <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+        <div className="relative">
+          <Search
+            size={16}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--dim)]"
+          />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t("searchPlaceholder")}
-            className="w-full bg-gray-900 border border-gray-800 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-purple-500"
+            className="w-full bg-[var(--bg2)] border border-[var(--border)] rounded-xl pl-10 pr-4 py-2.5 text-sm placeholder-[var(--dim)] focus:outline-none focus:border-white/30"
           />
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
           <button
+            type="button"
             onClick={() => setActiveCategory(null)}
-            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium ${
-              !activeCategory ? "bg-purple-600 text-white" : "bg-gray-900 text-gray-400 border border-gray-800"
+            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition ${
+              !activeCategory
+                ? "bg-[var(--accent)] text-white"
+                : "bg-[var(--bg2)] text-[var(--dim)] border border-[var(--border)]"
             }`}
           >
             {t("all")} ({experts.length})
           </button>
           {categories.map((c) => (
             <button
+              type="button"
               key={c.category}
               onClick={() => setActiveCategory(c.category)}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium ${
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition ${
                 activeCategory === c.category
-                  ? "bg-purple-600 text-white"
-                  : "bg-gray-900 text-gray-400 border border-gray-800"
+                  ? "bg-[var(--accent)] text-white"
+                  : "bg-[var(--bg2)] text-[var(--dim)] border border-[var(--border)]"
               }`}
             >
               {catLabel(c.category)} ({c.count})
             </button>
           ))}
         </div>
-      </div>
 
-      <div className="px-4 pt-4">
         {loading ? (
-          <div className="text-center text-gray-500 py-12 text-sm">{t("loading")}</div>
+          <div className="text-center text-[var(--dim)] py-12 text-sm">{t("loading")}</div>
         ) : filtered.length === 0 ? (
-          <div className="text-center text-gray-500 py-12 text-sm">{t("empty")}</div>
+          <div className="text-center text-[var(--dim)] py-12 text-sm">{t("empty")}</div>
         ) : (
-          <div className="grid grid-cols-1 gap-2">
+          <div className="rounded-xl bg-[var(--bg2)] border border-[var(--border)] overflow-hidden divide-y divide-[var(--border)]">
             {filtered.map((e) => (
               <Link
                 key={e.slug}
                 href={`/experts/${e.slug}` as never}
-                className="flex items-start gap-3 p-3 bg-gray-900/50 hover:bg-gray-900 border border-gray-800 rounded-xl transition"
+                className="flex items-center gap-3 px-3.5 py-3 active:bg-[var(--bg3)] transition"
               >
-                <div className="text-2xl shrink-0">{e.emoji}</div>
+                <div className="text-2xl shrink-0 w-9 h-9 rounded-lg bg-[var(--bg3)] flex items-center justify-center">
+                  {e.emoji}
+                </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm truncate">{e.name}</p>
-                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{e.description}</p>
-                  <p className="text-[10px] text-purple-400 mt-1 uppercase tracking-wider">
+                  <p className="font-medium text-sm truncate">{e.name}</p>
+                  <p className="text-xs text-[var(--dim)] mt-0.5 line-clamp-1">
+                    {e.description}
+                  </p>
+                  <p className="text-[10px] text-[var(--accent)] mt-1 uppercase tracking-wider">
                     {catLabel(e.category)}
                   </p>
                 </div>
+                <ChevronRight size={16} className="text-[var(--dim)] shrink-0" />
               </Link>
             ))}
           </div>

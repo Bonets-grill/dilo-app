@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Send, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowUp, Loader2 } from "lucide-react";
 import { createBrowserSupabase } from "@/lib/supabase/client";
 
 interface ExpertMeta {
@@ -49,7 +49,10 @@ export default function ExpertChatPage() {
   }, [slug]);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    scrollRef.current?.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: "smooth",
+    });
   }, [messages]);
 
   async function send() {
@@ -67,7 +70,10 @@ export default function ExpertChatPage() {
       });
       const data = await res.json();
       if (data.error) {
-        setMessages((m) => [...m, { role: "assistant", content: `❌ ${data.error}` }]);
+        setMessages((m) => [
+          ...m,
+          { role: "assistant", content: `⚠️ ${data.error}` },
+        ]);
       } else {
         if (data.conversationId && !conversationId) setConversationId(data.conversationId);
         setMessages((m) => [...m, { role: "assistant", content: data.reply }]);
@@ -75,7 +81,7 @@ export default function ExpertChatPage() {
     } catch (e) {
       setMessages((m) => [
         ...m,
-        { role: "assistant", content: `❌ ${(e as Error).message}` },
+        { role: "assistant", content: `⚠️ ${(e as Error).message}` },
       ]);
     } finally {
       setSending(false);
@@ -84,72 +90,100 @@ export default function ExpertChatPage() {
 
   if (!expert) {
     return (
-      <div className="h-full bg-black text-white flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
+      <div className="h-full flex items-center justify-center">
+        <Loader2 size={24} className="animate-spin text-[var(--accent)]" />
       </div>
     );
   }
 
   return (
-    <div className="h-full bg-black text-white flex flex-col min-h-0">
-      <div className="px-4 py-3 border-b border-gray-900 flex items-center gap-3 bg-black/95 shrink-0">
-        <button onClick={() => router.back()} className="p-1.5 hover:bg-gray-900 rounded-lg">
-          <ArrowLeft className="w-5 h-5" />
+    <div className="h-full flex flex-col min-h-0">
+      {/* Header — idéntico patrón al chat principal */}
+      <div className="flex-shrink-0 flex items-center gap-3 px-4 py-2 border-b border-[var(--border)]">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="p-1.5 -ml-1.5 rounded-full active:bg-[var(--bg2)]"
+          aria-label="back"
+        >
+          <ArrowLeft size={20} />
         </button>
-        <div className="text-2xl">{expert.emoji}</div>
+        <div className="w-9 h-9 rounded-lg bg-[var(--bg2)] flex items-center justify-center text-xl shrink-0">
+          {expert.emoji}
+        </div>
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-sm truncate">{expert.name}</p>
-          <p className="text-xs text-gray-500 truncate">{expert.vibe || expert.description}</p>
+          <p className="text-[11px] text-[var(--dim)] truncate">
+            {expert.vibe || expert.description}
+          </p>
         </div>
       </div>
 
-      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-3">
-        {messages.length === 0 && (
-          <div className="text-center text-gray-500 text-sm py-8">
-            <p>{expert.description}</p>
-            <p className="mt-3 text-xs text-gray-600">{t("startTyping")}</p>
-          </div>
-        )}
-        {messages.map((m, i) => (
-          <div
-            key={i}
-            className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
-          >
+      {/* Messages */}
+      <div
+        ref={scrollRef}
+        className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain px-4"
+      >
+        <div className="max-w-lg mx-auto space-y-3 py-4">
+          {messages.length === 0 && (
+            <div className="text-center py-10 px-2">
+              <div className="text-4xl mb-3">{expert.emoji}</div>
+              <p className="text-sm text-[var(--dim)] leading-relaxed">
+                {expert.description}
+              </p>
+              <p className="mt-4 text-xs text-[var(--dim)] opacity-70">
+                {t("startTyping")}
+              </p>
+            </div>
+          )}
+          {messages.map((m, i) => (
             <div
-              className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap ${
-                m.role === "user" ? "bg-purple-600 text-white" : "bg-gray-900 text-gray-100"
-              }`}
+              key={i}
+              className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
             >
-              {m.content}
+              <div
+                className={
+                  m.role === "user"
+                    ? "chat-msg bg-[var(--bg3)] rounded-2xl rounded-br-sm px-3.5 py-2 text-[14px] leading-relaxed max-w-[80%]"
+                    : "bg-[var(--bg2)] rounded-2xl rounded-bl-sm px-3.5 py-2 text-[14px] leading-[1.7] text-[#ccc] max-w-[85%] whitespace-pre-wrap"
+                }
+              >
+                {m.content}
+              </div>
             </div>
-          </div>
-        ))}
-        {sending && (
-          <div className="flex justify-start">
-            <div className="bg-gray-900 rounded-2xl px-3 py-2 text-sm">
-              <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
+          ))}
+          {sending && (
+            <div className="flex justify-start">
+              <div className="bg-[var(--bg2)] rounded-2xl rounded-bl-sm px-3.5 py-2">
+                <Loader2 size={14} className="animate-spin text-[var(--accent)]" />
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      <div className="border-t border-gray-900 px-3 py-3 flex gap-2 bg-black shrink-0">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send()}
-          placeholder={t("inputPlaceholder")}
-          disabled={sending || !userId}
-          className="flex-1 bg-gray-900 border border-gray-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-purple-500 disabled:opacity-50"
-        />
-        <button
-          onClick={send}
-          disabled={!input.trim() || sending || !userId}
-          className="bg-purple-600 hover:bg-purple-700 disabled:opacity-30 disabled:cursor-not-allowed rounded-xl p-2.5 transition"
-        >
-          <Send className="w-4 h-4" />
-        </button>
+      {/* Input */}
+      <div className="flex-shrink-0 border-t border-[var(--border)] px-3 py-2.5">
+        <div className="max-w-lg mx-auto flex items-end gap-2">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send()}
+            placeholder={t("inputPlaceholder")}
+            disabled={sending || !userId}
+            className="flex-1 bg-[var(--bg2)] border border-[var(--border)] rounded-full px-4 py-2.5 text-sm placeholder-[var(--dim)] focus:outline-none focus:border-white/30 disabled:opacity-50"
+          />
+          <button
+            type="button"
+            onClick={send}
+            disabled={!input.trim() || sending || !userId}
+            className="shrink-0 w-10 h-10 rounded-full bg-[var(--accent)] text-white flex items-center justify-center active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed transition"
+            aria-label="send"
+          >
+            <ArrowUp size={18} />
+          </button>
+        </div>
       </div>
     </div>
   );
