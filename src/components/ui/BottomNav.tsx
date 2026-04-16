@@ -16,6 +16,7 @@ import {
   Users,
   Phone,
   ShoppingBag,
+  Sparkles,
   X,
 } from "lucide-react";
 
@@ -29,6 +30,7 @@ const primaryTabs = [
 
 // Extra modules (inside "More" panel)
 const extraModules = [
+  { key: "experts", href: "/experts", icon: Sparkles, color: "text-purple-400" },
   { key: "nutrition", href: "/nutrition", icon: Apple, color: "text-green-400" },
   { key: "wellness", href: "/wellness", icon: Heart, color: "text-pink-400" },
   { key: "market", href: "/market", icon: ShoppingBag, color: "text-orange-400" },
