@@ -461,6 +461,38 @@ export async function POST(req: NextRequest) {
 
   const encoder = new TextEncoder();
 
+  // ── CAPABILITIES PITCH (direct, no LLM — regex-matched) ──
+  // Detects the "what can you do" question in ES/EN/FR/IT/DE and replies
+  // with the full, structured capabilities list. Bypasses GPT so it can
+  // never dilute or summarize the answer.
+  const CAPABILITIES_REGEX = /^(?:en\s+qu[eé]\s+me\s+(?:puedes\s+)?ayud|qu[eé]\s+(?:me\s+)?puedes\s+(?:hacer|ayud|ofrecer)|dime\s+(?:en\s+)?todo\s+lo\s+que\s+(?:me\s+)?puedes|qu[eé]\s+sabes\s+hacer|cu[aá]les\s+son\s+tus\s+(?:funciones|capacidades)|what\s+can\s+you\s+(?:do|help)|how\s+can\s+you\s+help|what\s+are\s+your\s+capabilities|que\s+puex)/i;
+  if (allMessages[allMessages.length - 1]?.role === "user" && CAPABILITIES_REGEX.test(lastMsgContent.trim())) {
+    let cid = await saveMsg("user", lastMsgContent, conversationId);
+    const pitch = `Soy tu asistente personal de verdad. Esto es lo que hago por ti:
+
+💰 **Tu dinero** — registro gastos, suscripciones, ahorro, comparo tarifas de luz, gasolineras baratas cerca, alertas de precio, cupones.
+
+📅 **Tu día a día** — recordatorios, planifico viajes, te ayudo a decidir (pros/contras), organizo tu semana, leo tu Gmail y Google Calendar.
+
+🥗 **Tu salud** — plan de nutrición personalizado, seguimiento de bienestar, diario emocional.
+
+💬 **Tu comunicación** — escribo emails, posts de LinkedIn/Instagram/Twitter, copy para landing, mensajes de WhatsApp/Telegram.
+
+💼 **Tu carrera y negocio** — CV, simulacro de entrevista, negociar salario, modelo de negocio, análisis de competidores, SEO, pricing.
+
+📸 **Tus fotos** — analizo cualquier imagen (recibos, documentos) y las mejoro con IA.
+
+🧠 **Tu memoria** — recuerdo lo que me cuentas y lo uso cuando te hace falta.
+
+🎓 **437 especialistas** — pregúntame sobre fiscal, legal, inmobiliario, marketing, ingeniería, salud, hogar… respondo con la profundidad de un experto del área.
+
+Dime qué necesitas y empezamos.`;
+    cid = await saveMsg("assistant", pitch, cid);
+    return new Response(pitch, {
+      headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" },
+    });
+  }
+
   // ── EXPENSE (direct, no LLM) ──
   if (intent.type === "expense" && intent.data?.expenses) {
     const expenses = intent.data.expenses as Array<{ amount: number; description: string; category: string }>;
