@@ -536,17 +536,23 @@ export default function ChatPage() {
           header already covers this action. The floating button overlapped
           message content and confused users with a duplicate entry point. */}
 
-      <div className={`flex-shrink-0 px-3 py-1.5 border-t border-[var(--border)] ${voicePreview !== null ? "hidden" : ""}`}>
+      <div
+        className={`flex-shrink-0 py-1.5 border-t border-[var(--border)] ${voicePreview !== null ? "hidden" : ""}`}
+        style={{
+          paddingLeft: "calc(12px + env(safe-area-inset-left))",
+          paddingRight: "calc(12px + env(safe-area-inset-right))",
+        }}
+      >
         <div className="flex items-end gap-2 max-w-2xl mx-auto">
           <button type="button" onClick={() => fileRef.current?.click()} disabled={enhancing} className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 mb-0.5 bg-[var(--bg3)] ${enhancing ? "opacity-40" : ""}`}>
             <ImagePlus size={16} className="text-white" />
           </button>
-          <div className="flex-1 flex items-end bg-[var(--bg2)] rounded-2xl border border-[var(--border)] px-3 py-1.5">
+          <div className="flex-1 min-w-0 flex items-end bg-[var(--bg2)] rounded-2xl border border-[var(--border)] px-3 py-1.5">
             <textarea ref={taRef} value={input} onChange={e => onInput(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
               placeholder={transcribing ? t("transcribing") : rec ? t("recording") : t("placeholder")}
               rows={1} disabled={transcribing}
-              className="flex-1 bg-transparent text-[14px] text-white placeholder-[var(--dim)] resize-none leading-6 max-h-[100px] focus:outline-none disabled:opacity-50" />
+              className="flex-1 min-w-0 bg-transparent text-[14px] text-white placeholder-[var(--dim)] resize-none leading-6 max-h-[100px] focus:outline-none disabled:opacity-50" />
           </div>
           {hasText ? (
             <button type="button" onClick={() => send()} disabled={busy} className="w-9 h-9 rounded-full bg-white flex items-center justify-center flex-shrink-0 disabled:opacity-30 mb-0.5"><ArrowUp size={18} className="text-black" /></button>
