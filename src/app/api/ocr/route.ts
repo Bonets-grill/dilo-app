@@ -3,6 +3,11 @@ import OpenAI from "openai";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
+// Max payload we're willing to forward to OpenAI vision. iPhones send 4-8 MB
+// base64; OpenAI's practical cap is ~20 MB but larger = slower + higher failure
+// rate. If the caller sends bigger, we log and degrade to detail:"low".
+const MAX_BASE64_CHARS = 4_000_000; // ~3 MB
+
 /**
  * POST /api/ocr — Analyze an image: read text, describe content, extract data
  * Body: { imageUrl: string (base64 data URL or https URL) }
@@ -11,10 +16,14 @@ export async function POST(req: NextRequest) {
   const { imageUrl } = await req.json();
   if (!imageUrl) return NextResponse.json({ error: "Missing imageUrl" }, { status: 400 });
 
+  const isBase64 = imageUrl.startsWith("data:");
+  const size = imageUrl.length;
+  const detail: "low" | "high" | "auto" = isBase64 && size > MAX_BASE64_CHARS ? "low" : "auto";
+
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      max_tokens: 1000,
+      max_tokens: 800,
       messages: [
         {
           role: "user",
@@ -34,7 +43,7 @@ Responde en español. Sé conciso pero completo. Si hay texto, prioriza extraerl
             },
             {
               type: "image_url",
-              image_url: { url: imageUrl, detail: "high" },
+              image_url: { url: imageUrl, detail },
             },
           ],
         },
@@ -44,9 +53,21 @@ Responde en español. Sé conciso pero completo. Si hay texto, prioriza extraerl
     const text = response.choices[0]?.message?.content?.trim() || "No pude analizar la imagen.";
     return NextResponse.json({ text });
   } catch (err) {
-    console.error("[OCR] Error:", err);
-    return NextResponse.json({ error: "Analysis failed" }, { status: 500 });
+    const msg = err instanceof Error ? err.message : String(err);
+    // Surface a human message; include the provider error so failures are
+    // diagnosable from a screenshot instead of "Analysis failed".
+    console.error("[OCR] size:", size, "detail:", detail, "error:", msg);
+    return NextResponse.json(
+      {
+        error: "No pude analizar la imagen.",
+        detail: msg.slice(0, 200),
+        size,
+        mode: detail,
+      },
+      { status: 500 }
+    );
   }
 }
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;

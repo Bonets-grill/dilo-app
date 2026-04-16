@@ -43,17 +43,36 @@ export interface RouteMatch {
   expert: Expert | undefined;
 }
 
+// Small-talk / greetings / thanks — never route these to an expert, they'd
+// always match something weakly (Support Responder, Language Translator,
+// etc.) and degrade the reply with off-topic expert framing.
+const SMALLTALK_PATTERNS = [
+  /^(hola|hi|hey|hello|buenos?\s+(d[ií]as|tardes|noches)|buen[oa]s)\b/i,
+  /^(gracias|thanks?|ty|ok|vale|perfecto|genial|entendido|bien)\b/i,
+  /^(adi[oó]s|bye|chao|hasta\s+luego)\b/i,
+  /^(s[ií]|no|quiz[aá]s?)[\s.!?]*$/i,
+];
+
+function isSmallTalk(msg: string): boolean {
+  const t = msg.trim();
+  if (t.length <= 3) return true;
+  if (t.length <= 20 && SMALLTALK_PATTERNS.some((re) => re.test(t))) return true;
+  return false;
+}
+
 /** Returns top-K experts most relevant to the user message. */
 export async function routeToExperts(
   userMessage: string,
   opts: { topK?: number; minScore?: number } = {}
 ): Promise<RouteMatch[]> {
+  if (isSmallTalk(userMessage)) return [];
+
   const topK = opts.topK ?? 3;
-  // 0.35 empirically: matches when the user asks about a domain the expert
-  // owns ("LinkedIn post", "Meta Ads", "backend architecture") but rejects
-  // greetings/short smalltalk (which would otherwise match weakly to random
-  // specialists). Queries below threshold fall through to the base DILO chat.
-  const minScore = opts.minScore ?? 0.35;
+  // 0.33 with ES/EN keyword tags in the embedding: captures Spanish queries
+  // like "IRPF autónomo" (0.341) / "contrato de alquiler" (0.312) / "invertir"
+  // (0.313) that the English-only descriptions missed. Smalltalk/greetings
+  // are filtered above so lowering threshold doesn't bring false positives.
+  const minScore = opts.minScore ?? 0.33;
 
   const matrix = loadMatrix();
   const query = await embed(userMessage);
