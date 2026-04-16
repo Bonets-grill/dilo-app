@@ -51,6 +51,7 @@ export default function StudyPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const ttsCacheRef = useRef<Map<string, string>>(new Map());
 
   // ── Load student profile (subjects from onboarding) ──
   useEffect(() => {
@@ -254,27 +255,44 @@ export default function StudyPage() {
     } finally { setChatBusy(false); }
   }
 
-  // ── TTS ──
+  // ── TTS con cache + iOS unlock ──
   async function playTts(msgId: string, text: string) {
     if (ttsPlaying === msgId) {
       audioRef.current?.pause();
       setTtsPlaying(null);
       return;
     }
+
+    // iOS Safari: unlock audio context synchronously from user tap
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
+    }
+    const audio = audioRef.current;
+    audio.pause();
+
     setTtsPlaying(msgId);
+
     try {
-      const r = await fetch("/api/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      });
-      if (!r.ok) { setTtsPlaying(null); return; }
-      const blob = await r.blob();
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audioRef.current = audio;
-      audio.onended = () => { setTtsPlaying(null); URL.revokeObjectURL(url); };
-      audio.play();
+      // Cache check — same text = same audio
+      const cacheKey = text.slice(0, 200);
+      let blobUrl = ttsCacheRef.current.get(cacheKey);
+
+      if (!blobUrl) {
+        const r = await fetch("/api/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text }),
+        });
+        if (!r.ok) { setTtsPlaying(null); return; }
+        const blob = await r.blob();
+        blobUrl = URL.createObjectURL(blob);
+        ttsCacheRef.current.set(cacheKey, blobUrl);
+      }
+
+      audio.src = blobUrl;
+      audio.onended = () => setTtsPlaying(null);
+      audio.onerror = () => setTtsPlaying(null);
+      await audio.play().catch(() => setTtsPlaying(null));
     } catch {
       setTtsPlaying(null);
     }
