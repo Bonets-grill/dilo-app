@@ -6,9 +6,10 @@ import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 
-// Worker desde CDN — evita tener que bundle-arlo con Next.js/Turbopack y
-// funciona igual en PWA y Capacitor iOS.
-pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+// Worker servido desde nuestro propio origen (public/pdf.worker.min.mjs).
+// CDNs externos a veces fallan con "Importing a module script failed" por
+// CSP o MIME, y Capacitor iOS bloquea cross-origin module scripts.
+pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
 export default function CoursePDFViewer({ src }: { src: string }) {
   const [numPages, setNumPages] = useState(0);
