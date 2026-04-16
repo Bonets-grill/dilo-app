@@ -2,7 +2,8 @@
 
 import { useTranslations, useLocale } from "next-intl";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ArrowUp, Mic, Square, Plus, MessageCircle, ImagePlus, X, Pencil, Copy, Reply, Search, Sparkles, Loader2 } from "lucide-react";
+import { ArrowUp, Mic, Square, Plus, MessageCircle, ImagePlus, X, Pencil, Copy, Reply, Search, Sparkles, Loader2, Phone } from "lucide-react";
+import VoiceRealtime from "@/components/VoiceRealtime";
 import ShareMenu from "@/components/ui/ShareMenu";
 import ReactMarkdown from "react-markdown";
 import { createBrowserSupabase } from "@/lib/supabase/client";
@@ -18,6 +19,7 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [suggestLoading, setSuggestLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [voiceLiveOpen, setVoiceLiveOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [rec, setRec] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
@@ -594,6 +596,13 @@ export default function ChatPage() {
             {suggestLoading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
             <span>IA ✨</span>
           </button>
+          {userId && (
+            <button type="button" onClick={() => setVoiceLiveOpen(true)}
+              style={{ backgroundColor: "#10b981", color: "#ffffff", width: "36px", height: "36px", borderRadius: "18px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", border: "none", cursor: "pointer", marginBottom: "2px" }}
+              aria-label="Hablar con DILO en directo">
+              <Phone size={14} />
+            </button>
+          )}
           <div className="flex-1 min-w-0 flex items-end bg-[var(--bg2)] rounded-2xl border border-[var(--border)] px-3 py-1.5">
             <textarea ref={taRef} value={input} onChange={e => onInput(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
@@ -610,6 +619,10 @@ export default function ChatPage() {
           )}
         </div>
       </div>
+
+      {voiceLiveOpen && userId && (
+        <VoiceRealtime userId={userId} onClose={() => setVoiceLiveOpen(false)} />
+      )}
     </div>
   );
 }
