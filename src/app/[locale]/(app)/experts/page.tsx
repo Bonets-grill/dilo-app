@@ -46,8 +46,10 @@ export default function ExpertsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/experts/list")
-      .then((r) => r.json())
+    // Static file on the CDN edge — ~10x faster than the serverless API route.
+    // Falls back to /api/experts/list if the static file is missing (old deploys).
+    fetch("/experts-meta.json")
+      .then((r) => (r.ok ? r.json() : fetch("/api/experts/list").then((r2) => r2.json())))
       .then((d) => {
         setExperts(d.experts || []);
         setCategories(d.categories || []);

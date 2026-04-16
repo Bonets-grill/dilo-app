@@ -40,8 +40,9 @@ export default function ExpertChatPage() {
       if (data.user) setUserId(data.user.id);
     });
 
-    fetch(`/api/experts/list?q=${slug}`)
-      .then((r) => r.json())
+    // Static meta on the CDN edge — same source as the gallery.
+    fetch("/experts-meta.json")
+      .then((r) => (r.ok ? r.json() : fetch("/api/experts/list").then((r2) => r2.json())))
       .then((d) => {
         const found = (d.experts || []).find((e: ExpertMeta) => e.slug === slug);
         if (found) setExpert(found);
