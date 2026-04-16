@@ -8,6 +8,7 @@ import { Globe, Moon, Sun, CreditCard, Shield, Info, LogOut, ChevronRight, Spark
 import { useState, useEffect } from "react";
 import { Link } from "@/i18n/navigation";
 import { createBrowserSupabase } from "@/lib/supabase/client";
+import MemorySettings from "@/components/MemorySettings";
 
 const CURRENCIES = [
   { code: "EUR", symbol: "€", name: "Euro" },
@@ -102,6 +103,9 @@ export default function SettingsPage() {
           </div>
           <ChevronRight size={16} className="text-[var(--dim)]" />
         </button>
+
+        {/* Memory (Mem0) */}
+        <MemorySettings userId={userId} />
 
         {/* Language selector */}
         <div className="rounded-xl bg-[var(--bg2)] border border-[var(--border)] overflow-hidden">
