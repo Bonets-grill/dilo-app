@@ -1187,6 +1187,12 @@ REGLAS DE NEGOCIO:
 - "SEO" / "keywords" / "posicionamiento" → USA business_seo OBLIGATORIAMENTE.
 - "estrategia redes sociales" / "content calendar" → USA business_social_strategy OBLIGATORIAMENTE.
 - "ideas para ganar dinero" / "side hustle" → USA business_earn_ideas OBLIGATORIAMENTE.
+
+REGLAS DE SCRAPING (Firecrawl):
+- El usuario da una URL directa ("léeme esta web", "qué dice este artículo", pega un https://...) → USA web_scrape OBLIGATORIAMENTE.
+- El usuario pide datos estructurados de una web (lista de productos, precios, comparativa) → USA web_extract OBLIGATORIAMENTE con schema_description claro.
+- NO uses web_scrape cuando la información es conocida o genérica — usa tu conocimiento.
+- NO uses web_scrape para búsqueda amplia ("cosas sobre X") — usa web_search.
 ${userFacts}${journalKnowledge}`;
 
   // Build tools list — trading removed (DILO is a personal assistant, not a
