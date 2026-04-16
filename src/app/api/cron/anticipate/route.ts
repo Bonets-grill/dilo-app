@@ -59,19 +59,27 @@ Si no hay nada accionable: {"insights":[]}. NO inventes. NO seas alarmista.`;
 
 export async function GET() {
   try {
-    // Find users with Google OAuth connected (so we can read Gmail+Calendar)
-    const { data: googleUsers } = await supabase
-      .from("google_tokens")
-      .select("user_id")
-      .limit(500);
+    // Find users with Google OAuth connected. DILO stores tokens at
+    // users.preferences.google_oauth (not a separate table) — filter by
+    // presence of the access_token key.
+    const { data: allUsers } = await supabase
+      .from("users")
+      .select("id, preferences")
+      .limit(1000);
 
-    if (!googleUsers || googleUsers.length === 0) {
+    const googleUsers = (allUsers || []).filter((u) => {
+      const prefs = (u.preferences as Record<string, unknown>) || {};
+      const oauth = prefs.google_oauth as Record<string, unknown> | undefined;
+      return !!oauth?.access_token;
+    });
+
+    if (googleUsers.length === 0) {
       return NextResponse.json({ ok: true, processed: 0, reason: "no users with google" });
     }
 
     const results = { processed: 0, insights_created: 0, notifs_sent: 0, errors: 0 };
 
-    for (const { user_id: userId } of googleUsers) {
+    for (const { id: userId } of googleUsers) {
       try {
         // Gather context for this user
         const context = await gatherContext(userId);
