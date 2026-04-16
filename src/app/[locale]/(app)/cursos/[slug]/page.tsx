@@ -121,8 +121,9 @@ export default function CursoPage() {
         </div>
       </div>
       <div className="flex-1 min-h-0 bg-black">
+        {/* Proxy URL — same origin, bypasses Supabase Storage X-Frame-Options */}
         <iframe
-          src={info.url}
+          src={`/api/cursos/${slug}/file?userId=${userId}`}
           className="w-full h-full border-0"
           title={info.course?.title}
         />
