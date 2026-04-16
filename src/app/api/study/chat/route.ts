@@ -1,16 +1,18 @@
 import { NextRequest } from "next/server";
 import OpenAI from "openai";
+import { createClient } from "@supabase/supabase-js";
 import { createServerSupabase } from "@/lib/supabase/server";
+import { getTeacherPrompt } from "@/lib/study/teachers";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
 /**
  * POST /api/study/chat
- * Body: { messages, subject, studyContext, sessionId }
+ * Body: { messages, subject, mode, studyContext, sessionId }
  *
- * Chat dedicado para el modo estudio. DILO actúa como maestro/tutor
- * especializado en la materia y basado en el material que el alumno subió.
- * No es el chat general — aquí DILO pregunta, explica, corrige y evalúa.
+ * Chat con maestro especializado. En modo plan, carga el temario y da
+ * la clase del tema actual. En modo school, tutoriza sobre el material.
  */
 export async function POST(req: NextRequest) {
   const supa = await createServerSupabase();
@@ -19,29 +21,37 @@ export async function POST(req: NextRequest) {
     return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 });
   }
 
-  const { messages, subject, studyContext, sessionId } = await req.json().catch(() => ({}));
+  const { messages, subject, mode, studyContext, sessionId } = await req.json().catch(() => ({}));
   if (!messages || !Array.isArray(messages)) {
     return new Response(JSON.stringify({ error: "messages required" }), { status: 400 });
   }
 
-  const materialBlock = studyContext
-    ? `\n\nMATERIAL DEL ALUMNO (extraído de sus fotos de libro/tarea):\n---\n${String(studyContext).slice(0, 6000)}\n---\nBasa tus preguntas y explicaciones en ESTE material exacto. No inventes ejercicios de otros temas.`
-    : "";
+  const studyMode = mode === "plan" ? "plan" : "school";
+  let planTopic: string | undefined;
 
-  const systemPrompt = `Eres el MAESTRO de ${subject || "esta materia"} del alumno. Tu trabajo es:
+  // En modo plan, cargar el tema actual del syllabus
+  if (studyMode === "plan") {
+    const { data: plan } = await admin.from("study_plans")
+      .select("syllabus, current_topic")
+      .eq("user_id", auth.user.id)
+      .eq("subject", subject || "")
+      .maybeSingle();
 
-1. PREGUNTAR sobre el material — hazle preguntas para comprobar que entiende.
-2. EXPLICAR conceptos que no entienda — con ejemplos claros y sencillos.
-3. CORREGIR errores — si responde mal, explícale por qué y dale la respuesta correcta.
-4. PRACTICAR — proponle ejercicios similares a los del libro/tarea.
-5. MOTIVAR — celebra cuando acierte, anímale cuando falle.
+    if (plan?.syllabus && Array.isArray(plan.syllabus)) {
+      const idx = plan.current_topic || 0;
+      const topic = plan.syllabus[idx];
+      if (topic) {
+        planTopic = `${topic.topic}: ${topic.description || ""}`;
+      }
+    }
+  }
 
-Reglas:
-- Habla de tú, tono cercano pero educativo. Eres exigente pero simpático.
-- Respuestas CORTAS — el alumno está en el móvil, no quiere párrafos enormes.
-- Si el alumno sube una tarea con ejercicios, resuélvelos paso a paso CON ÉL (no le des la respuesta directa — pregúntale primero qué cree).
-- Al empezar, saluda brevemente y haz la primera pregunta sobre el material.
-- Si no hay material subido, pregúntale qué tema están dando en clase.${materialBlock}`;
+  const systemPrompt = getTeacherPrompt(
+    subject || "Ciencias",
+    studyMode,
+    studyContext || undefined,
+    planTopic
+  );
 
   const llmMessages = [
     { role: "system" as const, content: systemPrompt },
@@ -72,7 +82,7 @@ Reglas:
     });
 
     return new Response(readable, {
-      headers: { "Content-Type": "text/plain; charset=utf-8", "X-Session-Id": sessionId || "" },
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
     });
   } catch (err) {
     return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "error" }), { status: 500 });

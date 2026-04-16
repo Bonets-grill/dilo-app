@@ -186,7 +186,18 @@ export default function StudyPage() {
       const ctx = materials.map((m) => m.ocr_text).join("\n\n---\n\n");
       let greeting: string;
       if (mode === "plan") {
-        greeting = `Hola maestro, quiero estudiar ${subject} con el plan de clases. Dame la primera lección del temario — explícame el tema como en clase, con ejemplos y ejercicios. Usa la pizarra para las ecuaciones.`;
+        // Auto-generate plan if doesn't exist
+        try {
+          const planRes = await fetch(`/api/study/plan?subject=${encodeURIComponent(subject)}`);
+          if (planRes.status === 404) {
+            await fetch("/api/study/plan", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ subject }),
+            });
+          }
+        } catch {}
+        greeting = `Empieza la clase. Explica el tema actual del temario desde cero con ejemplos claros. Luego hazme preguntas para verificar que entiendo.`;
       } else if (ctx) {
         greeting = `Ya subí mi material de ${subject}. Léelo y empieza a hacerme preguntas sobre lo que aparece ahí.`;
       } else {
@@ -195,7 +206,7 @@ export default function StudyPage() {
       const r = await fetch("/api/study/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: [{ role: "user", content: greeting }], subject, studyContext: ctx || null, sessionId: session?.id }),
+        body: JSON.stringify({ messages: [{ role: "user", content: greeting }], subject, mode, studyContext: ctx || null, sessionId: session?.id }),
       });
       if (!r.body) throw new Error();
       const reader = r.body.getReader();
@@ -226,7 +237,7 @@ export default function StudyPage() {
       const r = await fetch("/api/study/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: newMsgs.map((m) => ({ role: m.role, content: m.content })), subject, studyContext: ctx || null, sessionId: session?.id }),
+        body: JSON.stringify({ messages: newMsgs.map((m) => ({ role: m.role, content: m.content })), subject, mode, studyContext: ctx || null, sessionId: session?.id }),
       });
       if (!r.body) throw new Error();
       const reader = r.body.getReader();
@@ -445,18 +456,36 @@ Donde "correct" es el índice (0-3) de la opción correcta. Solo el JSON, nada m
                           )}
                         </div>
                       </div>
-                      {/* TTS + Whiteboard buttons for assistant messages */}
+                      {/* TTS + Whiteboard + Help buttons */}
                       {m.role === "assistant" && m.content && (
-                        <div className="flex gap-2 mt-1 ml-1">
+                        <div className="flex flex-wrap gap-1.5 mt-1.5 ml-1">
                           <button type="button" onClick={() => playTts(m.id, m.content)}
-                            className="p-1 rounded text-[var(--dim)] hover:text-white">
-                            {ttsPlaying === m.id ? <VolumeX size={12} /> : <Volume2 size={12} />}
+                            className="px-2 py-1 rounded-lg bg-[var(--bg3)] text-[var(--dim)] text-[10px] flex items-center gap-1 hover:text-white">
+                            {ttsPlaying === m.id ? <VolumeX size={10} /> : <Volume2 size={10} />}
+                            {ttsPlaying === m.id ? "Parar" : "Escuchar"}
                           </button>
                           {(hasMath(m.content) || hasSteps(m.content)) && (
                             <button type="button" onClick={() => setShowWhiteboard(showWhiteboard === m.id ? null : m.id)}
-                              className="text-[10px] text-[var(--dim)] hover:text-white">
+                              className="px-2 py-1 rounded-lg bg-[var(--bg3)] text-[var(--dim)] text-[10px] hover:text-white">
                               📋 Pizarra
                             </button>
+                          )}
+                          {/* Quick-reply help buttons — only on last assistant message */}
+                          {m.id === chatMsgs[chatMsgs.length - 1]?.id && !chatBusy && (
+                            <>
+                              <button type="button" onClick={() => { setChatInput("No sé, explícamelo"); sendChat(); }}
+                                className="px-2.5 py-1 rounded-lg bg-yellow-500/15 text-yellow-400 text-[10px] font-medium">
+                                🤔 No sé
+                              </button>
+                              <button type="button" onClick={() => { setChatInput("Explícamelo con un ejemplo"); sendChat(); }}
+                                className="px-2.5 py-1 rounded-lg bg-blue-500/15 text-blue-400 text-[10px] font-medium">
+                                💡 Ejemplo
+                              </button>
+                              <button type="button" onClick={() => { setChatInput("Siguiente tema"); sendChat(); }}
+                                className="px-2.5 py-1 rounded-lg bg-green-500/15 text-green-400 text-[10px] font-medium">
+                                ✅ Siguiente
+                              </button>
+                            </>
                           )}
                         </div>
                       )}
