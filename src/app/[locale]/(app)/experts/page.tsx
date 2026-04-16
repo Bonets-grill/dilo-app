@@ -75,7 +75,7 @@ export default function ExpertsPage() {
     CATEGORY_LABELS[cat]?.[locale] || CATEGORY_LABELS[cat]?.en || cat;
 
   return (
-    <div className="min-h-screen bg-black text-white pb-24">
+    <div className="h-full overflow-y-auto bg-black text-white">
       <div className="px-4 pt-6 pb-4 sticky top-0 bg-black/95 backdrop-blur z-10 border-b border-gray-900">
         <div className="flex items-center gap-2 mb-3">
           <Sparkles className="w-5 h-5 text-purple-400" />

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { invokeExpert, type ExpertMessage } from "@/lib/experts/invoke";
 import { getExpertBySlug } from "@/lib/experts/registry";
+import { limitLLM, rateLimitResponse } from "@/lib/rate-limit";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -26,6 +27,9 @@ export async function POST(
   if (!userId || !message) {
     return NextResponse.json({ error: "Missing userId or message" }, { status: 400 });
   }
+
+  const rl = await limitLLM(userId);
+  if (!rl.ok) return rateLimitResponse(rl);
 
   let convId = conversationId;
   if (!convId) {

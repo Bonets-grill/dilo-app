@@ -84,15 +84,15 @@ export default function ExpertChatPage() {
 
   if (!expert) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div className="h-full bg-black text-white flex items-center justify-center">
         <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col">
-      <div className="px-4 py-3 border-b border-gray-900 flex items-center gap-3 sticky top-0 bg-black/95 backdrop-blur z-10">
+    <div className="h-full bg-black text-white flex flex-col min-h-0">
+      <div className="px-4 py-3 border-b border-gray-900 flex items-center gap-3 bg-black/95 shrink-0">
         <button onClick={() => router.back()} className="p-1.5 hover:bg-gray-900 rounded-lg">
           <ArrowLeft className="w-5 h-5" />
         </button>
@@ -103,7 +103,7 @@ export default function ExpertChatPage() {
         </div>
       </div>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-3">
         {messages.length === 0 && (
           <div className="text-center text-gray-500 text-sm py-8">
             <p>{expert.description}</p>
@@ -133,7 +133,7 @@ export default function ExpertChatPage() {
         )}
       </div>
 
-      <div className="border-t border-gray-900 px-3 py-3 flex gap-2 sticky bottom-0 bg-black">
+      <div className="border-t border-gray-900 px-3 py-3 flex gap-2 bg-black shrink-0">
         <input
           type="text"
           value={input}
