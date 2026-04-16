@@ -157,6 +157,38 @@ export default function ChatPage() {
     setBusy(true);
     setPendingSend(null);
 
+    // Auto-routing: si el mensaje anterior del usuario fue una imagen Y el
+    // texto actual suena a edición (modifica/cambia/haz/convierte/quita/pon/
+    // sin cambiar), saltamos al endpoint de edit_image (gpt-image-1) en vez
+    // de pasar por el LLM normal — que no puede ver la imagen.
+    const lastUserImg = [...msgs].reverse().find(m => m.role === "user" && m.content.startsWith("__IMAGE__"));
+    const editIntent = /\b(cambia|cambiar|modifica|modificar|edita|editar|haz|hacer|quita|quitar|añade|añadir|pon|poner|convierte|convertir|transforma|transformar|sin\s+(cambiar|modificar|tocar)|m[aá]s\s+definidos?|mejora|mejorar)\b/i.test(text);
+    if (lastUserImg && editIntent) {
+      try {
+        setMsgs(p => p.map(m => m.id === aId ? { ...m, content: t("generatingImage") + " 🎨" } : m));
+        const r = await fetch("/api/image-edit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            imageBase64: lastUserImg.content.replace("__IMAGE__", ""),
+            prompt: text,
+            conversationId: convIdRef.current,
+          }),
+        });
+        const d = await r.json();
+        if (r.ok && d.image_url) {
+          setMsgs(p => p.map(m => m.id === aId ? { ...m, content: `__IMAGE__${d.image_url}` } : m));
+        } else {
+          setMsgs(p => p.map(m => m.id === aId ? { ...m, content: `No pude editar la imagen: ${d.error || "error"}` } : m));
+        }
+      } catch {
+        setMsgs(p => p.map(m => m.id === aId ? { ...m, content: "Error al editar imagen." } : m));
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
