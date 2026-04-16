@@ -32,10 +32,13 @@ export default async function AppLayout({
       <main className="flex-1 min-h-0 overflow-hidden">
         {children}
       </main>
+      {/* BottomNav now absorbs the safe-area-inset-bottom itself
+          (padding-bottom inside its nav), so its background extends to
+          the very edge of the screen — like Instagram/TikTok/WhatsApp.
+          No separate spacer needed. */}
       <BottomNav />
       <EmergencySystem />
       </ClientProviders>
-      <div className="flex-shrink-0 h-[env(safe-area-inset-bottom)]" />
     </div>
   );
 }
