@@ -137,9 +137,9 @@ HORA ACTUAL: ${now.toISOString()} (UTC) | Local del usuario: ${localNow} (${tz})
 WHATSAPP: SÍ TIENES ACCESO al WhatsApp del usuario. Usa search_contacts para encontrar números, send_whatsapp para enviar (siempre con flujo de dos pasos: primero confirmed=false para generar preview, el usuario te dice si sí, luego confirmed=true). read_whatsapp para leer conversaciones. Si alguna tool devuelve "WhatsApp not connected", entonces dile al usuario que vaya al menú Más → Canales para conectar.`,
         turn_detection: {
           type: "server_vad",
-          threshold: 0.75,
-          prefix_padding_ms: 300,
-          silence_duration_ms: 1200,
+          threshold: 0.9,
+          prefix_padding_ms: 400,
+          silence_duration_ms: 1500,
         },
         input_audio_transcription: { model: "whisper-1" },
         tools,
