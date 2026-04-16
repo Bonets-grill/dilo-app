@@ -4,7 +4,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { localeNames, localeFlags, locales } from "@/i18n/config";
 import type { Locale } from "@/i18n/config";
-import { Globe, Moon, Sun, CreditCard, Shield, Info, LogOut, ChevronRight, Sparkles, AlertTriangle, Eye, Check } from "lucide-react";
+import { Globe, Moon, Sun, CreditCard, Shield, Info, LogOut, ChevronRight, Sparkles, AlertTriangle, Eye, Check, Mic } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Link } from "@/i18n/navigation";
 import { createBrowserSupabase } from "@/lib/supabase/client";
@@ -33,12 +33,14 @@ export default function SettingsPage() {
   const [currency, setCurrency] = useState("EUR");
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
   const [easyMode, setEasyMode] = useState(false);
+  const [wakeWord, setWakeWord] = useState(false);
 
   useEffect(() => {
     // Load theme + easy mode from localStorage
     const saved = localStorage.getItem("dilo-theme") as "dark" | "light" | null;
     if (saved) setTheme(saved);
     setEasyMode(localStorage.getItem("dilo-easy") === "true");
+    setWakeWord(localStorage.getItem("dilo_wake_word") === "1");
 
     const supabase = createBrowserSupabase();
     supabase.auth.getUser().then(({ data }) => {
@@ -59,6 +61,14 @@ export default function SettingsPage() {
     setTheme(next);
     localStorage.setItem("dilo-theme", next);
     document.documentElement.setAttribute("data-theme", next);
+  }
+
+  function toggleWakeWord() {
+    const next = !wakeWord;
+    setWakeWord(next);
+    localStorage.setItem("dilo_wake_word", next ? "1" : "0");
+    // Trigger storage event for other tabs/components
+    window.dispatchEvent(new StorageEvent("storage", { key: "dilo_wake_word", newValue: next ? "1" : "0" }));
   }
 
   function toggleEasyMode() {
@@ -146,6 +156,16 @@ export default function SettingsPage() {
               <span className="text-sm">{t("easyMode")}</span>
             </div>
             <span className="text-sm text-[var(--dim)]">{easyMode ? "ON" : "OFF"}</span>
+          </button>
+          <button type="button" onClick={toggleWakeWord} className="w-full flex items-center justify-between px-3.5 py-2.5 border-t border-[var(--border)]">
+            <div className="flex items-center gap-3">
+              <Mic size={16} className={wakeWord ? "text-green-400" : "text-[var(--dim)]"} />
+              <div className="text-left">
+                <p className="text-sm">Wake word &ldquo;Hola DILO&rdquo;</p>
+                <p className="text-[10px] text-[var(--dim)]">Activa voz sin tocar botón. Requiere app abierta.</p>
+              </div>
+            </div>
+            <span className="text-sm text-[var(--dim)]">{wakeWord ? "ON" : "OFF"}</span>
           </button>
           {showCurrencyPicker && (
             <div className="px-2 py-2 grid grid-cols-2 gap-1.5">
