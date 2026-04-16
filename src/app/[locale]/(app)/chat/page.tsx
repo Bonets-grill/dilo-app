@@ -4,6 +4,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { ArrowUp, Mic, Square, Plus, MessageCircle, ImagePlus, X, Pencil, Copy, Reply, Search, Sparkles, Loader2, Phone } from "lucide-react";
 import VoiceRealtime from "@/components/VoiceRealtime";
+import WakeWordListener from "@/components/WakeWordListener";
 import ShareMenu from "@/components/ui/ShareMenu";
 import ReactMarkdown from "react-markdown";
 import { createBrowserSupabase } from "@/lib/supabase/client";
@@ -20,6 +21,16 @@ export default function ChatPage() {
   const [suggestLoading, setSuggestLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [voiceLiveOpen, setVoiceLiveOpen] = useState(false);
+  const [wakeWordEnabled, setWakeWordEnabled] = useState(false);
+
+  useEffect(() => {
+    setWakeWordEnabled(localStorage.getItem("dilo_wake_word") === "1");
+    const onChange = (e: StorageEvent) => {
+      if (e.key === "dilo_wake_word") setWakeWordEnabled(e.newValue === "1");
+    };
+    window.addEventListener("storage", onChange);
+    return () => window.removeEventListener("storage", onChange);
+  }, []);
   const [busy, setBusy] = useState(false);
   const [rec, setRec] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
@@ -623,6 +634,12 @@ export default function ChatPage() {
       {voiceLiveOpen && userId && (
         <VoiceRealtime userId={userId} onClose={() => setVoiceLiveOpen(false)} />
       )}
+
+      <WakeWordListener
+        enabled={wakeWordEnabled && !!userId}
+        active={voiceLiveOpen}
+        onWake={() => setVoiceLiveOpen(true)}
+      />
     </div>
   );
 }
