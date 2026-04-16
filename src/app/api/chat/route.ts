@@ -372,26 +372,37 @@ async function executeTool(name: string, input: Record<string, unknown>, userId:
         // así "juan antonio" no matchea "Juan Carlos Primo".
         const words = q.split(/\s+/).filter(Boolean);
 
-        const scored = allList
+        const candidates = allList
           .map((c) => {
             const raw = String(c.pushName || c.name || c.profileName || c.verifiedName || c.shortName || "").trim();
             if (!raw) return null;
-            const low = raw.toLowerCase();
-            if (!words.every((w) => low.includes(w))) return null;
             const ext = extractEvoPhone(c);
             if (!ext) return null;
-            return { name: raw, phone: ext.phone, sendable: ext.sendable };
+            return { name: raw, low: raw.toLowerCase(), phone: ext.phone, sendable: ext.sendable };
           })
-          .filter((x): x is { name: string; phone: string; sendable: boolean } => x !== null);
+          .filter((x): x is { name: string; low: string; phone: string; sendable: boolean } => x !== null);
 
-        const ranked = rankContactMatches(scored, q);
+        // Strict: AND de todas las palabras
+        const strict = candidates.filter((c) => words.every((w) => c.low.includes(w)));
+        const ranked = rankContactMatches(strict, q);
+
+        // Fallback: si 0 strict, OR match (al menos una palabra) como sugerencias.
+        // Esto resuelve "macho B" → sugerir "Elenita Macho" aunque no matchee exacto.
+        let suggestions: typeof ranked = [];
+        if (ranked.length === 0 && words.length > 0) {
+          const partial = candidates.filter((c) => words.some((w) => c.low.includes(w)));
+          suggestions = rankContactMatches(partial, q).slice(0, 5);
+        }
 
         return JSON.stringify({
           found: ranked.length,
           contacts: ranked.slice(0, 10),
           total_scanned: allList.length,
+          suggestions: suggestions.length > 0 ? suggestions : undefined,
           hint: ranked.length === 0
-            ? "Ningún contacto coincide. Pídele al usuario el teléfono directo o que reformule el nombre."
+            ? (suggestions.length > 0
+                ? `Nadie coincide exacto con '${input.query}'. Muestra las sugerencias al usuario y pregúntale si quiere una de esas. WhatsApp no lee los nombres de la agenda del móvil — solo los display names que cada contacto configura en su propio WhatsApp.`
+                : "Ningún contacto coincide ni parcialmente. Pídele el teléfono directo. WhatsApp no lee los nombres de la agenda del móvil del usuario.")
             : undefined,
         });
       } catch (err) { return JSON.stringify({ error: "WhatsApp not connected", details: String(err) }); }

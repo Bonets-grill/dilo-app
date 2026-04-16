@@ -199,34 +199,51 @@ export async function POST(req: NextRequest) {
           : Array.isArray(raw?.contacts) ? raw.contacts
           : Array.isArray(raw?.data) ? raw.data : [];
 
-        // Multi-word AND semantics
+        // Multi-word AND semantics + fallback OR si no hay match estricto
         const words = q.split(/\s+/).filter(Boolean);
 
-        const scored = list
+        const candidates = list
           .map((c) => {
             const name = String(c.pushName || c.name || c.profileName || c.verifiedName || "").trim();
             if (!name) return null;
-            const low = name.toLowerCase();
-            if (!words.every((w) => low.includes(w))) return null;
             const ext = extractEvoPhone(c);
             if (!ext) return null;
-            return { name, phone: ext.phone, sendable: ext.sendable };
+            return { name, low: name.toLowerCase(), phone: ext.phone, sendable: ext.sendable };
           })
-          .filter((x): x is { name: string; phone: string; sendable: boolean } => x !== null);
+          .filter((x): x is { name: string; low: string; phone: string; sendable: boolean } => x !== null);
 
-        // Ranking: exact > startsWith > contains, sendable > lid
-        const ranked = scored
-          .map((c) => {
-            const n = c.name.toLowerCase();
-            let score = n === q ? 100 : n.startsWith(q) ? 50 : 10;
-            if (c.sendable) score += 5;
-            return { c, score };
-          })
-          .sort((a, b) => b.score - a.score || a.c.name.localeCompare(b.c.name))
-          .map((x) => x.c)
-          .slice(0, 8);
+        function rank(arr: typeof candidates) {
+          return arr
+            .map((c) => {
+              let score = c.low === q ? 100 : c.low.startsWith(q) ? 50 : 10;
+              if (c.sendable) score += 5;
+              return { c, score };
+            })
+            .sort((a, b) => b.score - a.score || a.c.name.localeCompare(b.c.name))
+            .map((x) => ({ name: x.c.name, phone: x.c.phone, sendable: x.c.sendable }));
+        }
 
-        return NextResponse.json({ result: JSON.stringify({ found: ranked.length, contacts: ranked }) });
+        const strict = candidates.filter((c) => words.every((w) => c.low.includes(w)));
+        const exact = rank(strict).slice(0, 8);
+
+        let suggestions: ReturnType<typeof rank> = [];
+        if (exact.length === 0 && words.length > 0) {
+          const partial = candidates.filter((c) => words.some((w) => c.low.includes(w)));
+          suggestions = rank(partial).slice(0, 5);
+        }
+
+        return NextResponse.json({
+          result: JSON.stringify({
+            found: exact.length,
+            contacts: exact,
+            suggestions: suggestions.length > 0 ? suggestions : undefined,
+            hint: exact.length === 0
+              ? (suggestions.length > 0
+                  ? `No hay match exacto. Ofrécele al usuario las sugerencias verbalmente ('¿Querías decir Elenita Macho?'). WhatsApp no lee los nombres de la agenda del móvil.`
+                  : "Ningún contacto coincide. Pídele el teléfono directo.")
+              : undefined,
+          }),
+        });
       } catch (err) {
         return NextResponse.json({ result: JSON.stringify({ error: "WhatsApp not connected", detail: String(err).slice(0, 120) }) });
       }
