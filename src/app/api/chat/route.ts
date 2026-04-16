@@ -405,8 +405,8 @@ async function executeTool(name: string, input: Record<string, unknown>, userId:
           suggestions: suggestions.length > 0 ? suggestions : undefined,
           hint: merged.length === 0
             ? (suggestions.length > 0
-                ? `No hay match exacto para '${input.query}'. Muestra las sugerencias y pregunta cuál es. Si ninguna sirve, ofrece guardar el apodo con POST /api/contacts/nicknames.`
-                : "Ningún contacto. Pídele el teléfono. WhatsApp no lee la agenda del móvil — si el usuario guarda apodos que no están en los perfiles de WhatsApp, los añade en Apodos dentro de DILO.")
+                ? `ACCIÓN: no hay match exacto para '${input.query}'. Muestra DIRECTAMENTE estas sugerencias al usuario con nombre y teléfono (no preguntes si quiere verlas, MÚESTRALAS YA). Si ninguna es, dile que guarde su apodo en Menú Más → Apodos con el teléfono correcto.`
+                : "ACCIÓN: ningún contacto coincide. Pídele el teléfono directo o dile que guarde un apodo en Menú Más → Apodos. WhatsApp no puede leer la agenda del móvil.")
             : undefined,
         });
       } catch (err) { return JSON.stringify({ error: "WhatsApp not connected", details: String(err) }); }
