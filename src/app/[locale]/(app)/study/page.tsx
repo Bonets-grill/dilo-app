@@ -270,7 +270,11 @@ export default function StudyPage() {
 
     try {
       // Cache key: hash simple del texto (primeros 200 chars)
-      const cacheKey = `/tts-cache/${btoa(unescape(encodeURIComponent(text.slice(0, 200)))).slice(0, 60)}`;
+      // Hash simple: sum de charCodes → string hex. No usa btoa (rompe con unicode).
+      const raw = text.slice(0, 200);
+      let h = 0;
+      for (let i = 0; i < raw.length; i++) h = ((h << 5) - h + raw.charCodeAt(i)) | 0;
+      const cacheKey = `/tts-cache/${(h >>> 0).toString(16)}`;
 
       let blob: Blob | undefined;
 

@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
         voice: "nova",
         input: trimmed,
         speed: 1.1,
-        response_format: "opus",
+        response_format: "aac",
       }),
     });
 
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     // Stream directo — el audio empieza a llegar al cliente mientras se genera
     return new NextResponse(response.body, {
       headers: {
-        "Content-Type": "audio/ogg",
+        "Content-Type": "audio/aac",
         "Cache-Control": "private, max-age=3600",
         "Transfer-Encoding": "chunked",
       },
