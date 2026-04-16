@@ -532,11 +532,12 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* FAB — New Chat */}
+      {/* FAB — New Chat. Positioned above the input; respects iOS safe-area. */}
       {msgs.length > 0 && !busy && voicePreview === null && (
         <button type="button"
           onClick={newChat}
-          className="absolute right-4 bottom-[72px] w-12 h-12 rounded-full bg-[var(--accent)] shadow-lg shadow-black/40 flex items-center justify-center z-50 active:scale-95 transition-transform"
+          className="absolute right-4 w-12 h-12 rounded-full bg-[var(--accent)] shadow-lg shadow-black/40 flex items-center justify-center z-50 active:scale-95 transition-transform"
+          style={{ bottom: "calc(96px + env(safe-area-inset-bottom))" }}
         >
           <Pencil size={20} className="text-white" />
         </button>

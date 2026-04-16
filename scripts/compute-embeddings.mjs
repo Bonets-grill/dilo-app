@@ -30,15 +30,20 @@ const INDEX_OUT = path.join(process.cwd(), "src/lib/experts/embeddings-index.jso
 const agents = JSON.parse(fs.readFileSync(AGENTS_JSON, "utf8"));
 console.log(`Computing embeddings for ${agents.length} agents…`);
 
-// Text to embed: rich signal — name + vibe + description + category + first 800 chars
-// of the system prompt (captures domain language/keywords beyond the terse description).
+// Text to embed: multilingual signal — name + vibe + description + category +
+// ES/EN keyword tags (bridges Spanish queries to English-only descriptions) +
+// first 800 chars of system prompt.
 function textFor(a) {
   const systemHint = (a.system_prompt || "").slice(0, 800);
+  const esTags = (a.es_keywords || []).join(", ");
+  const enTags = (a.en_keywords || []).join(", ");
   return [
     a.name,
     a.vibe,
     a.description,
     `category: ${a.category}`,
+    esTags && `ES: ${esTags}`,
+    enTags && `EN: ${enTags}`,
     systemHint,
   ].filter(Boolean).join(" — ");
 }
