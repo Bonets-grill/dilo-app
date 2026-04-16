@@ -36,13 +36,13 @@
 
 html, body {
   overscroll-behavior: none;
-  /* Prevent WebView rubber-band on iOS/Capacitor — scrolling happens in
-     inner containers only, never at the document level. */
+  /* Prevent WebView rubber-band without using position: fixed —
+     position: fixed fights with the iOS on-screen keyboard and causes
+     the layout to jump when the textarea gets focus. 100dvh respects
+     the dynamic viewport (shrinks when the keyboard appears),
+     overflow: hidden contains scrolling to inner scrollable children. */
+  height: 100dvh;
   overflow: hidden;
-  position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100%;
 }
 
 body {
@@ -50,8 +50,6 @@ body {
   color: var(--fg);
   -webkit-tap-highlight-color: transparent;
   -webkit-text-size-adjust: 100%;
-  /* iOS: cancel touch-action bounce between nested scroll containers */
-  touch-action: manipulation;
 }
 
 ::-webkit-scrollbar { width: 0; }
