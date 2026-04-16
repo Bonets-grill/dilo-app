@@ -180,7 +180,9 @@
     "configurePin": "PIN konfigurieren",
     "configurePinDesc": "Schnellzugriff mit 4-stelliger PIN",
     "inviteFriends": "Freunde einladen",
-    "inviteDesc": "Verdiene Premium kostenlos, indem du 10 Freunde einlädst"
+    "inviteDesc": "Verdiene Premium kostenlos, indem du 10 Freunde einlädst",
+    "expertsLink": "Experten",
+    "expertsDesc": "184 Spezialisten: Marketing, Finanzen, Technik…"
   },
   "landing": {
     "hero": "Dein persönlicher KI-Sekretär",

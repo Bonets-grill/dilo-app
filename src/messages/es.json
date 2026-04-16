@@ -180,7 +180,9 @@
     "configurePin": "Configurar PIN",
     "configurePinDesc": "Acceso rápido con PIN de 4 dígitos",
     "inviteFriends": "Invitar amigos",
-    "inviteDesc": "Gana Premium gratis invitando a 10 amigos"
+    "inviteDesc": "Gana Premium gratis invitando a 10 amigos",
+    "expertsLink": "Expertos",
+    "expertsDesc": "184 especialistas: marketing, finanzas, ingeniería…"
   },
   "landing": {
     "hero": "Tu secretario personal con AI",

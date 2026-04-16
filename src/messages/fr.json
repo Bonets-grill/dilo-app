@@ -180,7 +180,9 @@
     "configurePin": "Configurer le PIN",
     "configurePinDesc": "Accès rapide avec un PIN à 4 chiffres",
     "inviteFriends": "Inviter des amis",
-    "inviteDesc": "Gagne Premium gratuit en invitant 10 amis"
+    "inviteDesc": "Gagne Premium gratuit en invitant 10 amis",
+    "expertsLink": "Experts",
+    "expertsDesc": "184 spécialistes: marketing, finance, ingénierie…"
   },
   "landing": {
     "hero": "Ton secrétaire personnel avec IA",
