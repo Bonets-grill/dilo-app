@@ -255,8 +255,8 @@ export async function POST(req: NextRequest) {
             suggestions: suggestions.length > 0 ? suggestions : undefined,
             hint: merged.length === 0
               ? (suggestions.length > 0
-                  ? "No hay match exacto. Ofrécele al usuario las sugerencias ('¿Querías decir X?'). Si ninguna sirve, dile que puede guardar un apodo en Menú Más → Apodos."
-                  : "Ningún contacto coincide. Pídele el teléfono directo o que guarde el apodo en Menú Más → Apodos.")
+                  ? "ACCIÓN: di DIRECTAMENTE 'No encontré ese nombre exacto pero tengo a [nombre] con teléfono [tel]. ¿Es esa persona?' — NO preguntes si quiere ver sugerencias, DÍSELAS YA."
+                  : "ACCIÓN: ningún contacto coincide. Pídele el teléfono directo o dile que guarde un apodo en Menú Más → Apodos.")
               : undefined,
           }),
         });
