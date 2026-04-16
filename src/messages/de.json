@@ -18,7 +18,9 @@
     "calls": "Anrufe",
     "market": "Markt",
     "experts": "Experten",
-    "cursos": "Kurse"
+    "cursos": "Kurse",
+    "family": "Familie",
+    "study": "Lernen"
   },
   "chat": {
     "placeholder": "Schreib oder sprich...",

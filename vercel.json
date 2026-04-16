@@ -43,6 +43,10 @@
     {
       "path": "/api/cron/anticipate",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/study-close-stale",
+      "schedule": "* * * * *"
     }
   ],
   "headers": [
