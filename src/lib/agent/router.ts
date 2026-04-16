@@ -89,9 +89,11 @@ export function detectIntent(text: string): RouteResult {
     return { type: "expense_query", data: { period } };
   }
 
-  // REMINDER: "recuérdame en 5 minutos", "ponme un recordatorio"
+  // REMINDER: "recuérdame en 5 minutos", "ponme un recordatorio", "recuerda hacer X",
+  // "agéndame una cita para...", "apúntame la cita del dentista"
   // But NOT "avísame cuando baje" (that's a price alert)
-  if (/(?:recuerdame|recordatorio|alarma|remind\s+me)/i.test(lower)
+  const reminderVerbs = /(?:recu[eé]rda(?:me)?|recordatorio|alarma|remind\s+me|ag[eé]nd[aá](?:me)?|ap[uú]nta(?:me)?|anota(?:me)?|ponme\s+un|pon\s+una|crea\s+(?:un|una)\s+(?:recordatorio|cita|alarma))/i;
+  if (reminderVerbs.test(lower)
     || (/avisame/i.test(lower) && !/(?:baj[ea]|precio|cuesta|oferta)/i.test(lower))) {
     return { type: "reminder" }; // Complex — needs LLM to parse time
   }
