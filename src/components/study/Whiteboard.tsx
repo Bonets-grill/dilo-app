@@ -18,8 +18,11 @@ export default function Whiteboard({ steps, onDone }: { steps: Step[]; onDone?: 
   const [typing, setTyping] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // steps.length como dep en vez de steps — evita reiniciar animación
+  // cuando el parent re-renderiza y recrea el array con mismo contenido.
+  const stepsLen = steps.length;
   useEffect(() => {
-    if (visibleSteps >= steps.length) {
+    if (visibleSteps >= stepsLen) {
       setTyping(false);
       onDone?.();
       return;
@@ -29,7 +32,8 @@ export default function Whiteboard({ steps, onDone }: { steps: Step[]; onDone?: 
       setVisibleSteps((v) => v + 1);
     }, delay);
     return () => clearTimeout(timer);
-  }, [visibleSteps, steps, onDone]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibleSteps, stepsLen]);
 
   useEffect(() => {
     containerRef.current?.scrollTo({ top: containerRef.current.scrollHeight, behavior: "smooth" });
