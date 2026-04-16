@@ -370,7 +370,7 @@ export default function ChatPage() {
         <button type="button" onClick={() => setShowHistory(true)} className="text-xs text-[var(--muted)] flex items-center gap-1.5">
           <MessageCircle size={14} /> {t("history")}
         </button>
-        <span className="text-sm font-semibold">DILO</span>
+        <span className="text-sm font-semibold">DILO <span className="text-[9px] text-[var(--dim)] font-normal ml-1">v1057</span></span>
         <button type="button" onClick={newChat} className="text-xs text-[var(--muted)] flex items-center gap-1.5">
           <Plus size={14} /> {t("newChat")}
         </button>
