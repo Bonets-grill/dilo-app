@@ -150,7 +150,22 @@ export default function FamilyCard() {
           ) : (
             <>
               <p className="text-[10px] text-[var(--dim)] text-center">
-                Pídele a tu hijo que abra DILO, vaya a Ajustes → Vincular con padre y pegue este código:
+                Comparte este enlace directo con tu hijo — abre, se registra y queda vinculado:
+              </p>
+              <a
+                href={`/join/${code}`}
+                className="block text-center text-xs text-[var(--accent)] font-mono underline truncate"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const url = `${window.location.origin}/es/join/${code}`;
+                  navigator.clipboard?.writeText(url).catch(() => {});
+                  alert("Enlace copiado: " + url);
+                }}
+              >
+                {typeof window !== "undefined" ? `${window.location.origin}/es/join/${code}` : `/join/${code}`}
+              </a>
+              <p className="text-[10px] text-[var(--dim)] text-center mt-2">
+                O que pegue este código en DILO → Más → Familia:
               </p>
               <div className="flex items-center gap-2">
                 <p className="flex-1 text-2xl font-black tracking-[0.2em] font-mono text-center text-[var(--accent)] bg-[var(--bg)] rounded-lg py-2 select-all" data-selectable>
