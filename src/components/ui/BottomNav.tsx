@@ -89,7 +89,7 @@ export default function BottomNav() {
           safe area. */}
       <nav
         className="fixed bottom-0 left-0 right-0 z-40 border-t border-[var(--border)] bg-[var(--bg)]"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        style={{ paddingBottom: "max(4px, calc(env(safe-area-inset-bottom) - 16px))" }}
       >
         <div className="flex items-stretch h-12">
           {primaryTabs.map(({ key, href, icon: Icon }) => {
