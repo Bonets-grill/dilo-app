@@ -34,12 +34,24 @@
   --font-sans: var(--font-inter);
 }
 
+html, body {
+  overscroll-behavior: none;
+  /* Prevent WebView rubber-band on iOS/Capacitor — scrolling happens in
+     inner containers only, never at the document level. */
+  overflow: hidden;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
 body {
   background: var(--bg);
   color: var(--fg);
   -webkit-tap-highlight-color: transparent;
-  overscroll-behavior: none;
   -webkit-text-size-adjust: 100%;
+  /* iOS: cancel touch-action bounce between nested scroll containers */
+  touch-action: manipulation;
 }
 
 ::-webkit-scrollbar { width: 0; }
