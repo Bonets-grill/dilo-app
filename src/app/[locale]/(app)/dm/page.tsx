@@ -23,6 +23,7 @@ import {
   ImagePlus,
   Ban,
   MoreVertical,
+  Sparkles,
 } from "lucide-react";
 
 interface Contact {
@@ -73,6 +74,35 @@ export default function DMPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [msgInput, setMsgInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [suggestLoading, setSuggestLoading] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+
+  async function requestSuggestions() {
+    if (suggestLoading || !userId || !chatWith) return;
+    setSuggestLoading(true);
+    setSuggestions([]);
+    try {
+      const payload = {
+        userId,
+        contactName: chatWith.name,
+        messages: messages.slice(-10).map((m) => ({
+          role: m.fromMe ? "me" : "them",
+          content: m.content,
+        })),
+      };
+      const res = await fetch("/api/dm/suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      setSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []);
+    } catch (e) {
+      console.error("[dm] suggest failed:", e);
+    } finally {
+      setSuggestLoading(false);
+    }
+  }
   const [loading, setLoading] = useState(true);
   const [recording, setRecording] = useState(false);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
@@ -465,6 +495,11 @@ export default function DMPage() {
               <button type="button" onClick={() => imgRef.current?.click()} className="w-9 h-9 rounded-full bg-[var(--bg2)] border border-[var(--border)] text-[var(--dim)] flex items-center justify-center flex-shrink-0">
                 <ImagePlus size={16} />
               </button>
+              <button type="button" onClick={requestSuggestions} disabled={suggestLoading || messages.length === 0}
+                className="w-9 h-9 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-400 flex items-center justify-center flex-shrink-0 disabled:opacity-30"
+                aria-label="Sugerir respuesta con IA">
+                {suggestLoading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+              </button>
               <input
                 value={msgInput}
                 onChange={e => setMsgInput(e.target.value)}
@@ -486,6 +521,21 @@ export default function DMPage() {
             </>
           )}
         </div>
+        {suggestions.length > 0 && (
+          <div className="mt-2 flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+            {suggestions.map((s, i) => (
+              <button key={i} type="button"
+                onClick={() => { setMsgInput(s); setSuggestions([]); }}
+                className="shrink-0 max-w-[85%] text-left text-xs text-[var(--fg)] bg-purple-500/10 border border-purple-500/25 rounded-2xl px-3 py-2 active:bg-purple-500/20 transition">
+                {s}
+              </button>
+            ))}
+            <button type="button" onClick={() => setSuggestions([])}
+              className="shrink-0 w-7 h-7 rounded-full bg-[var(--bg2)] border border-[var(--border)] text-[var(--dim)] flex items-center justify-center">
+              <X size={12} />
+            </button>
+          </div>
+        )}
       </div>
     );
   }
