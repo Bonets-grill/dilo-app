@@ -84,8 +84,13 @@ export default function BottomNav() {
         </div>
       )}
 
-      {/* Bottom navigation bar */}
-      <nav className="flex-shrink-0 border-t border-[var(--border)] bg-[var(--bg)]">
+      {/* Bottom navigation bar. The nav background extends through the
+          home-indicator safe area (padding-bottom: env(safe-area-inset-bottom))
+          — the row itself stays inside the safe zone, so taps work normally. */}
+      <nav
+        className="flex-shrink-0 border-t border-[var(--border)] bg-[var(--bg)]"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
         <div className="flex items-stretch h-12">
           {primaryTabs.map(({ key, href, icon: Icon }) => {
             const active = pathname.startsWith(href);
