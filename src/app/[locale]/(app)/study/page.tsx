@@ -197,11 +197,14 @@ export default function StudyPage() {
     setChatMsgs([{ id: aId, role: "assistant", content: "" }]);
     try {
       const ctx = materials.map((m) => m.ocr_text).join("\n\n---\n\n");
+      const greeting = ctx
+        ? `Ya subí mi material de ${subject}. Léelo y empieza a hacerme preguntas sobre lo que aparece ahí.`
+        : `Hola maestro, estoy listo para estudiar ${subject}. No tengo material subido, pregúntame qué tema estamos dando.`;
       const r = await fetch("/api/study/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: [{ role: "user", content: "Hola maestro, estoy listo para estudiar." }],
+          messages: [{ role: "user", content: greeting }],
           subject,
           studyContext: ctx || null,
           sessionId: session?.id,
