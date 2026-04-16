@@ -102,14 +102,13 @@ export function detectIntent(text: string): RouteResult {
     return { type: "reminder" }; // Complex — needs LLM to parse time
   }
 
-  // REMINDER QUERY: "qué recordatorios tengo", "cuáles son mis recordatorios", "dime mis recordatorios"
-  // Strict: solo si menciona "recordatorio" y es pregunta. Queries sobre citas
-  // de calendario ("cuándo es mi próxima cita") se dejan al flow normal con
-  // calendar_list disponible.
-  if (/recordatorio/i.test(lower) && /(?:tengo|cuales|que|mis|pendientes|ver|mostrar|lista|dime|show|list|what|my)/i.test(lower)) {
-    if (!/(?:recuerdame|recordatorio\s+(?:de|para|a\s+las)|ponme|crea|pon\s+un|set|create|remind\s+me)/i.test(lower)) {
-      return { type: "reminder_query" };
-    }
+  // REMINDER QUERY: "qué recordatorios tengo", "qué pendientes tengo",
+  // "qué tengo mañana", "dime mis recordatorios", "lo que tengo pendiente".
+  // Cubre variantes naturales sin obligar a decir la palabra "recordatorio".
+  const isQueryShape = /(?:recordatorio|pendientes?|qu[eé]\s+tengo\s+(hoy|ma[nñ]ana|esta\s+(semana|tarde|noche)|pendiente)|lo\s+que\s+tengo\s+pendiente|dime\s+(todo\s+)?lo\s+que\s+tengo)/i.test(lower);
+  const isCreateShape = /(?:recu[eé]rdame|recordatorio\s+(?:de|para|a\s+las)|ponme|crea|pon\s+un|set|create|remind\s+me|ag[eé]nd[aá]me|ap[uú]nta(?:me)?|anota(?:me)?)/i.test(lower);
+  if (isQueryShape && !isCreateShape) {
+    return { type: "reminder_query" };
   }
 
   // CALCULATOR: "cuánto es 45 + 30", "calcula 100 * 0.21"
