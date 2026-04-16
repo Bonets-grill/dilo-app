@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import OpenAI from "openai";
 import { getExpertBySlug, type Expert } from "./registry";
+import { EXECUTORS, getExecutorBySlug, type ExecutorAgent } from "./executors";
 import indexJson from "./embeddings-index.json";
 
 const EMBEDDING_MODEL = "text-embedding-3-small";
@@ -59,6 +60,93 @@ function isSmallTalk(msg: string): boolean {
   if (t.length <= 20 && SMALLTALK_PATTERNS.some((re) => re.test(t))) return true;
   return false;
 }
+
+/**
+ * Keyword-based executor matcher. Executors have very specific intents
+ * ("envía email", "lee correos", "agenda cita") that are better detected
+ * by regex than by semantic similarity. Run this BEFORE the expert router
+ * in chat/route.ts — if it returns a match, use its tool list directly.
+ */
+export interface ExecutorMatch {
+  executor: ExecutorAgent;
+  confidence: "high" | "medium";
+}
+
+const EXECUTOR_PATTERNS: Array<{ slug: string; patterns: RegExp[] }> = [
+  { slug: "email-guardian", patterns: [
+    /\b(l[eé]e(me)?|revisa|m[ií]rate?|resume|chequea)\s+(mi\s+)?(correo|email|inbox|gmail|bandeja)/i,
+    /\b(responde|contesta)\s+(a|al?)\s+.+(email|correo)/i,
+    /\b(env[ií]a|manda)\s+(un\s+)?(email|correo)\s+a\b/i,
+    /\b(busca|encuentra)\s+(el\s+)?(email|correo)/i,
+    /\bhay\s+(algo|emails?|correos?)\s+(nuevo|importante|pendiente)/i,
+  ]},
+  { slug: "whatsapp-messenger", patterns: [
+    /\b(env[ií]a|manda|escr[ií]bele?|dile|av[ií]sale)\s+.*\b(whatsapp|whats|wa)\b/i,
+    /\b(whatsapp|whats)\s+(a|para)\s+\w+/i,
+    /\bmandale\s+un\s+(mensaje|whats)/i,
+  ]},
+  { slug: "calendar-wizard", patterns: [
+    /\b(ag[eé]ndame|ag[eé]nd[aá]|crea?\s+(una\s+)?(cita|reuni[oó]n|evento))/i,
+    /\bqu[eé]\s+tengo\s+(hoy|ma[nñ]ana|el\s+\w+)/i,
+    /\b(cancela|elimina|borra)\s+(la\s+)?(reuni[oó]n|cita|evento)/i,
+    /\b(cu[aá]ndo|cuando)\s+(estoy|tengo)\s+(libre|disponible)/i,
+    /\b(mueve|cambia|reprograma)\s+(la\s+)?(reuni[oó]n|cita)/i,
+  ]},
+  { slug: "bill-detective", patterns: [
+    /\b(busca|encuentra|revisa)\s+.*(facturas?|recibos?|pagos?|bills?)/i,
+    /\bqu[eé]\s+(facturas?|recibos?)\s+tengo/i,
+    /\bcu[aá]nto\s+pagu[eé]\s+(a|en|por)/i,
+    /\bdetecta\s+(gastos?|facturas?)/i,
+  ]},
+  { slug: "subscription-killer", patterns: [
+    /\b(qu[eé]|cu[aá]les)\s+suscrip?ciones?\s+(tengo|pago)/i,
+    /\b(cancela|cancelar|dar\s+de\s+baja)\s+(mi\s+)?(suscripcion|netflix|spotify|hbo|disney|adobe|prime)/i,
+    /\bsuscripciones?\s+(que\s+no\s+)?uso/i,
+  ]},
+  { slug: "document-reader", patterns: [
+    /\b(l[eé]e(me)?|anal[ií]za|resume)\s+(este|esta|el|la)\s+(documento|pdf|art[ií]culo|contrato|p[aá]gina)/i,
+    /\b(qu[eé]\s+dice)\s+(este|esta)/i,
+    /https?:\/\/\S+/,
+  ]},
+  { slug: "travel-booker", patterns: [
+    /\b(plan[eé]a|organ[ií]za|arr[eé]glame|b[uú]scame)\s+.*(viaje|vuelo|hotel)/i,
+    /\b(vuelos?|hoteles?)\s+(a|de|desde)/i,
+    /\bviaje\s+a\s+\w+/i,
+  ]},
+  { slug: "contract-reviewer", patterns: [
+    /\b(revisa|anal[ií]za|m[ií]rate?)\s+(este|el)\s+contrato/i,
+    /\b(contrato|cl[aá]usulas?)\s+(abusiva|peligrosa|rar)/i,
+    /\bme\s+(mandaron|enviaron|pasaron)\s+(un\s+)?contrato/i,
+  ]},
+  { slug: "health-tracker", patterns: [
+    /\b(tengo|ag[eé]ndame)\s+cita\s+(con|el|m[eé]dico|doctor)/i,
+    /\bpreg?u?ntas?\s+para\s+(el\s+|la\s+)?(m[eé]dico|doctor|cardi[oó]logo|especialist)/i,
+    /\brecu[eé]rdame\s+(tomar|la\s+pastilla|medicaci[oó]n)/i,
+  ]},
+  { slug: "meeting-prepper", patterns: [
+    /\bprep[aá]rame\s+(la\s+)?(reuni[oó]n|meeting|cita)\s+(con|de)/i,
+    /\btengo\s+reuni[oó]n\s+con\s+.+(prep[aá]rame|cont[eé]xto)/i,
+    /\b(briefing|resumen)\s+para\s+(la\s+)?reuni[oó]n/i,
+  ]},
+];
+
+export function matchExecutor(userMessage: string): ExecutorMatch | null {
+  const t = userMessage.trim();
+  if (t.length < 10) return null;
+
+  for (const { slug, patterns } of EXECUTOR_PATTERNS) {
+    for (const pat of patterns) {
+      if (pat.test(t)) {
+        const executor = getExecutorBySlug(slug);
+        if (executor) return { executor, confidence: "high" };
+      }
+    }
+  }
+  return null;
+}
+
+/** Export executors list so other modules can introspect */
+export { EXECUTORS };
 
 /** Returns top-K experts most relevant to the user message. */
 export async function routeToExperts(

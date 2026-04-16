@@ -1204,21 +1204,49 @@ ${userFacts}${journalKnowledge}`;
 
   // Build tools list — trading removed (DILO is a personal assistant, not a
   // trading platform). Cost protection + scope focus.
-  const userTools = [...baseTools, ...KNOWLEDGE_TOOLS, ...ENTERTAINMENT_TOOLS];
+  let userTools: OpenAI.ChatCompletionTool[] = [...baseTools, ...KNOWLEDGE_TOOLS, ...ENTERTAINMENT_TOOLS];
   const tradingProfilePrompt = "";
 
-  // ─── EXPERT ROUTING (embeddings → top-1 specialist injected into system prompt) ───
-  // Graceful: if this fails for any reason, the chat continues as before.
-  let expertContext = "";
+  // ─── EXECUTOR DETECTION (keyword match → focused tool set) ───
+  // If the user asks for a specific action ("read emails", "send whatsapp",
+  // "book meeting"), use only that executor's tools so gpt-4o-mini can't
+  // pick the wrong one out of 22+ options.
+  let executorContext = "";
+  let activeExecutor: string | null = null;
   try {
     const lastUser = allMessages[allMessages.length - 1]?.content || "";
-    if (lastUser && lastUser.length > 10 && lastUser.length < 2000) {
-      const { routeToExperts, expertContextBlock } = await import("@/lib/experts/router");
-      const matches = await routeToExperts(lastUser, { topK: 3, minScore: 0.38 });
-      if (matches.length > 0) expertContext = expertContextBlock(matches, 4500);
+    if (lastUser && lastUser.length > 10) {
+      const { matchExecutor } = await import("@/lib/experts/router");
+      const match = matchExecutor(lastUser);
+      if (match) {
+        activeExecutor = match.executor.slug;
+        executorContext = `\n\n[EXECUTOR ACTIVO — ${match.executor.emoji} ${match.executor.name}]\n${match.executor.systemPrompt}`;
+        // Narrow tools to only the ones this executor declared.
+        const toolNames = new Set(match.executor.tools);
+        userTools = userTools.filter(
+          (t) => t.type === "function" && toolNames.has(t.function.name)
+        );
+      }
     }
   } catch (e) {
-    console.error("[expert-router] non-fatal:", e);
+    console.error("[executor-router] non-fatal:", e);
+  }
+
+  // ─── EXPERT ROUTING (embeddings → top-1 specialist injected into system prompt) ───
+  // Only runs if no executor matched (they're mutually exclusive: executor = do,
+  // expert = advise). Graceful: if this fails for any reason, the chat continues.
+  let expertContext = "";
+  if (!activeExecutor) {
+    try {
+      const lastUser = allMessages[allMessages.length - 1]?.content || "";
+      if (lastUser && lastUser.length > 10 && lastUser.length < 2000) {
+        const { routeToExperts, expertContextBlock } = await import("@/lib/experts/router");
+        const matches = await routeToExperts(lastUser, { topK: 3, minScore: 0.38 });
+        if (matches.length > 0) expertContext = expertContextBlock(matches, 4500);
+      }
+    } catch (e) {
+      console.error("[expert-router] non-fatal:", e);
+    }
   }
 
   // encoder already declared above
@@ -1229,7 +1257,7 @@ ${userFacts}${journalKnowledge}`;
     async start(controller) {
       try {
         let chatMessages: OpenAI.ChatCompletionMessageParam[] = [
-          { role: "system", content: systemPrompt + tradingProfilePrompt + expertContext },
+          { role: "system", content: systemPrompt + tradingProfilePrompt + executorContext + expertContext },
           ...messages.map((m: { role: string; content: string }) => ({
             role: m.role as "user" | "assistant",
             content: m.content,
