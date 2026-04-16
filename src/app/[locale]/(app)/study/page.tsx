@@ -383,7 +383,7 @@ Donde "correct" es el índice (0-3) de la opción correcta. Solo el JSON, nada m
                 <span className="text-[var(--dim)] font-mono">{fmt(elapsedWall)}</span>
               </div>
               <div className="flex items-center gap-2">
-                <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={uploadMaterial} />
+                <input ref={fileRef} type="file" accept="image/*"  className="hidden" onChange={uploadMaterial} />
                 <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
                   className="p-1.5 rounded-lg bg-yellow-500/20 text-yellow-400 disabled:opacity-50">
                   {uploading ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
