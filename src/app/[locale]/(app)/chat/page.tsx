@@ -27,6 +27,7 @@ export default function ChatPage() {
   const [showHistory, setShowHistory] = useState(false);
   const [pendingSend, setPendingSend] = useState<PendingSend | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const mrRef = useRef<MediaRecorder | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -98,7 +99,10 @@ export default function ChatPage() {
   function newChat() { setConvId(null); setMsgs([]); setShowHistory(false); setPendingSend(null); }
 
   const scrollDown = useCallback(() => {
-    setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+    // With flex-col-reverse, visual bottom === scrollTop 0
+    setTimeout(() => {
+      if (scrollRef.current) scrollRef.current.scrollTop = 0;
+    }, 50);
   }, []);
   useEffect(scrollDown, [msgs, scrollDown]);
   useEffect(() => { if (voicePreview !== null) voiceRef.current?.focus(); }, [voicePreview]);
@@ -375,7 +379,7 @@ export default function ChatPage() {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto overscroll-y-contain px-4 flex flex-col-reverse">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-y-contain px-4 flex flex-col-reverse">
         {msgs.length === 0 ? (
           <div className="flex items-center justify-center flex-1">
             <p className="text-sm text-[var(--dim)]">{t("placeholder")}</p>
