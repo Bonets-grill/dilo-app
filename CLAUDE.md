@@ -188,3 +188,27 @@ All migrations 001 through 013 are locked.
 - Remove the session_closed check
 - Change the FVG +5 boost without evidence
 - Add GPT/OpenAI calls to intelligence.ts
+
+## Protocolo de fix OBLIGATORIO (no saltar ningún paso)
+
+**Antes de tocar una sola línea, por cada fix/feature:**
+
+1. **Auditoría previa (evidencia literal):** Lee el archivo real y cita `file:line_start-line_end` del código que vas a modificar. Si no puedes citarlo, NO puedes arreglarlo todavía. Prohibido abrir `Edit` sin haber mostrado antes las líneas exactas que cambiarán.
+2. **Plan quirúrgico:** En ≤5 bullets, diff mínimo propuesto. Sin refactors de paso, sin limpieza de código colateral, sin renombres "de paso".
+3. **Ejecución:** Aplica el diff. Nada más.
+4. **Auditoría posterior (demostrar que funciona):** Ejecuta los comandos de verificación del proyecto (typecheck, test del archivo afectado, evals si aplica — ver sección de Comandos de este archivo) y **pega el output literal** en la conversación. No resumas, no digas "passing" sin pegarlo.
+5. **Estado honesto:** Solo puedes escribir "listo" / "ready" / "passing" si el paso 4 muestra output verde literal en esta conversación. Prohibido afirmar sin evidencia pegada. Si falló, dilo — 10 "no lo sé / falló X" antes que 1 "todo ok" fabricado.
+
+**Dudas sobre el alcance del fix → auditor independiente con contexto fresco** (spawn un subagente Explore pidiendo evidencia `file:line`). Nunca te auto-validas en fixes no triviales — tu propio contexto puede estar contaminado.
+
+**Si el usuario dice "protocolo de fix" al principio de un mensaje, activas este flujo sin excepción.**
+
+## Superpowers workflow
+
+Este proyecto usa el plugin `superpowers` (instalado global en ~/.claude/). Para trabajo no trivial seguir este flujo:
+
+- **Antes de codear:** `brainstorming` (features nuevas) → `writing-plans` (specs multi-paso) → `using-git-worktrees` (aislar workspace si procede)
+- **Mientras codeas:** `test-driven-development` (tests primero) · `systematic-debugging` (bugs antes de parchear) · `dispatching-parallel-agents` (tareas independientes)
+- **Antes de cerrar:** `verification-before-completion` (evidencia, no claims) → `requesting-code-review` → `finishing-a-development-branch`
+
+Alineado con reglas globales del usuario: codemap-first, surgical edits, independent auditor, promptfoo antes de prompts, no inventar.
