@@ -18,7 +18,7 @@ const Quiz = dynamic(() => import("@/components/study/Quiz"), { ssr: false });
 // parseSteps must be sync — import directly
 import { parseSteps as parseStepsSync } from "@/components/study/Whiteboard";
 
-const SUBJECTS = [
+const DEFAULT_SUBJECTS = [
   "Matemáticas", "Lengua", "Historia", "Geografía", "Inglés",
   "Ciencias", "Física", "Química", "Biología", "Tecnología", "Arte", "Otra",
 ];
@@ -29,6 +29,8 @@ interface Msg { id: string; role: "user" | "assistant"; content: string; }
 
 export default function StudyPage() {
   const [subject, setSubject] = useState("Matemáticas");
+  const [mode, setMode] = useState<"school" | "plan">("school");
+  const [userSubjects, setUserSubjects] = useState<string[]>(DEFAULT_SUBJECTS);
   const [session, setSession] = useState<Session | null>(null);
   const [starting, setStarting] = useState(false);
   const [stopping, setStopping] = useState(false);
@@ -49,6 +51,16 @@ export default function StudyPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // ── Load student profile (subjects from onboarding) ──
+  useEffect(() => {
+    fetch("/api/user/me").then((r) => r.json()).then((d) => {
+      if (d?.subjects && Array.isArray(d.subjects) && d.subjects.length > 0) {
+        setUserSubjects(d.subjects);
+        setSubject(d.subjects[0]);
+      }
+    }).catch(() => {});
+  }, []);
 
   // ── Session recovery ──
   useEffect(() => {
@@ -172,9 +184,14 @@ export default function StudyPage() {
     setChatMsgs([{ id: aId, role: "assistant", content: "" }]);
     try {
       const ctx = materials.map((m) => m.ocr_text).join("\n\n---\n\n");
-      const greeting = ctx
-        ? `Ya subí mi material de ${subject}. Léelo y empieza a hacerme preguntas sobre lo que aparece ahí.`
-        : `Hola maestro, estoy listo para estudiar ${subject}.`;
+      let greeting: string;
+      if (mode === "plan") {
+        greeting = `Hola maestro, quiero estudiar ${subject} con el plan de clases. Dame la primera lección del temario — explícame el tema como en clase, con ejemplos y ejercicios. Usa la pizarra para las ecuaciones.`;
+      } else if (ctx) {
+        greeting = `Ya subí mi material de ${subject}. Léelo y empieza a hacerme preguntas sobre lo que aparece ahí.`;
+      } else {
+        greeting = `Hola maestro, estoy listo para estudiar ${subject}. No tengo material subido, pregúntame qué tema estamos dando.`;
+      }
       const r = await fetch("/api/study/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -308,10 +325,27 @@ Donde "correct" es el índice (0-3) de la opción correcta. Solo el JSON, nada m
               <GraduationCap size={20} className="text-[var(--accent)]" />
               <h1 className="text-lg font-semibold">Modo Estudio</h1>
             </div>
+            {/* Modo de estudio */}
+            <div className="flex gap-2 p-1 bg-[var(--bg2)] rounded-xl">
+              <button type="button" onClick={() => setMode("school")}
+                className={`flex-1 py-2 rounded-lg text-xs font-medium transition ${mode === "school" ? "bg-[var(--accent)] text-white shadow" : "text-[var(--dim)]"}`}>
+                📚 Lo del cole
+              </button>
+              <button type="button" onClick={() => setMode("plan")}
+                className={`flex-1 py-2 rounded-lg text-xs font-medium transition ${mode === "plan" ? "bg-[var(--accent)] text-white shadow" : "text-[var(--dim)]"}`}>
+                🎓 Plan DILO
+              </button>
+            </div>
+            <p className="text-[10px] text-[var(--dim)] text-center">
+              {mode === "school"
+                ? "Sube fotos de tu libro o tarea y el maestro te ayuda con eso"
+                : "El maestro tiene un temario preparado para ti — clases en orden"}
+            </p>
+
             <div>
               <label className="text-xs text-[var(--dim)] block mb-2">Materia</label>
               <div className="grid grid-cols-3 gap-2">
-                {SUBJECTS.map((s) => (
+                {userSubjects.map((s) => (
                   <button key={s} type="button" onClick={() => setSubject(s)}
                     className={`px-3 py-2 rounded-xl text-xs font-medium border ${subject === s ? "bg-[var(--accent)] text-white border-[var(--accent)]" : "bg-[var(--bg2)] border-[var(--border)] text-[var(--muted)]"}`}>{s}</button>
                 ))}
@@ -320,11 +354,8 @@ Donde "correct" es el índice (0-3) de la opción correcta. Solo el JSON, nada m
             <button type="button" onClick={start} disabled={starting}
               className="w-full py-4 rounded-2xl bg-[var(--accent)] text-white font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-60">
               {starting ? <Loader2 className="animate-spin" size={16} /> : <Play size={16} fill="currentColor" />}
-              Empezar a estudiar {subject}
+              {mode === "school" ? `Estudiar ${subject}` : `Clase de ${subject}`}
             </button>
-            <p className="text-[11px] text-[var(--dim)] text-center leading-relaxed">
-              Sube fotos de tus libros o tareas. El maestro DILO te enseña con pizarra, voz y quiz.
-            </p>
           </div>
         </div>
       ) : (
