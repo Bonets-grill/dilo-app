@@ -189,6 +189,21 @@ export async function POST(req: NextRequest) {
       const q = String(a.query || "").trim().toLowerCase();
       if (!q) return NextResponse.json({ result: JSON.stringify({ error: "missing_query" }) });
       try {
+        const words = q.split(/\s+/).filter(Boolean);
+
+        // 1) Apodos privados primero
+        const { data: nicks } = await supabase
+          .from("contact_nicknames")
+          .select("nickname, phone")
+          .eq("user_id", userId);
+        const nickMatches = (nicks || [])
+          .filter((n) => {
+            const low = n.nickname.toLowerCase();
+            return words.every((w) => low.includes(w));
+          })
+          .map((n) => ({ name: n.nickname, phone: n.phone, sendable: true }));
+
+        // 2) Evolution
         const res = await fetch(`${evoUrl}/chat/findContacts/${instName}`, {
           method: "POST",
           headers: { "Content-Type": "application/json", apikey: evoKey },
@@ -198,9 +213,6 @@ export async function POST(req: NextRequest) {
         const list: Record<string, unknown>[] = Array.isArray(raw) ? raw
           : Array.isArray(raw?.contacts) ? raw.contacts
           : Array.isArray(raw?.data) ? raw.data : [];
-
-        // Multi-word AND semantics + fallback OR si no hay match estricto
-        const words = q.split(/\s+/).filter(Boolean);
 
         const candidates = list
           .map((c) => {
@@ -224,23 +236,27 @@ export async function POST(req: NextRequest) {
         }
 
         const strict = candidates.filter((c) => words.every((w) => c.low.includes(w)));
-        const exact = rank(strict).slice(0, 8);
+        const evoExact = rank(strict).slice(0, 8);
+
+        // Mezclar apodos primero, Evolution después
+        const merged = [...nickMatches, ...evoExact];
 
         let suggestions: ReturnType<typeof rank> = [];
-        if (exact.length === 0 && words.length > 0) {
+        if (merged.length === 0 && words.length > 0) {
           const partial = candidates.filter((c) => words.some((w) => c.low.includes(w)));
           suggestions = rank(partial).slice(0, 5);
         }
 
         return NextResponse.json({
           result: JSON.stringify({
-            found: exact.length,
-            contacts: exact,
+            found: merged.length,
+            contacts: merged.slice(0, 8),
+            nickname_matches: nickMatches.length,
             suggestions: suggestions.length > 0 ? suggestions : undefined,
-            hint: exact.length === 0
+            hint: merged.length === 0
               ? (suggestions.length > 0
-                  ? `No hay match exacto. Ofrécele al usuario las sugerencias verbalmente ('¿Querías decir Elenita Macho?'). WhatsApp no lee los nombres de la agenda del móvil.`
-                  : "Ningún contacto coincide. Pídele el teléfono directo.")
+                  ? "No hay match exacto. Ofrécele al usuario las sugerencias ('¿Querías decir X?'). Si ninguna sirve, dile que puede guardar un apodo en Menú Más → Apodos."
+                  : "Ningún contacto coincide. Pídele el teléfono directo o que guarde el apodo en Menú Más → Apodos.")
               : undefined,
           }),
         });

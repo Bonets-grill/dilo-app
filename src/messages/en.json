@@ -20,7 +20,8 @@
     "experts": "Experts",
     "cursos": "Courses",
     "family": "Family",
-    "study": "Study"
+    "study": "Study",
+    "nicknames": "Nicknames"
   },
   "chat": {
     "placeholder": "Type or speak...",

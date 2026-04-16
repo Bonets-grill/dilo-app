@@ -20,7 +20,8 @@
     "experts": "Esperti",
     "cursos": "Corsi",
     "family": "Famiglia",
-    "study": "Studio"
+    "study": "Studio",
+    "nicknames": "Soprannomi"
   },
   "chat": {
     "placeholder": "Scrivi o parla...",

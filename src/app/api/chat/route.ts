@@ -345,19 +345,25 @@ async function executeTool(name: string, input: Record<string, unknown>, userId:
 
     case "search_contacts": {
       try {
-        const res = await fetch(`${evoUrl}/chat/findContacts/${instName}`, {
-          method: "POST", headers: { "Content-Type": "application/json", apikey: evoKey },
-          body: JSON.stringify({ where: { pushName: { contains: String(input.query) } } }),
-        });
-        let contactsRaw = await res.json();
-        // Handle multiple response formats: array, { contacts: [] }, or other wrapper
-        const contactsList = Array.isArray(contactsRaw) ? contactsRaw
-          : Array.isArray(contactsRaw?.contacts) ? contactsRaw.contacts
-          : Array.isArray(contactsRaw?.data) ? contactsRaw.data : [];
+        const q = String(input.query).toLowerCase().trim();
+        const words = q.split(/\s+/).filter(Boolean);
 
-        // Fetch ALL contacts once and filter+rank locally — el pre-filter
-        // de Evolution es poco fiable y devolver pocos resultados sin
-        // ranking es peor UX que traer los 2-3k y filtrar aquí.
+        // 1) PRIMERO los apodos privados del usuario. Estos ganan sobre
+        // cualquier cosa de Evolution porque WhatsApp/Baileys no puede leer
+        // la agenda del móvil y los apodos son la forma en que el usuario
+        // resuelve esa limitación.
+        const { data: nicks } = await supabase
+          .from("contact_nicknames")
+          .select("nickname, phone, note")
+          .eq("user_id", userId);
+        const nickMatches = (nicks || [])
+          .filter((n) => {
+            const low = n.nickname.toLowerCase();
+            return words.every((w) => low.includes(w));
+          })
+          .map((n) => ({ name: n.nickname, phone: n.phone, sendable: true, source: "nickname" as const, note: n.note }));
+
+        // 2) Después consulta Evolution como antes
         const res2 = await fetch(`${evoUrl}/chat/findContacts/${instName}`, {
           method: "POST", headers: { "Content-Type": "application/json", apikey: evoKey },
           body: JSON.stringify({}),
@@ -366,11 +372,6 @@ async function executeTool(name: string, input: Record<string, unknown>, userId:
         const allList: Record<string, unknown>[] = Array.isArray(allRaw) ? allRaw
           : Array.isArray(allRaw?.contacts) ? allRaw.contacts
           : Array.isArray(allRaw?.data) ? allRaw.data : [];
-
-        const q = String(input.query).toLowerCase().trim();
-        // Multi-word: requiere que TODAS las palabras aparezcan (AND),
-        // así "juan antonio" no matchea "Juan Carlos Primo".
-        const words = q.split(/\s+/).filter(Boolean);
 
         const candidates = allList
           .map((c) => {
@@ -382,27 +383,30 @@ async function executeTool(name: string, input: Record<string, unknown>, userId:
           })
           .filter((x): x is { name: string; low: string; phone: string; sendable: boolean } => x !== null);
 
-        // Strict: AND de todas las palabras
         const strict = candidates.filter((c) => words.every((w) => c.low.includes(w)));
-        const ranked = rankContactMatches(strict, q);
+        const evoRanked = rankContactMatches(strict, q)
+          .map((x) => ({ ...x, source: "whatsapp" as const }));
 
-        // Fallback: si 0 strict, OR match (al menos una palabra) como sugerencias.
-        // Esto resuelve "macho B" → sugerir "Elenita Macho" aunque no matchee exacto.
-        let suggestions: typeof ranked = [];
-        if (ranked.length === 0 && words.length > 0) {
+        // Combinar: apodos primero (son el nombre que el usuario recuerda), luego Evolution
+        const merged = [...nickMatches, ...evoRanked];
+
+        // Fallback: si 0 matches exactos, dar sugerencias parciales (de Evolution)
+        let suggestions: Array<{ name: string; phone: string; sendable: boolean }> = [];
+        if (merged.length === 0 && words.length > 0) {
           const partial = candidates.filter((c) => words.some((w) => c.low.includes(w)));
           suggestions = rankContactMatches(partial, q).slice(0, 5);
         }
 
         return JSON.stringify({
-          found: ranked.length,
-          contacts: ranked.slice(0, 10),
+          found: merged.length,
+          contacts: merged.slice(0, 10),
           total_scanned: allList.length,
+          nickname_matches: nickMatches.length,
           suggestions: suggestions.length > 0 ? suggestions : undefined,
-          hint: ranked.length === 0
+          hint: merged.length === 0
             ? (suggestions.length > 0
-                ? `Nadie coincide exacto con '${input.query}'. Muestra las sugerencias al usuario y pregúntale si quiere una de esas. WhatsApp no lee los nombres de la agenda del móvil — solo los display names que cada contacto configura en su propio WhatsApp.`
-                : "Ningún contacto coincide ni parcialmente. Pídele el teléfono directo. WhatsApp no lee los nombres de la agenda del móvil del usuario.")
+                ? `No hay match exacto para '${input.query}'. Muestra las sugerencias y pregunta cuál es. Si ninguna sirve, ofrece guardar el apodo con POST /api/contacts/nicknames.`
+                : "Ningún contacto. Pídele el teléfono. WhatsApp no lee la agenda del móvil — si el usuario guarda apodos que no están en los perfiles de WhatsApp, los añade en Apodos dentro de DILO.")
             : undefined,
         });
       } catch (err) { return JSON.stringify({ error: "WhatsApp not connected", details: String(err) }); }
