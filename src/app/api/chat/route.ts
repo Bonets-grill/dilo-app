@@ -164,17 +164,52 @@ const baseTools: OpenAI.ChatCompletionTool[] = [
 ];
 
 // Evolution v2 devuelve contactos con ULID interno en `id` (ej "cmnqz2eh…"),
-// no el teléfono. El JID de WhatsApp está en remoteJid/owner/jid. Aceptamos
-// también contactos nuevos con sufijo @lid (Linked ID) que siguen siendo
-// dígitos. Devolvemos null si nada válido para filtrar esos resultados.
-function extractEvoPhone(c: Record<string, unknown>): string | null {
-  const candidates = [c.remoteJid, c.owner, c.jid, c.phoneNumber, c.number, c.id];
-  for (const raw of candidates) {
-    if (!raw) continue;
-    const m = String(raw).match(/^(\d{8,15})(?:@.*)?$/);
-    if (m) return m[1];
+// no el teléfono. El JID real está en remoteJid con sufijo @s.whatsapp.net
+// (número real) o @lid (linked ID — NO se puede mensajear de forma fiable,
+// Evolution/Baileys rechaza muchos envíos a @lid).
+//
+// Devolvemos: { phone, sendable } — sendable=false para @lid.
+function extractEvoPhone(c: Record<string, unknown>): { phone: string; sendable: boolean } | null {
+  const candidates = [
+    { v: c.remoteJid, isJid: true },
+    { v: c.owner, isJid: true },
+    { v: c.jid, isJid: true },
+    { v: c.phoneNumber, isJid: false },
+    { v: c.number, isJid: false },
+    { v: c.id, isJid: true },
+  ];
+  for (const { v, isJid } of candidates) {
+    if (!v) continue;
+    const s = String(v);
+    const m = s.match(/^(\d{8,15})(@(.+))?$/);
+    if (!m) continue;
+    const suffix = m[3] || "";
+    // @lid no es un teléfono real — no se puede enviar texto
+    const sendable = !isJid || !suffix || suffix === "s.whatsapp.net" || suffix === "c.us";
+    return { phone: m[1], sendable };
   }
   return null;
+}
+
+// Rank matches: exact full-name > startsWith > contains. Dentro de cada
+// bucket, valid sendable > non-sendable. Empate alfabético.
+function rankContactMatches<T extends { name: string; sendable: boolean }>(
+  items: T[],
+  query: string
+): T[] {
+  const q = query.toLowerCase().trim();
+  return items
+    .map((c) => {
+      const n = c.name.toLowerCase();
+      let score = 0;
+      if (n === q) score = 100;
+      else if (n.startsWith(q)) score = 50;
+      else score = 10;
+      if (c.sendable) score += 5;
+      return { c, score };
+    })
+    .sort((a, b) => b.score - a.score || a.c.name.localeCompare(b.c.name))
+    .map((x) => x.c);
 }
 
 // Tool execution (same logic as before)
@@ -320,48 +355,45 @@ async function executeTool(name: string, input: Record<string, unknown>, userId:
           : Array.isArray(contactsRaw?.contacts) ? contactsRaw.contacts
           : Array.isArray(contactsRaw?.data) ? contactsRaw.data : [];
 
-        const q = String(input.query).toLowerCase();
-        // Search in multiple name fields for robustness
-        const matches = contactsList
-          .filter((c: Record<string, unknown>) => {
-            const searchable = [
-              c.pushName, c.name, c.profileName, c.verifiedName, c.shortName, c.formattedName,
-            ].filter(Boolean).map(v => String(v).toLowerCase()).join(" ");
-            return searchable.includes(q);
+        // Fetch ALL contacts once and filter+rank locally — el pre-filter
+        // de Evolution es poco fiable y devolver pocos resultados sin
+        // ranking es peor UX que traer los 2-3k y filtrar aquí.
+        const res2 = await fetch(`${evoUrl}/chat/findContacts/${instName}`, {
+          method: "POST", headers: { "Content-Type": "application/json", apikey: evoKey },
+          body: JSON.stringify({}),
+        });
+        const allRaw = await res2.json();
+        const allList: Record<string, unknown>[] = Array.isArray(allRaw) ? allRaw
+          : Array.isArray(allRaw?.contacts) ? allRaw.contacts
+          : Array.isArray(allRaw?.data) ? allRaw.data : [];
+
+        const q = String(input.query).toLowerCase().trim();
+        // Multi-word: requiere que TODAS las palabras aparezcan (AND),
+        // así "juan antonio" no matchea "Juan Carlos Primo".
+        const words = q.split(/\s+/).filter(Boolean);
+
+        const scored = allList
+          .map((c) => {
+            const raw = String(c.pushName || c.name || c.profileName || c.verifiedName || c.shortName || "").trim();
+            if (!raw) return null;
+            const low = raw.toLowerCase();
+            if (!words.every((w) => low.includes(w))) return null;
+            const ext = extractEvoPhone(c);
+            if (!ext) return null;
+            return { name: raw, phone: ext.phone, sendable: ext.sendable };
           })
-          .slice(0, 10).map((c: Record<string, unknown>) => ({
-            name: c.pushName || c.profileName || c.name || c.verifiedName || c.shortName || "Sin nombre",
-            phone: extractEvoPhone(c),
-          }))
-          .filter((c: { phone: string | null }) => c.phone);
+          .filter((x): x is { name: string; phone: string; sendable: boolean } => x !== null);
 
-        // If no matches with pre-filter, try fetching ALL contacts and searching locally
-        if (matches.length === 0) {
-          const res2 = await fetch(`${evoUrl}/chat/findContacts/${instName}`, {
-            method: "POST", headers: { "Content-Type": "application/json", apikey: evoKey },
-            body: JSON.stringify({}),
-          });
-          let allRaw = await res2.json();
-          const allList = Array.isArray(allRaw) ? allRaw
-            : Array.isArray(allRaw?.contacts) ? allRaw.contacts
-            : Array.isArray(allRaw?.data) ? allRaw.data : [];
+        const ranked = rankContactMatches(scored, q);
 
-          const fallbackMatches = allList
-            .filter((c: Record<string, unknown>) => {
-              const searchable = [
-                c.pushName, c.name, c.profileName, c.verifiedName, c.shortName, c.formattedName,
-              ].filter(Boolean).map(v => String(v).toLowerCase()).join(" ");
-              return searchable.includes(q);
-            })
-            .slice(0, 10).map((c: Record<string, unknown>) => ({
-              name: c.pushName || c.profileName || c.name || c.verifiedName || c.shortName || "Sin nombre",
-              phone: String(c.id || c.remoteJid || c.jid || "").replace("@s.whatsapp.net", ""),
-            }));
-
-          return JSON.stringify({ found: fallbackMatches.length, contacts: fallbackMatches, total_contacts: allList.length });
-        }
-
-        return JSON.stringify({ found: matches.length, contacts: matches });
+        return JSON.stringify({
+          found: ranked.length,
+          contacts: ranked.slice(0, 10),
+          total_scanned: allList.length,
+          hint: ranked.length === 0
+            ? "Ningún contacto coincide. Pídele al usuario el teléfono directo o que reformule el nombre."
+            : undefined,
+        });
       } catch (err) { return JSON.stringify({ error: "WhatsApp not connected", details: String(err) }); }
     }
 
