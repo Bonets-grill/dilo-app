@@ -966,9 +966,23 @@ Dime qué necesitas y empezamos.`;
   const langName = langNames[lang] || "español";
   const now = new Date().toISOString();
 
-  // Load what DILO knows about this user
+  // Load what DILO knows about this user — legacy facts.ts + new Mem0-style
+  // retrieval from memory_facts (semantic + temporal).
   const { loadUserFacts } = await import("@/lib/agent/facts");
-  const userFacts = userId ? await loadUserFacts(userId) : "";
+  const legacyFacts = userId ? await loadUserFacts(userId) : "";
+
+  let memoryFactsBlock = "";
+  if (userId) {
+    try {
+      const { retrieveMemory, memoryBlock } = await import("@/lib/memory/retrieve");
+      const lastUser = allMessages[allMessages.length - 1]?.content || "";
+      const facts = await retrieveMemory({ userId, query: lastUser, limit: 8 });
+      memoryFactsBlock = memoryBlock(facts);
+    } catch (e) {
+      console.error("[memory/retrieve] non-fatal:", e);
+    }
+  }
+  const userFacts = legacyFacts + memoryFactsBlock;
 
   // Load journal knowledge (lessons + goals)
   let journalKnowledge = "";
@@ -1276,6 +1290,22 @@ ${userFacts}${journalKnowledge}`;
           // Extract personal facts from this exchange (fire-and-forget)
           const { extractFacts } = await import("@/lib/agent/facts");
           extractFacts(userId, lastMsgContent, fullResponse).catch(() => {});
+
+          // New Mem0-style extraction → stored as embeddings in memory_facts
+          (async () => {
+            try {
+              const [extractMod, storeMod] = await Promise.all([
+                import("@/lib/memory/extract"),
+                import("@/lib/memory/store"),
+              ]);
+              const facts = await extractMod.extractFacts(lastMsgContent, fullResponse, userName);
+              if (facts.length > 0) {
+                await storeMod.storeFacts({ userId, facts });
+              }
+            } catch (e) {
+              console.error("[memory/extract+store] non-fatal:", e);
+            }
+          })();
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Error";
