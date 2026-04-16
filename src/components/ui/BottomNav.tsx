@@ -17,6 +17,8 @@ import {
   ShoppingBag,
   GraduationCap,
   Smartphone,
+  PencilRuler,
+  UserCircle2,
   X,
 } from "lucide-react";
 
@@ -29,7 +31,10 @@ const primaryTabs = [
 
 // Extra modules (inside "More" panel)
 const extraModules = [
+  { key: "family", href: "/family", icon: Users, color: "text-blue-400" },
+  { key: "study", href: "/study", icon: PencilRuler, color: "text-yellow-400" },
   { key: "channels", href: "/channels", icon: Smartphone, color: "text-green-400" },
+  { key: "nicknames", href: "/nicknames", icon: UserCircle2, color: "text-cyan-400" },
   { key: "cursos", href: "/cursos", icon: GraduationCap, color: "text-purple-400" },
   { key: "nutrition", href: "/nutrition", icon: Apple, color: "text-green-400" },
   { key: "wellness", href: "/wellness", icon: Heart, color: "text-pink-400" },
