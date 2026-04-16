@@ -1207,36 +1207,43 @@ ${userFacts}${journalKnowledge}`;
   let userTools: OpenAI.ChatCompletionTool[] = [...baseTools, ...KNOWLEDGE_TOOLS, ...ENTERTAINMENT_TOOLS];
   const tradingProfilePrompt = "";
 
+  // Core DILO intents (reminders, expenses, direct actions) use baseTools
+  // without executor/expert contamination — those are deterministic internal
+  // tools, not knowledge topics. Adding expert context was making the LLM
+  // refuse valid tool use ("no tengo acceso al calendario" on /recuérdame).
+  const CORE_INTENTS = new Set([
+    "reminder", "expense", "expense_query", "reminder_query",
+    "suscripciones", "electricidad", "farmacia", "seguros",
+    "telefonia", "ayudas_publicas",
+  ]);
+  const isCoreIntent = CORE_INTENTS.has(intent.type);
+
   // ─── EXECUTOR DETECTION (keyword match → focused tool set) ───
-  // If the user asks for a specific action ("read emails", "send whatsapp",
-  // "book meeting"), use only that executor's tools so gpt-4o-mini can't
-  // pick the wrong one out of 22+ options.
   let executorContext = "";
   let activeExecutor: string | null = null;
-  try {
-    const lastUser = allMessages[allMessages.length - 1]?.content || "";
-    if (lastUser && lastUser.length > 10) {
-      const { matchExecutor } = await import("@/lib/experts/router");
-      const match = matchExecutor(lastUser);
-      if (match) {
-        activeExecutor = match.executor.slug;
-        executorContext = `\n\n[EXECUTOR ACTIVO — ${match.executor.emoji} ${match.executor.name}]\n${match.executor.systemPrompt}`;
-        // Narrow tools to only the ones this executor declared.
-        const toolNames = new Set(match.executor.tools);
-        userTools = userTools.filter(
-          (t) => t.type === "function" && toolNames.has(t.function.name)
-        );
+  if (!isCoreIntent) {
+    try {
+      const lastUser = allMessages[allMessages.length - 1]?.content || "";
+      if (lastUser && lastUser.length > 10) {
+        const { matchExecutor } = await import("@/lib/experts/router");
+        const match = matchExecutor(lastUser);
+        if (match) {
+          activeExecutor = match.executor.slug;
+          executorContext = `\n\n[EXECUTOR ACTIVO — ${match.executor.emoji} ${match.executor.name}]\n${match.executor.systemPrompt}`;
+          const toolNames = new Set(match.executor.tools);
+          userTools = userTools.filter(
+            (t) => t.type === "function" && toolNames.has(t.function.name)
+          );
+        }
       }
+    } catch (e) {
+      console.error("[executor-router] non-fatal:", e);
     }
-  } catch (e) {
-    console.error("[executor-router] non-fatal:", e);
   }
 
   // ─── EXPERT ROUTING (embeddings → top-1 specialist injected into system prompt) ───
-  // Only runs if no executor matched (they're mutually exclusive: executor = do,
-  // expert = advise). Graceful: if this fails for any reason, the chat continues.
   let expertContext = "";
-  if (!activeExecutor) {
+  if (!activeExecutor && !isCoreIntent) {
     try {
       const lastUser = allMessages[allMessages.length - 1]?.content || "";
       if (lastUser && lastUser.length > 10 && lastUser.length < 2000) {
