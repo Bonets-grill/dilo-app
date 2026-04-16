@@ -47,6 +47,7 @@ export default function ChatPage() {
   const mrRef = useRef<MediaRecorder | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [enhancing, setEnhancing] = useState(false);
+  const [stagedImage, setStagedImage] = useState<string | null>(null);
   const [voicePreview, setVoicePreview] = useState<string | null>(null);
   const voiceRef = useRef<HTMLTextAreaElement>(null);
   const [showLocationBanner, setShowLocationBanner] = useState(false);
@@ -149,31 +150,40 @@ export default function ChatPage() {
 
   async function send(overrideText?: string) {
     const text = (overrideText || input).trim();
-    if (!text || busy) return;
-    setInput(""); if (taRef.current) taRef.current.style.height = "auto";
+    const img = stagedImage;
+
+    // Necesitamos texto O imagen (o ambos)
+    if (!text && !img) return;
+    if (busy) return;
+    setInput(""); setStagedImage(null);
+    if (taRef.current) taRef.current.style.height = "auto";
+
     const aId = crypto.randomUUID();
-    const newMsgs = [...msgs, { id: crypto.randomUUID(), role: "user" as const, content: text }];
+    const userMsgs: Array<{ id: string; role: "user"; content: string }> = [];
+    if (img) userMsgs.push({ id: crypto.randomUUID(), role: "user", content: `__IMAGE__${img}` });
+    if (text) userMsgs.push({ id: crypto.randomUUID(), role: "user", content: text });
+    const newMsgs = [...msgs, ...userMsgs];
     setMsgs([...newMsgs, { id: aId, role: "assistant" as const, content: "" }]);
     setBusy(true);
     setPendingSend(null);
 
-    // Auto-routing: si el mensaje anterior del usuario fue una imagen Y el
-    // texto actual suena a edición (modifica/cambia/haz/convierte/quita/pon/
-    // sin cambiar), saltamos al endpoint de edit_image (gpt-image-1) en vez
-    // de pasar por el LLM normal — que no puede ver la imagen.
-    const lastUserImg = [...msgs].reverse().find(m => m.role === "user" && m.content.startsWith("__IMAGE__"));
-    const editIntent = /\b(cambia|cambiar|modifica|modificar|edita|editar|haz|hacer|quita|quitar|añade|añadir|pon|poner|convierte|convertir|transforma|transformar|sin\s+(cambiar|modificar|tocar)|m[aá]s\s+definidos?|mejora|mejorar)\b/i.test(text);
-    if (lastUserImg && editIntent) {
+    // ── Imagen adjunta: decidir edit vs analyze ──
+    // Usamos la imagen staged O la última __IMAGE__ del historial si el
+    // usuario escribió texto de edición sin adjuntar nueva foto.
+    const imgBase64 = img || (() => {
+      const found = [...msgs].reverse().find(m => m.role === "user" && m.content.startsWith("__IMAGE__"));
+      return found ? found.content.replace("__IMAGE__", "") : null;
+    })();
+    const editIntent = text && /\b(cambia|cambiar|modifica|modificar|edita|editar|haz|hacer|quita|quitar|añade|añadir|pon|poner|convierte|convertir|transforma|transformar|sin\s+(cambiar|modificar|tocar)|m[aá]s\s+definidos?|mejora|mejorar)\b/i.test(text);
+
+    // EDIT: imagen + texto de edición → gpt-image-1
+    if (imgBase64 && text && editIntent) {
       try {
         setMsgs(p => p.map(m => m.id === aId ? { ...m, content: t("generatingImage") + " 🎨" } : m));
         const r = await fetch("/api/image-edit", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            imageBase64: lastUserImg.content.replace("__IMAGE__", ""),
-            prompt: text,
-            conversationId: convIdRef.current,
-          }),
+          body: JSON.stringify({ imageBase64: imgBase64, prompt: text, conversationId: convIdRef.current }),
         });
         const d = await r.json();
         if (r.ok && d.image_url) {
@@ -183,9 +193,34 @@ export default function ChatPage() {
         }
       } catch {
         setMsgs(p => p.map(m => m.id === aId ? { ...m, content: "Error al editar imagen." } : m));
-      } finally {
-        setBusy(false);
-      }
+      } finally { setBusy(false); }
+      return;
+    }
+
+    // ANALYZE: imagen sin texto (o texto genérico tipo "qué ves") → OCR/vision
+    if (img && !text) {
+      try {
+        setMsgs(p => p.map(m => m.id === aId ? { ...m, content: t("analyzingImage") + " 🔍" } : m));
+        const r = await fetch("/api/ocr", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageUrl: img }),
+        });
+        const d = await r.json();
+        const analysis = d.text ? `**${t("imageAnalysis")}**\n\n${d.text}` : t("imageError");
+        setMsgs(p => p.map(m => m.id === aId ? { ...m, content: analysis } : m));
+        if (userId && convIdRef.current) {
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (supabase.from("messages") as any).insert([
+              { conversation_id: convIdRef.current, user_id: userId, role: "user", content: "[Foto enviada]" },
+              { conversation_id: convIdRef.current, user_id: userId, role: "assistant", content: analysis },
+            ]);
+          } catch { /* best-effort */ }
+        }
+      } catch {
+        setMsgs(p => p.map(m => m.id === aId ? { ...m, content: "❌ Error al analizar" } : m));
+      } finally { setBusy(false); }
       return;
     }
 
@@ -273,58 +308,14 @@ export default function ChatPage() {
     setMsgs(p => [...p, { id: crypto.randomUUID(), role: "assistant", content: t("cancelled") }]);
   }
 
-  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = "";
-
-    // Convert to base64 for preview
     const reader = new FileReader();
-    reader.onload = async () => {
-      const base64 = reader.result as string;
-      const uploadId = crypto.randomUUID();
-      const analyzeId = crypto.randomUUID();
-
-      // Show original with inline base64
-      setMsgs(p => [...p,
-        { id: uploadId, role: "user", content: `__IMAGE__${base64}` },
-        { id: analyzeId, role: "assistant", content: t("analyzingImage") + " 🔍" },
-      ]);
-      setEnhancing(true);
-
-      try {
-        // Analyze image with OCR / Vision AI
-        const res = await fetch("/api/ocr", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ imageUrl: base64 }),
-        });
-        const data = await res.json();
-
-        if (data.text) {
-          setMsgs(p => p.map(m => m.id === analyzeId ? {
-            ...m,
-            content: `**${t("imageAnalysis")}**\n\n${data.text}`,
-          } : m));
-          // Save messages
-          if (userId && convId) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await (supabase.from("messages") as any).insert([
-              { conversation_id: convId, user_id: userId, role: "user", content: "[Foto enviada]" },
-              { conversation_id: convId, user_id: userId, role: "assistant", content: `**${t("imageAnalysis")}**\n\n${data.text}` },
-            ]);
-          }
-        } else {
-          setMsgs(p => p.map(m => m.id === analyzeId ? {
-            ...m,
-            content: t("imageError"),
-          } : m));
-        }
-      } catch {
-        setMsgs(p => p.map(m => m.id === analyzeId ? { ...m, content: "❌ Error al analizar" } : m));
-      } finally {
-        setEnhancing(false);
-      }
+    reader.onload = () => {
+      setStagedImage(reader.result as string);
+      taRef.current?.focus();
     };
     reader.readAsDataURL(file);
   }
@@ -629,6 +620,19 @@ export default function ChatPage() {
             </button>
           </div>
         )}
+        {/* Staged image preview — foto adjunta pendiente de enviar */}
+        {stagedImage && (
+          <div className="flex items-end gap-2 max-w-2xl mx-auto mb-2">
+            <div className="relative inline-block">
+              <img src={stagedImage} alt="Preview" className="h-20 rounded-xl border border-[var(--border)] object-cover" />
+              <button type="button" onClick={() => setStagedImage(null)}
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[var(--bg)] border border-[var(--border)] flex items-center justify-center text-[10px] text-[var(--dim)]">
+                ✕
+              </button>
+            </div>
+            <p className="text-[10px] text-[var(--dim)] leading-tight mb-1">Escribe qué quieres hacer con esta foto, o envía sin texto para analizarla</p>
+          </div>
+        )}
         <div className="flex items-end gap-2 max-w-2xl mx-auto">
           <button type="button" onClick={() => fileRef.current?.click()} disabled={enhancing} className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 mb-0.5 bg-[var(--bg3)] ${enhancing ? "opacity-40" : ""}`}>
             <ImagePlus size={16} className="text-white" />
@@ -653,7 +657,7 @@ export default function ChatPage() {
               rows={1} disabled={transcribing}
               className="flex-1 min-w-0 bg-transparent text-[14px] text-white placeholder-[var(--dim)] resize-none leading-6 max-h-[100px] focus:outline-none disabled:opacity-50" />
           </div>
-          {hasText ? (
+          {(hasText || stagedImage) ? (
             <button type="button" onClick={() => send()} disabled={busy} className="w-9 h-9 rounded-full bg-white flex items-center justify-center flex-shrink-0 disabled:opacity-30 mb-0.5"><ArrowUp size={18} className="text-black" /></button>
           ) : (
             <button type="button" onClick={toggleRec} disabled={transcribing} className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 mb-0.5 ${rec ? "bg-red-500 animate-pulse" : "bg-[var(--bg3)]"} ${transcribing ? "opacity-40" : ""}`}>
