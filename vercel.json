@@ -25,24 +25,8 @@
       "schedule": "0 10 * * *"
     },
     {
-      "path": "/api/cron/trading-snapshot",
-      "schedule": "0 22 * * 1-5"
-    },
-    {
-      "path": "/api/cron/trading-learn",
-      "schedule": "0 7 * * 1-5"
-    },
-    {
       "path": "/api/cron/proactive",
       "schedule": "0 10,13,18,21 * * *"
-    },
-    {
-      "path": "/api/cron/trading-learn-forex",
-      "schedule": "0 8,14 * * 1-5"
-    },
-    {
-      "path": "/api/cron/trading-update-profiles",
-      "schedule": "0 6 1 * *"
     },
     {
       "path": "/api/cron/monitor",
@@ -55,30 +39,6 @@
     {
       "path": "/api/cron/wellness-checkin",
       "schedule": "0 20 * * *"
-    },
-    {
-      "path": "/api/cron/trading-discover-patterns",
-      "schedule": "0 6 * * 0"
-    },
-    {
-      "path": "/api/cron/trading-resolve",
-      "schedule": "0 8,10,12,14,16,18 * * 1-5"
-    },
-    {
-      "path": "/api/cron/trading-analytics",
-      "schedule": "0 7 * * 0"
-    },
-    {
-      "path": "/api/cron/trading-emotional-check",
-      "schedule": "*/30 8-18 * * 1-5"
-    },
-    {
-      "path": "/api/cron/trading-strategy",
-      "schedule": "0 7 * * 1-5"
-    },
-    {
-      "path": "/api/cron/trading-sniper",
-      "schedule": "*/15 8-10,14-16 * * 1-5"
     }
   ],
   "headers": [

@@ -6,7 +6,6 @@ import { Link } from "@/i18n/navigation";
 import { useState } from "react";
 import {
   MessageCircle,
-  TrendingUp,
   BookOpen,
   Wallet,
   User,
@@ -22,7 +21,6 @@ import {
 // Primary tabs (always visible)
 const primaryTabs = [
   { key: "chat", href: "/chat", icon: MessageCircle },
-  { key: "trading", href: "/trading", icon: TrendingUp },
   { key: "journal", href: "/journal", icon: BookOpen },
   { key: "expenses", href: "/expenses", icon: Wallet },
 ] as const;
