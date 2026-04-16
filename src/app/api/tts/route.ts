@@ -39,20 +39,40 @@ export async function POST(req: NextRequest) {
     .replace(/\s{2,}/g, " ")
     .slice(0, 4000);
 
+  // Limitar a ~600 chars (~30s de audio). Textos largos se truncan en punto.
+  let trimmed = clean.slice(0, 600);
+  const lastDot = trimmed.lastIndexOf(".");
+  if (lastDot > 200) trimmed = trimmed.slice(0, lastDot + 1);
+
   try {
-    const mp3 = await openai.audio.speech.create({
-      model: "tts-1",
-      voice: "nova",
-      input: clean,
-      speed: 1.0,
+    // tts-1 + opus = más rápido + archivo más pequeño que mp3.
+    // speed 1.1 para ritmo ligeramente más vivo (natural para enseñanza).
+    const response = await fetch("https://api.openai.com/v1/audio/speech", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "tts-1",
+        voice: "nova",
+        input: trimmed,
+        speed: 1.1,
+        response_format: "opus",
+      }),
     });
 
-    const buffer = Buffer.from(await mp3.arrayBuffer());
-    return new NextResponse(buffer, {
+    if (!response.ok || !response.body) {
+      const err = await response.text().catch(() => "");
+      return NextResponse.json({ error: "tts_failed", detail: err.slice(0, 200) }, { status: 500 });
+    }
+
+    // Stream directo — el audio empieza a llegar al cliente mientras se genera
+    return new NextResponse(response.body, {
       headers: {
-        "Content-Type": "audio/mpeg",
-        "Content-Length": String(buffer.length),
+        "Content-Type": "audio/ogg",
         "Cache-Control": "private, max-age=3600",
+        "Transfer-Encoding": "chunked",
       },
     });
   } catch (err) {
