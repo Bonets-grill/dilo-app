@@ -99,10 +99,7 @@ export default function ChatPage() {
   function newChat() { setConvId(null); setMsgs([]); setShowHistory(false); setPendingSend(null); }
 
   const scrollDown = useCallback(() => {
-    // With flex-col-reverse, visual bottom === scrollTop 0
-    setTimeout(() => {
-      if (scrollRef.current) scrollRef.current.scrollTop = 0;
-    }, 50);
+    setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
   }, []);
   useEffect(scrollDown, [msgs, scrollDown]);
   useEffect(() => { if (voicePreview !== null) voiceRef.current?.focus(); }, [voicePreview]);
@@ -379,14 +376,14 @@ export default function ChatPage() {
         </button>
       </div>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-y-contain px-4 flex flex-col-reverse">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-y-contain px-4">
         {msgs.length === 0 ? (
-          <div className="flex items-center justify-center flex-1">
+          <div className="flex items-center justify-center h-full">
             <p className="text-sm text-[var(--dim)]">{t("placeholder")}</p>
           </div>
         ) : (
-          <div className="max-w-2xl mx-auto w-full py-4 space-y-4 flex flex-col-reverse">
-            {[...msgs].reverse().map((m, reverseIdx) => { const idx = msgs.length - 1 - reverseIdx; return m.role === "user" ? (
+          <div className="max-w-2xl mx-auto w-full py-4 space-y-4">
+            {msgs.map((m, idx) => { return m.role === "user" ? (
               <div key={m.id} className={`flex justify-end ${ctxMenu?.msgId === m.id ? "msg-highlight" : ""}`}>
                 {m.content.startsWith("__IMAGE__") ? (
                   <img src={m.content.replace("__IMAGE__", "")} alt="Uploaded" className="rounded-2xl max-w-[80%] max-h-[300px] object-cover" />
@@ -472,7 +469,7 @@ export default function ChatPage() {
               </div>
               </div>
             ); })}
-            <div ref={endRef} />
+            <div ref={endRef} className="h-2" />
           </div>
         )}
       </div>
