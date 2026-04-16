@@ -13,7 +13,7 @@ async function evoFetch(path: string, options: RequestInit = {}) {
 }
 
 export async function POST(req: NextRequest) {
-  const { action, instanceName, to, text } = await req.json();
+  const { action, instanceName, to, text, phoneNumber } = await req.json();
 
   switch (action) {
     case "create": {
@@ -28,6 +28,18 @@ export async function POST(req: NextRequest) {
     case "qr": {
       const { ok, data } = await evoFetch(`/instance/connect/${instanceName}`);
       if (!ok) return NextResponse.json({ error: "Could not get QR" }, { status: 400 });
+      return NextResponse.json(data);
+    }
+
+    case "pair": {
+      // Pairing code path — user enters phone, gets 8-char code to paste in
+      // WhatsApp → Dispositivos vinculados → Vincular con número. No QR needed.
+      const num = String(phoneNumber || "").replace(/\D/g, "");
+      if (!num || num.length < 8) {
+        return NextResponse.json({ error: "phoneNumber invalid (digits only, with country code)" }, { status: 400 });
+      }
+      const { ok, data } = await evoFetch(`/instance/connect/${instanceName}?number=${num}`);
+      if (!ok) return NextResponse.json({ error: data || "Could not get pairing code" }, { status: 400 });
       return NextResponse.json(data);
     }
 
