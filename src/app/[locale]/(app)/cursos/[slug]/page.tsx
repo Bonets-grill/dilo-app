@@ -1,10 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
 import { ArrowLeft, Loader2, BookOpen, Lock } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { createBrowserSupabase } from "@/lib/supabase/client";
+
+// react-pdf usa APIs del DOM — cargar solo en cliente
+const CoursePDFViewer = dynamic(() => import("@/components/CoursePDFViewer"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-full flex items-center justify-center">
+      <Loader2 size={20} className="animate-spin text-[var(--accent)]" />
+    </div>
+  ),
+});
 
 interface AccessInfo {
   owned: boolean;
@@ -120,13 +131,8 @@ export default function CursoPage() {
           <p className="text-[10px] text-[var(--dim)]">{info.course?.pages} páginas</p>
         </div>
       </div>
-      <div className="flex-1 min-h-0 bg-black">
-        {/* Proxy URL — same origin, bypasses Supabase Storage X-Frame-Options */}
-        <iframe
-          src={`/api/cursos/${slug}/file?userId=${userId}`}
-          className="w-full h-full border-0"
-          title={info.course?.title}
-        />
+      <div className="flex-1 min-h-0">
+        <CoursePDFViewer src={`/api/cursos/${slug}/file?userId=${userId}`} />
       </div>
     </div>
   );
