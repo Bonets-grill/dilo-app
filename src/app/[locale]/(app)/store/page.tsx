@@ -3,6 +3,9 @@
 import { useTranslations } from "next-intl";
 import { useLocale } from "next-intl";
 import { clsx } from "clsx";
+import { useEffect, useState } from "react";
+import { createBrowserSupabase } from "@/lib/supabase/client";
+import CoursesSection from "@/components/CoursesSection";
 
 const SKILLS = [
   { id: "msg_whatsapp", icon: "📤", priceEur: 1.99, category: "messaging" },
@@ -67,6 +70,11 @@ export default function StorePage() {
     <div className="px-4 py-5 max-w-lg mx-auto">
       <h2 className="text-xl font-bold mb-6">{t("title")}</h2>
 
+      {/* Cursos */}
+      <div className="mb-8">
+        <StoreCourses />
+      </div>
+
       {/* Packs */}
       <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">{t("packs")}</h3>
       <div className="grid grid-cols-2 gap-3 mb-8">
@@ -120,4 +128,14 @@ export default function StorePage() {
     </div>
     </div>
   );
+}
+
+function StoreCourses() {
+  const [userId, setUserId] = useState<string | null>(null);
+  useEffect(() => {
+    createBrowserSupabase().auth.getUser().then(({ data }) => {
+      if (data.user) setUserId(data.user.id);
+    });
+  }, []);
+  return <CoursesSection userId={userId} />;
 }
