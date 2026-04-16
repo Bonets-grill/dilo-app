@@ -180,7 +180,9 @@
     "configurePin": "Configure PIN",
     "configurePinDesc": "Quick access with 4-digit PIN",
     "inviteFriends": "Invite friends",
-    "inviteDesc": "Earn free Premium by inviting 10 friends"
+    "inviteDesc": "Earn free Premium by inviting 10 friends",
+    "expertsLink": "Experts",
+    "expertsDesc": "184 specialists: marketing, finance, engineering…"
   },
   "landing": {
     "hero": "Your personal AI secretary",
