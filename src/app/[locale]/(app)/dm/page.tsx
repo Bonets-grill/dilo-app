@@ -496,10 +496,10 @@ export default function DMPage() {
                 <ImagePlus size={16} />
               </button>
               <button type="button" onClick={requestSuggestions} disabled={suggestLoading}
-                className="h-9 px-3 rounded-full bg-purple-600 text-white flex items-center gap-1.5 flex-shrink-0 disabled:opacity-50 active:scale-95 transition"
+                style={{ backgroundColor: "#8b5cf6", color: "#ffffff", height: "36px", padding: "0 12px", borderRadius: "18px", flexShrink: 0, display: "flex", alignItems: "center", gap: "6px", border: "none", cursor: "pointer", fontSize: "12px", fontWeight: 600 }}
                 aria-label="Sugerir respuesta con IA">
                 {suggestLoading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                <span className="text-[11px] font-medium">IA</span>
+                <span>IA ✨</span>
               </button>
               <input
                 value={msgInput}
