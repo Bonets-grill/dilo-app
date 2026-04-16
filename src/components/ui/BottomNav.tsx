@@ -84,11 +84,11 @@ export default function BottomNav() {
         </div>
       )}
 
-      {/* Bottom navigation bar. The nav background extends through the
-          home-indicator safe area (padding-bottom: env(safe-area-inset-bottom))
-          — the row itself stays inside the safe zone, so taps work normally. */}
+      {/* Bottom navigation bar — position:fixed so nothing below it can
+          ever appear. The background extends through the home-indicator
+          safe area. */}
       <nav
-        className="flex-shrink-0 border-t border-[var(--border)] bg-[var(--bg)]"
+        className="fixed bottom-0 left-0 right-0 z-40 border-t border-[var(--border)] bg-[var(--bg)]"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <div className="flex items-stretch h-12">

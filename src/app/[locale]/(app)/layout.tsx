@@ -29,13 +29,15 @@ export default async function AppLayout({
       <InstallBanner />
       <div className="flex-shrink-0 h-[env(safe-area-inset-top)]" />
       <ClientProviders userId={user.id}>
-      <main className="flex-1 min-h-0 overflow-hidden">
+      {/* BottomNav is position:fixed at bottom:0. The main compensates
+          with padding-bottom = BottomNav height (48px) + safe-area-inset
+          so content never hides behind the nav. */}
+      <main
+        className="flex-1 min-h-0 overflow-hidden"
+        style={{ paddingBottom: "calc(48px + env(safe-area-inset-bottom))" }}
+      >
         {children}
       </main>
-      {/* BottomNav now absorbs the safe-area-inset-bottom itself
-          (padding-bottom inside its nav), so its background extends to
-          the very edge of the screen — like Instagram/TikTok/WhatsApp.
-          No separate spacer needed. */}
       <BottomNav />
       <EmergencySystem />
       </ClientProviders>
