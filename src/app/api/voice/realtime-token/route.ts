@@ -18,7 +18,10 @@ export async function POST(req: NextRequest) {
     // Tools the Realtime model can call. Format is the flat "function"
     // shape used by Realtime API (NOT the nested one from chat completions).
     const now = new Date();
-    const tz = "Europe/Madrid";
+    // Resolve user's timezone (preferences → IP header → default)
+    const { getUserTimezone } = await import("@/lib/user/timezone");
+    const { timezone: tz } = await getUserTimezone(userId, req.headers.get("x-vercel-ip-timezone"));
+    const localNow = now.toLocaleString("sv-SE", { timeZone: tz });
     const tools = [
       {
         type: "function",
@@ -91,7 +94,7 @@ export async function POST(req: NextRequest) {
 
 REGLA DURA: si el usuario pide un recordatorio, gasto o similar, USA la tool correspondiente ANTES de confirmar verbalmente. Jamás digas "lo apunto" sin llamar la función. Si la función devuelve error, avísale al usuario.
 
-HORA ACTUAL: ${now.toISOString()} (${tz}). Cuando el usuario diga hora relativa ("mañana", "en 5 min", "a las 10"), conviértela a ISO 8601 absoluta.`,
+HORA ACTUAL: ${now.toISOString()} (UTC) | Local del usuario: ${localNow} (${tz}). Cuando el usuario diga hora relativa ("mañana", "en 5 min", "a las 10"), conviértela a ISO 8601 CON offset apropiado al timezone ${tz}. NUNCA uses 'Z' para horas declaradas en local.`,
         turn_detection: { type: "server_vad" },
         input_audio_transcription: { model: "whisper-1" },
         tools,
