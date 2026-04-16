@@ -532,16 +532,9 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* FAB — New Chat. Positioned above the input; respects iOS safe-area. */}
-      {msgs.length > 0 && !busy && voicePreview === null && (
-        <button type="button"
-          onClick={newChat}
-          className="absolute right-4 w-12 h-12 rounded-full bg-[var(--accent)] shadow-lg shadow-black/40 flex items-center justify-center z-50 active:scale-95 transition-transform"
-          style={{ bottom: "calc(96px + env(safe-area-inset-bottom))" }}
-        >
-          <Pencil size={20} className="text-white" />
-        </button>
-      )}
+      {/* New-chat FAB removed — the "+ Nueva conversación" button in the top
+          header already covers this action. The floating button overlapped
+          message content and confused users with a duplicate entry point. */}
 
       <div className={`flex-shrink-0 px-3 py-1.5 border-t border-[var(--border)] ${voicePreview !== null ? "hidden" : ""}`}>
         <div className="flex items-end gap-2 max-w-2xl mx-auto">
