@@ -34,7 +34,7 @@ export default async function AppLayout({
           so content never hides behind the nav. */}
       <main
         className="flex-1 min-h-0 overflow-hidden"
-        style={{ paddingBottom: "calc(48px + max(4px, env(safe-area-inset-bottom) - 16px))" }}
+        style={{ paddingBottom: "48px" }}
       >
         {children}
       </main>
