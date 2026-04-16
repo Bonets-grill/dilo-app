@@ -37,7 +37,7 @@ VALUES (
   'Curso completo paso a paso',
   'Aprende Claude desde cero hasta dominarlo. 659 páginas de contenido práctico: Claude Code, Claude Agent SDK, Claude API, prompts, skills, hooks, MCP servers, deployment en producción.',
   '📘',
-  19.99,
+  49.00,
   'courses/claude-de-cero-a-cien.pdf',
   4117037,
   659
