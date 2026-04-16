@@ -18,7 +18,9 @@
     "calls": "Llamadas",
     "market": "Market",
     "experts": "Expertos",
-    "cursos": "Cursos"
+    "cursos": "Cursos",
+    "family": "Familia",
+    "study": "Estudio"
   },
   "chat": {
     "placeholder": "Escribe o habla...",
