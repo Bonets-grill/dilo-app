@@ -1253,6 +1253,20 @@ ${userFacts}${journalKnowledge}`;
     }
   }
 
+  // ─── EXPERT ROUTING (embeddings → top-1 specialist injected into system prompt) ───
+  // Graceful: if this fails for any reason, the chat continues as before.
+  let expertContext = "";
+  try {
+    const lastUser = allMessages[allMessages.length - 1]?.content || "";
+    if (lastUser && lastUser.length > 10 && lastUser.length < 2000) {
+      const { routeToExperts, expertContextBlock } = await import("@/lib/experts/router");
+      const matches = await routeToExperts(lastUser, { topK: 3, minScore: 0.38 });
+      if (matches.length > 0) expertContext = expertContextBlock(matches, 4500);
+    }
+  } catch (e) {
+    console.error("[expert-router] non-fatal:", e);
+  }
+
   // encoder already declared above
   let fullResponse = "";
   let pendingSendMarker: { to: string; message: string } | null = null;
@@ -1261,7 +1275,7 @@ ${userFacts}${journalKnowledge}`;
     async start(controller) {
       try {
         let chatMessages: OpenAI.ChatCompletionMessageParam[] = [
-          { role: "system", content: systemPrompt + tradingProfilePrompt },
+          { role: "system", content: systemPrompt + tradingProfilePrompt + expertContext },
           ...messages.map((m: { role: string; content: string }) => ({
             role: m.role as "user" | "assistant",
             content: m.content,
