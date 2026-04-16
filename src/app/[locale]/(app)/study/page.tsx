@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  BookOpen, Play, Square, Loader2, GraduationCap, Camera, FileText, MessageCircle, X,
+  Play, Square, Loader2, GraduationCap, Camera, FileText, Send, ArrowUp,
 } from "lucide-react";
 
 const SUBJECTS = [
@@ -22,7 +22,12 @@ interface Material {
   id: string;
   summary: string;
   ocr_text: string;
-  created_at: string;
+}
+
+interface Msg {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
 }
 
 export default function StudyPage() {
@@ -34,9 +39,18 @@ export default function StudyPage() {
   const [elapsedWall, setElapsedWall] = useState(0);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [uploading, setUploading] = useState(false);
+  // Chat del maestro
+  const [chatMsgs, setChatMsgs] = useState<Msg[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatBusy, setChatBusy] = useState(false);
+  const [chatStarted, setChatStarted] = useState(false);
+
   const interactedRef = useRef(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  // Recuperar sesión abierta
   useEffect(() => {
     fetch("/api/study/start", {
       method: "POST",
@@ -56,6 +70,7 @@ export default function StudyPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Heartbeat
   useEffect(() => {
     if (!session) return;
     async function beat() {
@@ -80,6 +95,7 @@ export default function StudyPage() {
     return () => { clearInterval(id); clearInterval(localTick); };
   }, [session, subject]);
 
+  // Interaction tracking
   useEffect(() => {
     function mark() { interactedRef.current = true; }
     window.addEventListener("click", mark);
@@ -94,6 +110,7 @@ export default function StudyPage() {
     };
   }, []);
 
+  // Close on hide
   useEffect(() => {
     if (!session) return;
     function onHide() {
@@ -104,6 +121,11 @@ export default function StudyPage() {
     document.addEventListener("visibilitychange", onHide);
     return () => document.removeEventListener("visibilitychange", onHide);
   }, [session]);
+
+  // Scroll to bottom on new messages
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMsgs]);
 
   async function start() {
     setStarting(true);
@@ -127,15 +149,19 @@ export default function StudyPage() {
     if (!session) return;
     setStopping(true);
     try {
+      // Collect transcript for summary
+      const transcript = chatMsgs.map((m) => `${m.role === "user" ? "Alumno" : "Maestro"}: ${m.content}`).join("\n");
       await fetch("/api/study/stop", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId: session.id }),
+        body: JSON.stringify({ sessionId: session.id, transcript }),
       });
       setSession(null);
       setElapsedActive(0);
       setElapsedWall(0);
       setMaterials([]);
+      setChatMsgs([]);
+      setChatStarted(false);
     } finally { setStopping(false); }
   }
 
@@ -163,6 +189,75 @@ export default function StudyPage() {
     } finally { setUploading(false); }
   }
 
+  // Start teacher chat — sends first message to the teacher to get greeting
+  async function startChat() {
+    setChatStarted(true);
+    setChatBusy(true);
+    const aId = crypto.randomUUID();
+    setChatMsgs([{ id: aId, role: "assistant", content: "" }]);
+    try {
+      const ctx = materials.map((m) => m.ocr_text).join("\n\n---\n\n");
+      const r = await fetch("/api/study/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: "Hola maestro, estoy listo para estudiar." }],
+          subject,
+          studyContext: ctx || null,
+          sessionId: session?.id,
+        }),
+      });
+      if (!r.body) throw new Error();
+      const reader = r.body.getReader();
+      const dec = new TextDecoder();
+      let acc = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        acc += dec.decode(value, { stream: true });
+        setChatMsgs([{ id: aId, role: "assistant", content: acc }]);
+      }
+    } catch {
+      setChatMsgs([{ id: aId, role: "assistant", content: "Error al conectar con el maestro." }]);
+    } finally { setChatBusy(false); }
+  }
+
+  async function sendChat() {
+    const text = chatInput.trim();
+    if (!text || chatBusy) return;
+    setChatInput("");
+    interactedRef.current = true;
+    const aId = crypto.randomUUID();
+    const newMsgs = [...chatMsgs, { id: crypto.randomUUID(), role: "user" as const, content: text }];
+    setChatMsgs([...newMsgs, { id: aId, role: "assistant" as const, content: "" }]);
+    setChatBusy(true);
+    try {
+      const ctx = materials.map((m) => m.ocr_text).join("\n\n---\n\n");
+      const r = await fetch("/api/study/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: newMsgs.map((m) => ({ role: m.role, content: m.content })),
+          subject,
+          studyContext: ctx || null,
+          sessionId: session?.id,
+        }),
+      });
+      if (!r.body) throw new Error();
+      const reader = r.body.getReader();
+      const dec = new TextDecoder();
+      let acc = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        acc += dec.decode(value, { stream: true });
+        setChatMsgs((p) => p.map((m) => (m.id === aId ? { ...m, content: acc } : m)));
+      }
+    } catch {
+      setChatMsgs((p) => p.map((m) => (m.id === aId ? { ...m, content: "Error." } : m)));
+    } finally { setChatBusy(false); }
+  }
+
   function fmt(secs: number) {
     const h = Math.floor(secs / 3600);
     const m = Math.floor((secs % 3600) / 60);
@@ -172,26 +267,16 @@ export default function StudyPage() {
     return `${s}s`;
   }
 
-  // Link al chat con contexto del material subido
-  function chatLink() {
-    const ctx = materials.map((m) => m.ocr_text).join("\n\n---\n\n");
-    if (!ctx) return "/chat";
-    // Pasar contexto como query param (encoded). El chat puede leerlo.
-    // Si es muy largo solo pasamos el último material.
-    const trimmed = ctx.length > 2000 ? materials[0]?.ocr_text?.slice(0, 2000) || "" : ctx;
-    return `/chat?study_context=${encodeURIComponent(trimmed)}&study_subject=${encodeURIComponent(subject)}`;
-  }
-
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="px-4 py-5 max-w-lg mx-auto space-y-5">
-        <div className="flex items-center gap-2">
-          <GraduationCap size={20} className="text-[var(--accent)]" />
-          <h1 className="text-lg font-semibold">Modo Estudio</h1>
-        </div>
-
-        {!session ? (
-          <>
+    <div className="h-full flex flex-col">
+      {!session ? (
+        /* ── Selector de materia ── */
+        <div className="flex-1 overflow-y-auto">
+          <div className="px-4 py-5 max-w-lg mx-auto space-y-5">
+            <div className="flex items-center gap-2">
+              <GraduationCap size={20} className="text-[var(--accent)]" />
+              <h1 className="text-lg font-semibold">Modo Estudio</h1>
+            </div>
             <div>
               <label className="text-xs text-[var(--dim)] block mb-2">Materia</label>
               <div className="grid grid-cols-3 gap-2">
@@ -211,7 +296,6 @@ export default function StudyPage() {
                 ))}
               </div>
             </div>
-
             <button
               type="button"
               onClick={start}
@@ -221,94 +305,134 @@ export default function StudyPage() {
               {starting ? <Loader2 className="animate-spin" size={16} /> : <Play size={16} fill="currentColor" />}
               Empezar a estudiar {subject}
             </button>
-
             <p className="text-[11px] text-[var(--dim)] text-center leading-relaxed">
-              DILO cuenta tu tiempo activo mientras interactúas. Sube fotos de tus libros o tareas
-              para que te ayude con lo que estás dando en clase.
+              Sube fotos de tus libros o tareas y el maestro DILO te ayuda con lo que
+              estás dando en clase. Tu padre/madre puede ver cuánto estudias.
             </p>
-          </>
-        ) : (
-          <>
-            {/* Status */}
-            <div className="rounded-2xl bg-gradient-to-br from-[var(--accent)]/15 to-[var(--accent)]/5 border border-[var(--accent)]/40 p-5 text-center">
-              <div className="flex items-center justify-center gap-2 mb-1 text-[var(--accent)]">
+          </div>
+        </div>
+      ) : (
+        /* ── Sesión activa: status + material + chat ── */
+        <>
+          {/* Header compacto con timer */}
+          <div className="flex-shrink-0 px-4 py-2 border-b border-[var(--border)] bg-[var(--bg)]">
+            <div className="flex items-center justify-between max-w-lg mx-auto">
+              <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                <span className="text-xs font-medium">Estudiando</span>
+                <span className="text-sm font-semibold">{session.subject}</span>
               </div>
-              <p className="text-2xl font-bold mb-3">{session.subject}</p>
-              <div className="grid grid-cols-2 gap-3 text-center">
-                <div className="rounded-xl bg-[var(--bg2)] py-3">
-                  <p className="text-[10px] text-[var(--dim)]">Tiempo activo</p>
-                  <p className="text-xl font-bold text-green-400 font-mono mt-1">{fmt(elapsedActive)}</p>
-                </div>
-                <div className="rounded-xl bg-[var(--bg2)] py-3">
-                  <p className="text-[10px] text-[var(--dim)]">App abierta</p>
-                  <p className="text-xl font-bold text-[var(--muted)] font-mono mt-1">{fmt(elapsedWall)}</p>
-                </div>
+              <div className="flex items-center gap-3 text-[11px]">
+                <span className="text-green-400 font-mono font-bold">{fmt(elapsedActive)}</span>
+                <span className="text-[var(--dim)] font-mono">{fmt(elapsedWall)}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={uploadMaterial} />
+                <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
+                  className="p-1.5 rounded-lg bg-yellow-500/20 text-yellow-400 disabled:opacity-50">
+                  {uploading ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
+                </button>
+                <button type="button" onClick={stop} disabled={stopping}
+                  className="p-1.5 rounded-lg bg-red-500/20 text-red-400 disabled:opacity-50">
+                  {stopping ? <Loader2 size={14} className="animate-spin" /> : <Square size={12} fill="currentColor" />}
+                </button>
               </div>
             </div>
-
-            {/* Material upload */}
-            <div className="rounded-2xl bg-[var(--bg2)] border border-[var(--border)] p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <Camera size={16} className="text-yellow-400" />
-                <h3 className="text-sm font-semibold">Material de estudio</h3>
+            {/* Materials bar */}
+            {materials.length > 0 && (
+              <div className="flex gap-2 mt-2 overflow-x-auto max-w-lg mx-auto pb-1">
+                {materials.map((m) => (
+                  <div key={m.id} className="flex-shrink-0 rounded-lg bg-[var(--bg2)] border border-[var(--border)] px-2.5 py-1.5 max-w-[200px]">
+                    <div className="flex items-center gap-1.5">
+                      <FileText size={10} className="text-yellow-400 flex-shrink-0" />
+                      <p className="text-[10px] text-[var(--muted)] truncate">{m.summary}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <p className="text-[11px] text-[var(--dim)] leading-relaxed">
-                Sube fotos de tu libro, apuntes o tareas. DILO lee el contenido y te ayuda con
-                ejercicios, explicaciones y preguntas sobre ESO EXACTO.
-              </p>
-              <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={uploadMaterial} />
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                disabled={uploading}
-                className="w-full py-3 rounded-xl bg-yellow-500/20 text-yellow-400 font-semibold text-xs flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                {uploading ? <><Loader2 size={14} className="animate-spin" /> Analizando material...</> : <><Camera size={14} /> Subir foto de libro/tarea</>}
-              </button>
+            )}
+          </div>
 
-              {/* Uploaded materials */}
-              {materials.length > 0 && (
-                <div className="space-y-2 pt-2 border-t border-[var(--border)]">
-                  {materials.map((m) => (
-                    <div key={m.id} className="rounded-lg bg-[var(--bg3)] p-2.5">
-                      <div className="flex items-start gap-2">
-                        <FileText size={13} className="text-[var(--dim)] mt-0.5 flex-shrink-0" />
-                        <div className="min-w-0">
-                          <p className="text-[11px] font-medium">{m.summary}</p>
-                          <p className="text-[10px] text-[var(--dim)] mt-1 line-clamp-3">{m.ocr_text.slice(0, 200)}...</p>
-                        </div>
+          {/* Chat del maestro */}
+          <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3">
+            <div className="max-w-lg mx-auto space-y-3">
+              {!chatStarted ? (
+                <div className="text-center py-10 space-y-4">
+                  <GraduationCap size={40} className="mx-auto text-[var(--accent)] opacity-50" />
+                  <p className="text-sm text-[var(--muted)]">
+                    {materials.length > 0
+                      ? `Material listo. El maestro te preguntará sobre ${session.subject}.`
+                      : "Sube una foto de tu libro/tarea o empieza a chatear directo."}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={startChat}
+                    className="px-6 py-3 rounded-2xl bg-[var(--accent)] text-white text-sm font-semibold"
+                  >
+                    🎓 Empezar con el maestro
+                  </button>
+                  {materials.length === 0 && (
+                    <button
+                      type="button"
+                      onClick={() => fileRef.current?.click()}
+                      disabled={uploading}
+                      className="block mx-auto px-5 py-2.5 rounded-xl bg-yellow-500/20 text-yellow-400 text-xs font-semibold disabled:opacity-50"
+                    >
+                      {uploading ? "Analizando..." : "📷 Subir material primero"}
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <>
+                  {chatMsgs.map((m) => (
+                    <div
+                      key={m.id}
+                      className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+                    >
+                      <div
+                        className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed ${
+                          m.role === "user"
+                            ? "bg-[var(--accent)] text-white rounded-br-md"
+                            : "bg-[var(--bg2)] border border-[var(--border)] rounded-bl-md"
+                        }`}
+                      >
+                        {m.content || <span className="opacity-40">...</span>}
                       </div>
                     </div>
                   ))}
-                </div>
+                  <div ref={chatEndRef} />
+                </>
               )}
             </div>
+          </div>
 
-            {/* Chat link with study context */}
-            <a
-              href={chatLink()}
-              className="w-full py-3 rounded-xl bg-green-500/20 border border-green-500/30 text-green-400 text-sm font-semibold flex items-center justify-center gap-2"
-            >
-              <MessageCircle size={15} />
-              {materials.length > 0
-                ? "Chatear sobre este material"
-                : "Ir al chat para estudiar"}
-            </a>
-
-            <button
-              type="button"
-              onClick={stop}
-              disabled={stopping}
-              className="w-full py-3 rounded-xl bg-red-500/20 text-red-400 font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-60"
-            >
-              {stopping ? <Loader2 className="animate-spin" size={15} /> : <Square size={14} fill="currentColor" />}
-              Terminar sesión
-            </button>
-          </>
-        )}
-      </div>
+          {/* Input del chat */}
+          {chatStarted && (
+            <div className="flex-shrink-0 px-4 py-2 border-t border-[var(--border)] bg-[var(--bg)]">
+              <div className="flex items-end gap-2 max-w-lg mx-auto">
+                <div className="flex-1 min-w-0 bg-[var(--bg2)] rounded-2xl border border-[var(--border)] px-3 py-1.5">
+                  <textarea
+                    ref={inputRef}
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); } }}
+                    placeholder="Responde al maestro..."
+                    rows={1}
+                    className="w-full bg-transparent text-[14px] text-white placeholder-[var(--dim)] resize-none leading-6 max-h-[80px] focus:outline-none"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={sendChat}
+                  disabled={chatBusy || !chatInput.trim()}
+                  className="w-9 h-9 rounded-full bg-white flex items-center justify-center flex-shrink-0 disabled:opacity-30 mb-0.5"
+                >
+                  <ArrowUp size={18} className="text-black" />
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }
