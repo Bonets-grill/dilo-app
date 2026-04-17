@@ -19,17 +19,30 @@ export class PTTConnection {
   private externalAudioEl: HTMLAudioElement | null;
   private pendingIce: RTCIceCandidateInit[] = [];
 
+  private getAccessToken: () => Promise<string | null>;
+
   constructor(
     userId: string,
     peerId: string,
     onStatusChange: (status: string) => void,
-    opts?: { audioEl?: HTMLAudioElement | null; onDebug?: (msg: string) => void }
+    opts?: {
+      audioEl?: HTMLAudioElement | null;
+      onDebug?: (msg: string) => void;
+      /**
+       * Returns a fresh Supabase access token or null. Used as
+       * `Authorization: Bearer <token>` on all walkie fetches so signals
+       * work inside the Capacitor WebView where cookies from
+       * `capacitor://localhost` don't cross to `https://ordydilo.com/api/*`.
+       */
+      getAccessToken?: () => Promise<string | null>;
+    }
   ) {
     this.userId = userId;
     this.peerId = peerId;
     this.onStatusChange = onStatusChange;
     this.onDebug = opts?.onDebug ?? (() => {});
     this.externalAudioEl = opts?.audioEl ?? null;
+    this.getAccessToken = opts?.getAccessToken ?? (async () => null);
   }
 
   setAudioEl(el: HTMLAudioElement | null) {
@@ -177,28 +190,62 @@ export class PTTConnection {
     this.startSignalPolling();
   }
 
+  private async authHeaders(): Promise<HeadersInit> {
+    const h: Record<string, string> = { "Content-Type": "application/json" };
+    try {
+      const tok = await this.getAccessToken();
+      if (tok) h["Authorization"] = `Bearer ${tok}`;
+    } catch { /* ignore */ }
+    return h;
+  }
+
   private async sendSignal(type: string, data: unknown) {
     try {
       const res = await fetch("/api/rtc/signal", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await this.authHeaders(),
+        credentials: "include",
         body: JSON.stringify({ fromUserId: this.userId, toUserId: this.peerId, type, data }),
       });
-      if (!res.ok) console.error("[walkie] sendSignal non-ok", type, res.status);
+      if (!res.ok) {
+        const msg = `sendSignal ${type} → ${res.status}`;
+        console.error("[walkie]", msg);
+        this.onDebug(msg);
+      }
     } catch (err) {
-      console.error("[walkie] sendSignal failed", type, err);
+      const msg = `sendSignal ${type} threw: ${(err as Error).message}`;
+      console.error("[walkie]", msg);
+      this.onDebug(msg);
     }
   }
 
   private startSignalPolling() {
+    if (this.signalPollInterval) return; // guard against duplicate intervals
     this.signalPollInterval = setInterval(async () => {
       try {
-        const res = await fetch(`/api/rtc/signal?userId=${this.userId}`);
-        if (!res.ok) { console.error("[walkie] poll non-ok", res.status); return; }
+        const res = await fetch(`/api/rtc/signal`, {
+          headers: await this.authHeaders(),
+          credentials: "include",
+        });
+        if (!res.ok) {
+          const msg = `poll → ${res.status}`;
+          console.error("[walkie]", msg);
+          this.onDebug(msg);
+          return;
+        }
         const { signals } = await res.json();
 
         for (const signal of signals || []) {
-          if (signal.from !== this.peerId) continue;
+          // In pre-call "listening" mode we accept offers from any peer the
+          // UI hasn't explicitly paired with — otherwise B would never hear
+          // A if B's dropdown auto-selected someone else. Once we're in an
+          // active call, the peerId is locked.
+          if (signal.type === "offer" && (this.peerId === "" || signal.from !== this.peerId) && !this.pc) {
+            this.peerId = signal.from;
+            this.onDebug(`incoming offer from ${signal.from.slice(0, 8)} → locking peer`);
+          } else if (signal.from !== this.peerId) {
+            continue;
+          }
 
           switch (signal.type) {
             case "offer":

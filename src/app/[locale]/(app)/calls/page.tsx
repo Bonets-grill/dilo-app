@@ -117,6 +117,7 @@ export default function CallsPage() {
   useEffect(() => {
     if (!userId || !selectedPeer) return;
     dbg(`mount peer=${selectedPeer.userId.slice(0, 8)} name=${selectedPeer.name}`);
+    const supabase = createBrowserSupabase();
     const conn = new PTTConnection(
       userId,
       selectedPeer.userId,
@@ -127,6 +128,14 @@ export default function CallsPage() {
       {
         audioEl: remoteAudioRef.current,
         onDebug: (m) => dbg(`rtc: ${m}`),
+        // Capacitor WebView: cookies from `capacitor://localhost` don't
+        // reach `https://ordydilo.com/api/*`. Pass a fresh Supabase access
+        // token so the server-side `requireUser` can authenticate via
+        // `Authorization: Bearer <token>` fallback.
+        getAccessToken: async () => {
+          const { data: { session } } = await supabase.auth.getSession();
+          return session?.access_token ?? null;
+        },
       }
     );
     pttRef.current = conn;
