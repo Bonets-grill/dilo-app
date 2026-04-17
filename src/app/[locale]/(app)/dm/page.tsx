@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { createBrowserSupabase } from "@/lib/supabase/client";
-import CallButton from "@/components/calls/CallButton";
+import WalkieButton from "@/components/calls/WalkieButton";
 import {
   Search,
   UserPlus,
@@ -276,6 +276,16 @@ export default function DMPage() {
             }];
           });
           setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+          // Auto-play walkie: si es audio, intentar reproducir. Safari lo puede
+          // bloquear sin user-gesture reciente; si falla, el user usa el Play.
+          if (msg.message_type === "voice" && msg.media_url) {
+            const a = new Audio(msg.media_url);
+            a.onerror = () => { /* bloqueado o formato no soportado, silent */ };
+            a.play().catch(() => { /* autoplay blocked */ });
+            audioRef.current = a;
+            setPlayingAudio(msg.media_url);
+            a.onended = () => setPlayingAudio(null);
+          }
         }
       })
       // El otro leyó mis mensajes (read_at se setea en GET /api/dm) → azul palomitas
@@ -490,7 +500,7 @@ export default function DMPage() {
             {getInitials(chatWith.name)}
           </div>
           <span className="text-sm font-semibold flex-1">{chatWith.name} <span className="text-[9px] text-[var(--dim)] font-normal ml-1">v1057</span></span>
-          <CallButton calleeId={chatWith.id} calleeName={chatWith.name} />
+          {userId && <WalkieButton senderId={userId} receiverId={chatWith.id} />}
           <div className="relative">
             <button type="button" onClick={() => setShowMenu(!showMenu)} className="p-2 text-[var(--dim)]">
               <MoreVertical size={18} />
