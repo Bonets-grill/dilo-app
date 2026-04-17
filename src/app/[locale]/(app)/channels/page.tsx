@@ -135,8 +135,24 @@ export default function ChannelsPage() {
         return;
       }
 
-      // Si no existe la instancia, crearla. Si existe pero no abierta, saltar el create.
-      if (!state || state === "unknown" || statusData?.error) {
+      // Si la instance está en "close" (sesión vieja rota), Evolution genera
+      // un pairing code que WhatsApp rechaza como "código incorrecto" porque
+      // Baileys quedó con auth state corrupto. Hard-reset antes del pair.
+      if (state === "close" || state === "disconnected") {
+        await fetch("/api/evolution", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "delete", instanceName }),
+        });
+        await new Promise((r) => setTimeout(r, 1200));
+        await fetch("/api/evolution", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "create", instanceName }),
+        });
+        await new Promise((r) => setTimeout(r, 1500));
+      } else if (!state || state === "unknown" || statusData?.error) {
+        // No existe → crear fresca
         await fetch("/api/evolution", {
           method: "POST",
           headers: { "Content-Type": "application/json" },

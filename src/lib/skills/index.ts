@@ -65,8 +65,30 @@ export async function executeExtendedTool(
     const token = await getGoogleAccessToken(userId);
 
     if (!token) {
-      const oauthUrl = `https://dilo-app-five.vercel.app/api/oauth/google?userId=${userId}`;
-      return JSON.stringify({ error: "google_not_connected", message: `El usuario no ha conectado su cuenta de Google. Dile que haga click aquí para conectar: ${oauthUrl}` });
+      // Si es un calendar tool sin Google, delegamos al tool interno de
+      // DILO (appointment_create / appointment_list) para que el LLM no
+      // bloquee al usuario pidiendo conectar Google.
+      if (toolName === "calendar_create_event") {
+        return executeAppointmentTool("appointment_create", {
+          title: (input as { summary?: string }).summary,
+          start_at: (input as { start?: string }).start,
+          end_at: (input as { end?: string }).end,
+          location: (input as { location?: string }).location,
+          notes: (input as { description?: string }).description,
+        }, userId);
+      }
+      if (toolName === "calendar_list_events") {
+        return executeAppointmentTool("appointment_list", {
+          from: (input as { time_min?: string }).time_min,
+          to: (input as { time_max?: string }).time_max,
+        }, userId);
+      }
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://ordydilo.com";
+      const oauthUrl = `${appUrl}/api/oauth/google?userId=${userId}`;
+      return JSON.stringify({
+        error: "google_not_connected",
+        message: `El usuario no tiene Google conectado. Para ${toolName.startsWith("gmail_") ? "Gmail usa sus tools cuando conecte Google" : "citas/recordatorios usa appointment_create o create_reminder en su lugar"}. Link para conectar Google: ${oauthUrl}`,
+      });
     }
 
     if (toolName.startsWith("gmail_")) {
