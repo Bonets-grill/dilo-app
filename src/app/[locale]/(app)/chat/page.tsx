@@ -8,6 +8,7 @@ import WakeWordListener from "@/components/WakeWordListener";
 import ShareMenu from "@/components/ui/ShareMenu";
 import ReactMarkdown from "react-markdown";
 import { createBrowserSupabase } from "@/lib/supabase/client";
+import HoroscopeCard from "@/components/home/HoroscopeCard";
 
 interface Msg { id: string; role: "user" | "assistant"; content: string; }
 interface Conv { id: string; title: string; updated_at: string; }
@@ -539,11 +540,13 @@ export default function ChatPage() {
         <button type="button" onClick={() => setShowHistory(true)} className="text-xs text-[var(--muted)] flex items-center gap-1.5">
           <MessageCircle size={14} /> {t("history")}
         </button>
-        <span className="text-sm font-semibold">DILO <span className="text-[9px] text-[var(--dim)] font-normal ml-1">v1057</span></span>
+        <span className="text-sm font-semibold">DILO <span className="text-[9px] text-[var(--dim)] font-normal ml-1">v1059</span></span>
         <button type="button" onClick={newChat} className="text-xs text-[var(--muted)] flex items-center gap-1.5">
           <Plus size={14} /> {t("newChat")}
         </button>
       </div>
+      {/* Daily horoscope entry point — autorizado 2026-04-17 para desbloquear acceso al horóscopo desde home */}
+      <div className="flex-shrink-0 pt-3"><HoroscopeCard /></div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-y-contain px-4">
         {msgs.length === 0 ? (
