@@ -165,7 +165,9 @@ export default function DMPage() {
       const d = await r.json();
       const link: string | undefined = d?.link;
       if (!link) { alert("No se pudo generar el enlace, inténtalo de nuevo"); return; }
-      const shareText = `Te invito a DILO, mi asistente personal. Descárgala y quedaremos vinculados directamente: ${link}`;
+      // OJO: no incluir la URL dentro de `text`; WhatsApp y otras apps concatenan
+      // `text` + `url` y salía duplicada. `text` = solo mensaje, `url` = enlace.
+      const shareText = "Te invito a DILO, mi asistente personal. Descárgala y quedaremos vinculados directamente:";
       if (typeof navigator !== "undefined" && "share" in navigator) {
         try {
           await (navigator as Navigator & { share: (d: ShareData) => Promise<void> }).share({
