@@ -958,6 +958,91 @@ Dime qué necesitas y empezamos.`;
   const lastMsg = lastMsgContent.toLowerCase();
   const isImageRequest = /(?:crea|genera|dibuja|hazme|diseña|haz).*(?:imagen|foto|ilustracion|logo|dibujo)/i.test(lastMsg)
     || /(?:create|generate|draw|make).*(?:image|photo|picture|logo)/i.test(lastMsg);
+  const isImageEdit = /(?:mejora|edita|edítala|retoca|modifica|transforma|quítale|quita|p[oó]nle|pon|a[ñn][aá]dele|a[ñn]ade|agrega|cambia|convierte)\b.*?\b(?:foto|imagen|esta|esto|esa|eso|la)/i.test(lastMsg)
+    || /(?:improve|edit|retouch|modify|transform|remove|add|change).*(?:photo|image|picture|this)/i.test(lastMsg);
+
+  // Edit path: only if we actually have a previous image in the conversation.
+  // Looks backwards for the most recent message whose content starts with __IMAGE__.
+  if (isImageEdit && !isImageRequest && allMessages[allMessages.length - 1]?.role === "user") {
+    const priorImageMsg = [...allMessages].slice(0, -1).reverse().find(
+      (m: { content?: string }) => typeof m.content === "string" && m.content.startsWith("__IMAGE__")
+    );
+
+    const promptText: string = allMessages[allMessages.length - 1].content;
+    const encoder = new TextEncoder();
+
+    // No hay imagen previa → no gastamos LLM ni image-edit; respondemos directo
+    if (!priorImageMsg) {
+      const reply = "Para mejorar una foto, envíamela primero (📷) y luego me dices qué quieres cambiar. Por ejemplo: mándala y después dime «ponle músculos», «quita el fondo» o «mejórala».";
+      let cid = await saveMsg("user", promptText, conversationId);
+      cid = await saveMsg("assistant", reply, cid);
+      return new Response(reply, {
+        headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": cid || "" },
+      });
+    }
+
+    const imageDataUrl = priorImageMsg.content.slice("__IMAGE__".length);
+
+    // Save user message & ensure conversation
+    let editConvId = conversationId;
+    if (userId) {
+      if (!editConvId) {
+        const { data: conv } = await supabase.from("conversations")
+          .insert({ user_id: userId, title: promptText.slice(0, 50) }).select("id").single();
+        editConvId = conv?.id;
+      }
+      if (editConvId) {
+        await supabase.from("messages").insert({
+          conversation_id: editConvId, user_id: userId, role: "user", content: promptText,
+        });
+      }
+    }
+
+    const readable = new ReadableStream({
+      async start(controller) {
+        controller.enqueue(encoder.encode("Editando imagen..."));
+        try {
+          const match = imageDataUrl.match(/^data:image\/(\w+);base64,(.+)$/);
+          if (!match) {
+            controller.enqueue(encoder.encode("No pude leer la imagen original."));
+            controller.close();
+            return;
+          }
+          const { toFile } = await import("openai/uploads");
+          const bytes = Buffer.from(match[2], "base64");
+          const file = await toFile(bytes, `input.${match[1]}`, { type: `image/${match[1]}` });
+          const resp = await openai.images.edit({
+            model: "gpt-image-1",
+            image: file,
+            prompt: promptText.slice(0, 1000),
+            n: 1,
+            size: "1024x1024",
+            quality: "medium",
+          });
+          const b64 = resp.data?.[0]?.b64_json;
+          if (!b64) {
+            controller.enqueue(encoder.encode("No se pudo editar la imagen. Inténtalo de nuevo."));
+          } else {
+            const outUrl = `data:image/png;base64,${b64}`;
+            controller.enqueue(encoder.encode(`__IMAGE__${outUrl}`));
+            if (userId && editConvId) {
+              await supabase.from("messages").insert({
+                conversation_id: editConvId, user_id: userId, role: "assistant",
+                content: `__IMAGE__${outUrl}`, model: "gpt-image-1-edit",
+              });
+            }
+          }
+        } catch (e) {
+          controller.enqueue(encoder.encode(`Error editando: ${e instanceof Error ? e.message : "desconocido"}`));
+        }
+        controller.close();
+      },
+    });
+
+    return new Response(readable, {
+      headers: { "Content-Type": "text/plain; charset=utf-8", "X-Conversation-Id": editConvId || "" },
+    });
+  }
 
   if (isImageRequest && allMessages[allMessages.length - 1]?.role === "user") {
     const prompt = allMessages[allMessages.length - 1].content;
