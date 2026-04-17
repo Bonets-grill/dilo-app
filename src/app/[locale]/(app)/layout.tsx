@@ -23,6 +23,18 @@ export default async function AppLayout({
     redirect(`/${locale}/login`);
   }
 
+  // Gate obligatorio: fecha de nacimiento. DILO la usa cada mañana para
+  // enviar horóscopo + audio de motivación. Sin birthdate, el usuario va
+  // al onboarding antes de ver el resto de la app.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: profile } = await (supabase.from("users") as any)
+    .select("birthdate")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (!profile?.birthdate) {
+    redirect(`/${locale}/onboarding/birthday`);
+  }
+
   return (
     <div className="h-dvh flex flex-col bg-[var(--bg)] app-scroll-lock">
       <PushSetup />

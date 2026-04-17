@@ -13,6 +13,10 @@
       "schedule": "0 8 * * *"
     },
     {
+      "path": "/api/cron/horoscope",
+      "schedule": "0 6 * * *"
+    },
+    {
       "path": "/api/cron/friendly",
       "schedule": "0 10,15,20 * * *"
     },
