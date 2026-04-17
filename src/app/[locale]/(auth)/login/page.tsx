@@ -16,6 +16,13 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const pinRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [joinCode] = useState(() => {
+    if (typeof window !== "undefined") {
+      return new URLSearchParams(window.location.search).get("join") || "";
+    }
+    return "";
+  });
+  const postAuthPath = joinCode ? `/join/${joinCode}` : "/chat";
 
   // Check if user has email saved
   useEffect(() => {
@@ -88,7 +95,7 @@ export default function LoginPage() {
       }
 
       localStorage.setItem("dilo-email", email.trim());
-      router.push("/chat");
+      router.push(postAuthPath);
     } catch {
       setError(t("connectionError"));
       setLoading(false);
@@ -111,7 +118,7 @@ export default function LoginPage() {
     }
 
     localStorage.setItem("dilo-email", email.trim());
-    router.push("/chat");
+    router.push(postAuthPath);
   }
 
   return (
@@ -216,7 +223,12 @@ export default function LoginPage() {
         )}
 
         <p className="text-center text-xs text-[var(--dim)] mt-6">
-          <Link href="/signup" className="text-[var(--muted)] hover:text-white">{t("signup")}</Link>
+          <Link
+            href={joinCode ? `/signup?join=${joinCode}` : "/signup"}
+            className="text-[var(--muted)] hover:text-white"
+          >
+            {t("signup")}
+          </Link>
         </p>
       </div>
     </main>

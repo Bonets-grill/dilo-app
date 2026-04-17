@@ -5,6 +5,8 @@ import { cookies } from "next/headers";
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
+  const nextParam = searchParams.get("next");
+  const safeNext = nextParam && /^\/[a-zA-Z0-9_\-/]+$/.test(nextParam) ? nextParam : null;
   const locale = request.nextUrl.pathname.split("/")[1] || "es";
 
   if (code) {
@@ -48,7 +50,8 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      return NextResponse.redirect(`${origin}/${locale}/chat`);
+      const dest = safeNext ? `${origin}/${locale}${safeNext}` : `${origin}/${locale}/chat`;
+      return NextResponse.redirect(dest);
     }
   }
 

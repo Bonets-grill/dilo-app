@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { useState } from "react";
 import { createBrowserSupabase } from "@/lib/supabase/client";
 import { Link, useRouter } from "@/i18n/navigation";
@@ -8,6 +8,7 @@ import { Link, useRouter } from "@/i18n/navigation";
 export default function SignupPage() {
   const t = useTranslations("auth");
   const router = useRouter();
+  const locale = useLocale();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -19,6 +20,13 @@ export default function SignupPage() {
     }
     return "";
   });
+  const [joinCode] = useState(() => {
+    if (typeof window !== "undefined") {
+      return new URLSearchParams(window.location.search).get("join") || "";
+    }
+    return "";
+  });
+  const postAuthPath = joinCode ? `/join/${joinCode}` : "/pin-setup";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,10 +36,16 @@ export default function SignupPage() {
     setError("");
 
     const supabase = createBrowserSupabase();
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      (typeof window !== "undefined" ? window.location.origin : "");
     const { data, error: authError } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { name } },
+      options: {
+        data: { name },
+        emailRedirectTo: `${appUrl}/${locale}/auth/callback${joinCode ? `?next=/join/${joinCode}` : ""}`,
+      },
     });
 
     if (authError) {
@@ -74,8 +88,8 @@ export default function SignupPage() {
     // Save email for PIN login later
     localStorage.setItem("dilo-email", email.trim());
 
-    // Go straight to PIN setup
-    router.push("/pin-setup");
+    // Go to invite redeem if came from /join/[code], else PIN setup
+    router.push(postAuthPath);
   }
 
   return (
@@ -99,7 +113,12 @@ export default function SignupPage() {
         </form>
 
         <p className="text-center text-xs text-[var(--dim)] mt-5">
-          <Link href="/login" className="text-[var(--muted)] hover:text-white">{t("login")}</Link>
+          <Link
+            href={joinCode ? `/login?join=${joinCode}` : "/login"}
+            className="text-[var(--muted)] hover:text-white"
+          >
+            {t("login")}
+          </Link>
         </p>
       </div>
     </main>

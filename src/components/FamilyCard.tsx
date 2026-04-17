@@ -1,8 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Users, Plus, Copy, Check } from "lucide-react";
+
+function buildShareUrl(locale: string, code: string) {
+  const base =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (typeof window !== "undefined" ? window.location.origin : "");
+  return `${base}/${locale}/join/${code}`;
+}
 
 interface KidStatus {
   id: string;
@@ -34,6 +42,7 @@ function fmtShort(s: number) {
 }
 
 export default function FamilyCard() {
+  const locale = useLocale();
   const [kids, setKids] = useState<KidStatus[] | null>(null);
   const [error, setError] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
@@ -157,12 +166,12 @@ export default function FamilyCard() {
                 className="block text-center text-xs text-[var(--accent)] font-mono underline truncate"
                 onClick={(e) => {
                   e.preventDefault();
-                  const url = `${window.location.origin}/es/join/${code}`;
+                  const url = buildShareUrl(locale, code);
                   navigator.clipboard?.writeText(url).catch(() => {});
                   alert("Enlace copiado: " + url);
                 }}
               >
-                {typeof window !== "undefined" ? `${window.location.origin}/es/join/${code}` : `/join/${code}`}
+                {buildShareUrl(locale, code)}
               </a>
               <p className="text-[10px] text-[var(--dim)] text-center mt-2">
                 O que pegue este código en DILO → Más → Familia:
