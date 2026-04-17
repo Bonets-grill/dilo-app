@@ -32,6 +32,7 @@ export default function HoroscopeTodayPage() {
   const [horoscope, setHoroscope] = useState<Horoscope | null>(null);
   const [zodiac, setZodiac] = useState<ZodiacInfo | null>(null);
   const [playing, setPlaying] = useState(false);
+  const [audioError, setAudioError] = useState("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -51,6 +52,7 @@ export default function HoroscopeTodayPage() {
 
   async function togglePlay() {
     if (!horoscope?.audio_url) return;
+    setAudioError("");
     if (playing) {
       audioRef.current?.pause();
       setPlaying(false);
@@ -59,9 +61,22 @@ export default function HoroscopeTodayPage() {
     if (!audioRef.current) audioRef.current = new Audio(horoscope.audio_url);
     else audioRef.current.src = horoscope.audio_url;
     audioRef.current.onended = () => setPlaying(false);
-    audioRef.current.onerror = () => { setPlaying(false); };
-    try { await audioRef.current.play(); setPlaying(true); }
-    catch { setPlaying(false); }
+    audioRef.current.onerror = () => {
+      setPlaying(false);
+      const e = audioRef.current?.error;
+      const msg = e ? `MediaError code=${e.code} msg=${e.message || "(empty)"}` : "audio element error";
+      console.error("[horoscope.audio]", msg, "url_len=", horoscope.audio_url?.length);
+      setAudioError(msg);
+    };
+    try {
+      await audioRef.current.play();
+      setPlaying(true);
+    } catch (err) {
+      setPlaying(false);
+      const msg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+      console.error("[horoscope.audio.play]", msg);
+      setAudioError(msg);
+    }
   }
 
   if (loading) {
@@ -95,22 +110,34 @@ export default function HoroscopeTodayPage() {
         </div>
 
         {horoscope.audio_url && (
-          <button
-            type="button"
-            onClick={togglePlay}
-            className="w-full flex items-center gap-3 p-4 rounded-2xl bg-purple-500/10 border border-purple-500/25 hover:bg-purple-500/20 active:scale-[0.98] transition"
-          >
-            <div className="w-11 h-11 rounded-full bg-purple-500 text-white flex items-center justify-center flex-shrink-0">
-              {playing ? <VolumeX size={20} /> : <Volume2 size={20} />}
-            </div>
-            <div className="flex-1 text-left">
-              <p className="text-sm font-medium">Audio de motivación</p>
-              <p className="text-[11px] text-[var(--dim)]">
-                {playing ? "Reproduciendo..." : "Toca para escucharlo"}
+          <>
+            <button
+              type="button"
+              onClick={togglePlay}
+              className="w-full flex items-center gap-3 p-4 rounded-2xl bg-purple-500/10 border border-purple-500/25 hover:bg-purple-500/20 active:scale-[0.98] transition"
+            >
+              <div className="w-11 h-11 rounded-full bg-purple-500 text-white flex items-center justify-center flex-shrink-0">
+                {playing ? <VolumeX size={20} /> : <Volume2 size={20} />}
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-sm font-medium">Audio de motivación</p>
+                <p className="text-[11px] text-[var(--dim)]">
+                  {playing ? "Reproduciendo..." : "Toca para escucharlo"}
+                </p>
+              </div>
+              <Sparkles size={16} className="text-purple-400" />
+            </button>
+            {/* Nativo <audio controls> como fallback — algunos navegadores se
+                niegan a reproducir data:audio/mpeg vía new Audio() pero SÍ lo
+                tocan cuando el <audio> está en el DOM. Además enseña la barra
+                de progreso y controles nativos. */}
+            <audio controls src={horoscope.audio_url} className="w-full mt-1 rounded-xl" preload="metadata" />
+            {audioError && (
+              <p className="text-[11px] text-red-400 px-2">
+                ⚠ {audioError}
               </p>
-            </div>
-            <Sparkles size={16} className="text-purple-400" />
-          </button>
+            )}
+          </>
         )}
 
         <article className="rounded-2xl bg-[var(--bg2)] border border-[var(--border)] p-4 text-sm leading-relaxed whitespace-pre-line">
