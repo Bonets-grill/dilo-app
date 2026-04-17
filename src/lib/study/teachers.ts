@@ -79,7 +79,20 @@ Metodología: observar → analizar → crear → reflexionar.
 Describe obras detalladamente. Promueve la interpretación personal del alumno.`,
 };
 
-export function getTeacherPrompt(subject: string, mode: "school" | "plan", studyContext?: string, planTopic?: string): string {
+export interface TopicHistoryEntry {
+  topic_idx: number;
+  topic_name: string | null;
+  summary: string | null;
+  struggled: string[];
+}
+
+export function getTeacherPrompt(
+  subject: string,
+  mode: "school" | "plan",
+  studyContext?: string,
+  planTopic?: string,
+  history?: TopicHistoryEntry[],
+): string {
   const persona = TEACHER_PERSONAS[subject] || TEACHER_PERSONAS["Ciencias"];
   const modeRules = mode === "plan" ? PLAN_MODE_RULES : SCHOOL_MODE_RULES;
 
@@ -93,5 +106,20 @@ export function getTeacherPrompt(subject: string, mode: "school" | "plan", study
     materialBlock = `\n\nMATERIAL DEL ALUMNO:\n---\n${studyContext.slice(0, 6000)}\n---\nBasa todo en ESTE material.`;
   }
 
-  return `${persona}\n${BASE_RULES}\n${modeRules}${topicBlock}${materialBlock}`;
+  let historyBlock = "";
+  if (history && history.length > 0) {
+    const lines = history.slice(-5).map((h) => {
+      const name = h.topic_name || `Tema ${h.topic_idx + 1}`;
+      const summary = h.summary ? ` — ${h.summary}` : "";
+      const struggled = h.struggled.length > 0
+        ? ` · Le costó: ${h.struggled.slice(0, 3).join(", ")}`
+        : "";
+      return `• ${name}${summary}${struggled}`;
+    });
+    historyBlock =
+      `\n\nHISTORIAL DEL ALUMNO (temas ya estudiados, NO los repitas de cero):\n${lines.join("\n")}\n` +
+      `Usa este historial para referirte a lo visto antes ("como vimos con..."). NUNCA empieces otra vez un tema ya completado salvo que el alumno pida repaso.`;
+  }
+
+  return `${persona}\n${BASE_RULES}\n${modeRules}${topicBlock}${materialBlock}${historyBlock}`;
 }
