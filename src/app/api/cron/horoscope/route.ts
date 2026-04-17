@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { generateHoroscope } from "@/lib/horoscope/generate";
+import { fetchExternalContext } from "@/lib/horoscope/context";
 import { zodiacInfoBySign, type ZodiacSign } from "@/lib/zodiac";
 
 const admin = createClient(
@@ -55,18 +56,26 @@ export async function GET(req: NextRequest) {
         .maybeSingle();
       if (existing) { skipped++; continue; }
 
-      const { data: facts } = await admin
-        .from("memory_facts")
-        .select("fact, category")
-        .eq("user_id", u.id)
-        .order("created_at", { ascending: false })
-        .limit(8);
+      const [{ data: facts }, extra] = await Promise.all([
+        admin
+          .from("memory_facts")
+          .select("fact, category")
+          .eq("user_id", u.id)
+          .order("created_at", { ascending: false })
+          .limit(8),
+        fetchExternalContext(admin, u.id),
+      ]);
+
+      const mergedFacts: Array<{ fact: string; category: string }> = [
+        ...extra, // Gmail + WhatsApp first — más recientes
+        ...((facts as Array<{ fact: string; category: string }>) || []),
+      ];
 
       const h = await generateHoroscope({
         userId: u.id,
         userName: (u.name as string) || (u.email as string)?.split("@")[0] || null,
         zodiac: u.zodiac_sign as ZodiacSign,
-        facts: (facts as Array<{ fact: string; category: string }>) || [],
+        facts: mergedFacts,
         forDate: today,
       });
 

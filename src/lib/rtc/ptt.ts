@@ -3,10 +3,7 @@
  * Handles peer connection, audio streaming, and signaling.
  */
 
-const ICE_SERVERS = [
-  { urls: "stun:stun.l.google.com:19302" },
-  { urls: "stun:stun1.l.google.com:19302" },
-];
+import { getIceServers } from "./ice";
 
 const SIGNAL_POLL_INTERVAL = 1000; // Poll every 1s for signals
 
@@ -29,7 +26,7 @@ export class PTTConnection {
     this.onStatusChange("connecting");
 
     // Create peer connection
-    this.pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+    this.pc = new RTCPeerConnection({ iceServers: getIceServers() });
 
     // Handle incoming audio
     this.remoteAudio = new Audio();
@@ -73,7 +70,7 @@ export class PTTConnection {
   async acceptCall(offer: RTCSessionDescriptionInit) {
     this.onStatusChange("connecting");
 
-    this.pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+    this.pc = new RTCPeerConnection({ iceServers: getIceServers() });
 
     this.remoteAudio = new Audio();
     this.remoteAudio.autoplay = true;
@@ -151,17 +148,23 @@ export class PTTConnection {
   }
 
   private async sendSignal(type: string, data: unknown) {
-    await fetch("/api/rtc/signal", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fromUserId: this.userId, toUserId: this.peerId, type, data }),
-    }).catch(() => {});
+    try {
+      const res = await fetch("/api/rtc/signal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fromUserId: this.userId, toUserId: this.peerId, type, data }),
+      });
+      if (!res.ok) console.error("[walkie] sendSignal non-ok", type, res.status);
+    } catch (err) {
+      console.error("[walkie] sendSignal failed", type, err);
+    }
   }
 
   private startSignalPolling() {
     this.signalPollInterval = setInterval(async () => {
       try {
         const res = await fetch(`/api/rtc/signal?userId=${this.userId}`);
+        if (!res.ok) { console.error("[walkie] poll non-ok", res.status); return; }
         const { signals } = await res.json();
 
         for (const signal of signals || []) {
@@ -190,7 +193,7 @@ export class PTTConnection {
               break;
           }
         }
-      } catch { /* skip */ }
+      } catch (err) { console.error("[walkie] poll error", err); }
     }, SIGNAL_POLL_INTERVAL);
   }
 }

@@ -212,3 +212,7 @@ Este proyecto usa el plugin `superpowers` (instalado global en ~/.claude/). Para
 - **Antes de cerrar:** `verification-before-completion` (evidencia, no claims) → `requesting-code-review` → `finishing-a-development-branch`
 
 Alineado con reglas globales del usuario: codemap-first, surgical edits, independent auditor, promptfoo antes de prompts, no inventar.
+
+## Auditoría de migraciones
+
+**Numeración 015 → 018 (gap 016/017):** Auditado 2026-04-17 contra `git log --all`. Los archivos `016_*.sql` y `017_*.sql` NUNCA existieron en el historial (`git log -S "016_"` y `-S "017_"` vacíos, `--diff-filter=A`/`=D` vacíos). No es un rename ni un delete — son números saltados durante desarrollo. Intencional, no requiere restauración. Nuevas migraciones continúan desde la siguiente disponible (048+).

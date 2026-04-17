@@ -3,22 +3,9 @@
  * Gestiona la conexión peer-to-peer para llamadas de voz y vídeo.
  */
 
-const ICE_SERVERS: RTCIceServer[] = [
-  { urls: "stun:stun.l.google.com:19302" },
-  { urls: "stun:stun1.l.google.com:19302" },
-];
+import { getIceServers } from "@/lib/rtc/ice";
 
-// Añadir TURN server si está configurado
-if (
-  typeof process !== "undefined" &&
-  process.env?.NEXT_PUBLIC_TURN_URL
-) {
-  ICE_SERVERS.push({
-    urls: process.env.NEXT_PUBLIC_TURN_URL,
-    username: process.env.NEXT_PUBLIC_TURN_USER || "",
-    credential: process.env.NEXT_PUBLIC_TURN_PASS || "",
-  });
-}
+const ICE_SERVERS: RTCIceServer[] = getIceServers();
 
 export type CallType = "voice" | "video";
 

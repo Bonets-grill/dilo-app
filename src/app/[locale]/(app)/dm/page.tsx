@@ -5,6 +5,9 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { createBrowserSupabase } from "@/lib/supabase/client";
 import WalkieButton from "@/components/calls/WalkieButton";
+import CallButton from "@/components/calls/CallButton";
+import HoroscopeCard from "@/components/home/HoroscopeCard";
+import { toWavBlob } from "@/lib/audio/wav";
 import {
   Search,
   UserPlus,
@@ -350,15 +353,12 @@ export default function DMPage() {
       mr.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
       mr.onstop = async () => {
         stream.getTracks().forEach(t => t.stop());
-        const blob = new Blob(chunks, { type: mr.mimeType || "audio/webm" });
-        // Transcribimos el audio antes de enviar para que el receptor tenga
-        // TEXTO aunque su navegador no decodifique el formato del blob (webm
-        // en Safari iOS). El texto se usa como content del mensaje; el blob
-        // se envía igual como mediaUrl para reproducción opcional.
+        const recordedBlob = new Blob(chunks, { type: mr.mimeType || "audio/webm" });
+        // Transcribimos con el blob original (Whisper/AssemblyAI aceptan webm).
         let transcript = "";
         try {
           const fd = new FormData();
-          fd.append("audio", blob, mr.mimeType?.includes("mp4") ? "a.m4a" : "a.webm");
+          fd.append("audio", recordedBlob, mr.mimeType?.includes("mp4") ? "a.m4a" : "a.webm");
           fd.append("locale", "es");
           const tr = await fetch("/api/transcribe", { method: "POST", body: fd });
           if (tr.ok) {
@@ -366,6 +366,19 @@ export default function DMPage() {
             transcript = (td?.text || "").trim();
           }
         } catch { /* fallback to placeholder */ }
+        // Transcode webm/ogg → WAV para que Safari (y cualquier navegador)
+        // pueda reproducirlo. Safari decodifica mp4/aac y wav pero NO webm.
+        // Si el blob ya es mp4 (Safari) o wav, lo dejamos intacto.
+        let deliverBlob = recordedBlob;
+        const srcMime = (mr.mimeType || recordedBlob.type || "").toLowerCase();
+        const needsTranscode = /webm|ogg/.test(srcMime);
+        if (needsTranscode) {
+          try {
+            deliverBlob = await toWavBlob(recordedBlob);
+          } catch (err) {
+            console.error("[dm] wav transcode failed, sending original:", err);
+          }
+        }
         const reader = new FileReader();
         reader.onloadend = async () => {
           const base64 = reader.result as string;
@@ -384,7 +397,7 @@ export default function DMPage() {
             });
           }
         };
-        reader.readAsDataURL(blob);
+        reader.readAsDataURL(deliverBlob);
       };
       mr.start();
       mediaRecRef.current = mr;
@@ -407,13 +420,10 @@ export default function DMPage() {
     }
     if (audioRef.current) audioRef.current.pause();
 
-    // Detectar formato del data URL y advertir si es webm en Safari (no lo decodifica)
-    const isWebm = /^data:audio\/webm/i.test(url);
-    const isSafari = typeof navigator !== "undefined" && /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    if (isWebm && isSafari) {
-      alert("Este audio está en formato webm y tu Safari no lo reproduce. Pide al otro que te envíe un walkie en vivo (botón radio) o un mensaje nuevo.");
-      return;
-    }
+    // Nota: los audios nuevos se entregan en WAV (Chrome emisor) o MP4/AAC
+    // (Safari emisor) — ambos se decodifican en cualquier navegador. Mensajes
+    // legacy grabados antes del 2026-04-17 pueden seguir en webm; se avisa
+    // en onerror si el navegador no puede reproducirlos.
 
     const audio = new Audio(url);
     audio.onended = () => setPlayingAudio(null);
@@ -524,6 +534,7 @@ export default function DMPage() {
           </div>
           <span className="text-sm font-semibold flex-1">{chatWith.name} <span className="text-[9px] text-[var(--dim)] font-normal ml-1">v1057</span></span>
           {userId && <WalkieButton senderId={userId} receiverId={chatWith.id} />}
+          {userId && <CallButton calleeId={chatWith.id} calleeName={chatWith.name} />}
           <div className="relative">
             <button type="button" onClick={() => setShowMenu(!showMenu)} className="p-2 text-[var(--dim)]">
               <MoreVertical size={18} />
@@ -714,6 +725,8 @@ export default function DMPage() {
   // ── LIST VIEW (default) ──
   return (
     <div className="h-full overflow-y-auto overscroll-y-contain">
+      {/* Horoscope entry point — hides silently if user has no birthdate */}
+      <div className="pt-3"><HoroscopeCard /></div>
       <div className="px-4 py-5 max-w-lg mx-auto">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">{t("title")}</h2>
