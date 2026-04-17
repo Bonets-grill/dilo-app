@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dilo-v4-20260417';
+const CACHE_NAME = 'dilo-v5-20260417-fix';
 const SUPPORTED_LOCALES = ['es', 'en', 'fr', 'it', 'de'];
 const DEFAULT_LOCALE = 'es';
 
@@ -7,15 +7,71 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil((async () => {
+    // Wipe old cache buckets left behind by prior CACHE_NAME bumps.
+    const keys = await caches.keys();
+    await Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)));
+    await self.clients.claim();
+  })());
 });
 
-// Fetch: network first
+/**
+ * Fetch handler — scoped cautiously.
+ *
+ * Previous version (pre 2026-04-17) did:
+ *   event.respondWith(fetch(req).catch(() => caches.match(req)))
+ *
+ * When BOTH the network request failed AND the cache had no entry,
+ * caches.match resolved to `undefined`, so respondWith received undefined
+ * and crashed with:
+ *   "TypeError: Failed to convert value to 'Response'"
+ *
+ * The crash propagated to every GET the browser routed through the SW —
+ * HTML documents, /api/* fetches, /_next/static chunks, Supabase Realtime
+ * websocket handshake (the initial /auth exchange). Full page breakage.
+ *
+ * This version:
+ *   1. Passes through non-GET, cross-origin, and dynamic routes untouched
+ *      (no respondWith called → browser handles it natively, SW cannot
+ *      corrupt the response).
+ *   2. For truly static same-origin assets, tries network first and falls
+ *      back to cache; guarantees a Response either way so respondWith
+ *      never receives undefined.
+ */
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
-  event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request))
-  );
+  const req = event.request;
+  if (req.method !== 'GET') return;
+
+  let url;
+  try { url = new URL(req.url); } catch (_) { return; }
+
+  if (url.origin !== self.location.origin) return;
+
+  // Never intercept these — let the browser hit the network directly.
+  const p = url.pathname;
+  if (p.startsWith('/api/')) return;
+  if (p.startsWith('/_next/data/')) return;
+  if (p.startsWith('/_next/image')) return;
+  if (p.startsWith('/auth/')) return;
+
+  // Only take over for genuinely static assets.
+  const isStatic =
+    p.startsWith('/_next/static/') ||
+    p.startsWith('/icons/') ||
+    /\.(png|jpg|jpeg|svg|ico|css|js|woff2?|ttf|webp|mp3|mp4|webm|wav)$/i.test(p);
+  if (!isStatic) return;
+
+  event.respondWith((async () => {
+    try {
+      const res = await fetch(req);
+      return res;
+    } catch (_) {
+      const cached = await caches.match(req);
+      if (cached) return cached;
+      // Last-resort offline response — ALWAYS a Response, never undefined.
+      return new Response('', { status: 503, statusText: 'offline' });
+    }
+  })());
 });
 
 // Push notification — LOUD
