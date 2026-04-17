@@ -286,14 +286,19 @@ export async function POST(req: NextRequest) {
         });
       }
       try {
-        const res = await fetch(`${evoUrl}/message/sendText/${instName}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", apikey: evoKey },
-          body: JSON.stringify({ number: to, text: message }),
+        // User-confirmed send via voice tool — proactive=false because the
+        // user explicitly chose to send. Still gated by spacing + cap so a
+        // scripted loop can't blast.
+        const { safeSendWhatsAppText } = await import("@/lib/wa/anti-ban");
+        const r = await safeSendWhatsAppText({
+          instance: instName,
+          to,
+          text: message,
+          userId,
+          proactive: false,
         });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          return NextResponse.json({ result: JSON.stringify({ error: "send_failed", detail: data }) });
+        if (!r.ok) {
+          return NextResponse.json({ result: JSON.stringify({ error: "send_failed", reason: r.reason }) });
         }
         return NextResponse.json({ result: JSON.stringify({ success: true, sent_to: to }) });
       } catch (err) {

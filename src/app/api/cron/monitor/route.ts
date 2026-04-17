@@ -114,10 +114,17 @@ export async function GET() {
     if (phone) {
       const message = `🔧 *DILO Cron Monitor — ${today}*\n\n${issues.join("\n")}\n\n${summary.length > 0 ? summary.join("\n") : ""}`;
 
-      await fetch(`${EVO_URL}/message/sendText/${instName}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", apikey: EVO_KEY },
-        body: JSON.stringify({ number: phone, text: message }),
+      // System alert to the admin — skipPresence=true (no typing indicator
+      // because it's a machine-to-machine ping, not a conversation), still
+      // gated by anti-ban to respect kill-switch + caps.
+      const { safeSendWhatsAppText } = await import("@/lib/wa/anti-ban");
+      await safeSendWhatsAppText({
+        instance: instName,
+        to: phone,
+        text: message,
+        userId: ADMIN_USER_ID,
+        proactive: true,
+        skipPresence: true,
       }).catch(() => {});
     }
   }

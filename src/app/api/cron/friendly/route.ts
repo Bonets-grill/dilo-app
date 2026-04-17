@@ -79,14 +79,18 @@ export async function GET() {
         const message = completion.choices[0]?.message?.content?.trim();
         if (!message) continue;
 
-        // Send via WhatsApp
-        await fetch(`${EVO_URL}/message/sendText/${channel.instance_name}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", apikey: EVO_KEY },
-          body: JSON.stringify({ number: channel.phone, text: message }),
+        // Send via WhatsApp through the anti-ban layer (proactive → respects
+        // warmup + daily cap + typing simulation).
+        const { safeSendWhatsAppText } = await import("@/lib/wa/anti-ban");
+        const res = await safeSendWhatsAppText({
+          instance: channel.instance_name,
+          to: channel.phone,
+          text: message,
+          userId: user.id,
+          proactive: true,
         });
-
-        sent++;
+        if (res.ok) sent++;
+        else if (res.reason && res.reason !== "error") console.warn("[friendly] WA skip:", res.reason);
       } catch (e) {
         console.error(`[Friendly] Failed for user ${user.id}:`, e);
       }

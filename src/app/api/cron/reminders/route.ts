@@ -78,12 +78,16 @@ export async function GET() {
             }
 
             if (phone) {
-              const res = await fetch(`${evoUrl}/message/sendText/${instName}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json", apikey: evoKey },
-                body: JSON.stringify({ number: phone, text: `⏰ Recordatorio de DILO:\n\n${reminder.text}` }),
+              const { safeSendWhatsAppText } = await import("@/lib/wa/anti-ban");
+              const res = await safeSendWhatsAppText({
+                instance: instName,
+                to: phone,
+                text: `⏰ Recordatorio de DILO:\n\n${reminder.text}`,
+                userId: reminder.user_id,
+                proactive: true,
               });
               if (res.ok) delivered = true;
+              else if (res.reason && res.reason !== "error") console.warn("[reminders] WA skip:", res.reason);
             }
           } catch (waErr) {
             console.error("[Reminder] WhatsApp send failed:", waErr);

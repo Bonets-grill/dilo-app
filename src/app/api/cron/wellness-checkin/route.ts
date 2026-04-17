@@ -75,18 +75,16 @@ export async function GET() {
         const msg = messages[locale] || messages.es;
 
         if (EVO_URL && EVO_KEY) {
-          await fetch(`${EVO_URL}/message/sendText/${wa.instance_name}`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              apikey: EVO_KEY,
-            },
-            body: JSON.stringify({
-              number: wa.phone,
-              text: msg,
-            }),
+          const { safeSendWhatsAppText } = await import("@/lib/wa/anti-ban");
+          const r = await safeSendWhatsAppText({
+            instance: wa.instance_name,
+            to: wa.phone,
+            text: msg,
+            userId: user.id,
+            proactive: true,
           });
-          sent++;
+          if (r.ok) sent++;
+          else if (r.reason && r.reason !== "error") console.warn("[wellness] WA skip:", r.reason);
         }
       } catch (err) {
         console.error(`[Wellness Cron] Error for user ${user.id}:`, err);
