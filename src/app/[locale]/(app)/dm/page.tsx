@@ -351,12 +351,28 @@ export default function DMPage() {
       mr.onstop = async () => {
         stream.getTracks().forEach(t => t.stop());
         const blob = new Blob(chunks, { type: mr.mimeType || "audio/webm" });
+        // Transcribimos el audio antes de enviar para que el receptor tenga
+        // TEXTO aunque su navegador no decodifique el formato del blob (webm
+        // en Safari iOS). El texto se usa como content del mensaje; el blob
+        // se envía igual como mediaUrl para reproducción opcional.
+        let transcript = "";
+        try {
+          const fd = new FormData();
+          fd.append("audio", blob, mr.mimeType?.includes("mp4") ? "a.m4a" : "a.webm");
+          fd.append("locale", "es");
+          const tr = await fetch("/api/transcribe", { method: "POST", body: fd });
+          if (tr.ok) {
+            const td = await tr.json();
+            transcript = (td?.text || "").trim();
+          }
+        } catch { /* fallback to placeholder */ }
         const reader = new FileReader();
         reader.onloadend = async () => {
           const base64 = reader.result as string;
-          // Send as voice message
+          const msgContent = transcript || "[Audio]";
+          // Send as voice message (content = transcripción si existe, si no placeholder)
           setMessages(prev => [...prev, {
-            id: crypto.randomUUID(), fromMe: true, content: "[Audio]",
+            id: crypto.randomUUID(), fromMe: true, content: msgContent,
             type: "voice", mediaUrl: base64, read: false, time: new Date().toISOString(),
           }]);
           setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
@@ -364,7 +380,7 @@ export default function DMPage() {
             await fetch("/api/dm", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ userId, receiverId: chatWith.id, content: "[Audio]", messageType: "voice", mediaUrl: base64 }),
+              body: JSON.stringify({ userId, receiverId: chatWith.id, content: msgContent, messageType: "voice", mediaUrl: base64 }),
             });
           }
         };
@@ -538,10 +554,15 @@ export default function DMPage() {
                 {m.type === "image" && m.mediaUrl ? (
                   <Image src={m.mediaUrl} alt="Imagen" width={300} height={200} className="rounded-xl max-w-full max-h-[200px] object-cover cursor-pointer" onClick={() => setFullscreenImage(m.mediaUrl!)} />
                 ) : m.type === "voice" && m.mediaUrl ? (
-                  <button type="button" onClick={() => toggleAudio(m.mediaUrl!)} className="flex items-center gap-2">
-                    {playingAudio === m.mediaUrl ? <Pause size={16} /> : <Play size={16} />}
-                    <span className="text-xs">{t("voiceMessage")}</span>
-                  </button>
+                  <div className="space-y-1">
+                    {m.content && m.content !== "[Audio]" && (
+                      <p className="leading-snug">{m.content}</p>
+                    )}
+                    <button type="button" onClick={() => toggleAudio(m.mediaUrl!)} className={`flex items-center gap-1.5 text-xs ${m.fromMe ? "text-white/80" : "text-[var(--dim)]"} hover:underline`}>
+                      {playingAudio === m.mediaUrl ? <Pause size={14} /> : <Play size={14} />}
+                      <span>{m.content && m.content !== "[Audio]" ? "Escuchar" : t("voiceMessage")}</span>
+                    </button>
+                  </div>
                 ) : (
                   <p>{m.content}</p>
                 )}

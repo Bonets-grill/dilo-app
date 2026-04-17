@@ -138,26 +138,44 @@ export default function ChannelsPage() {
       // Si la instance está en "close" (sesión vieja rota), Evolution genera
       // un pairing code que WhatsApp rechaza como "código incorrecto" porque
       // Baileys quedó con auth state corrupto. Hard-reset antes del pair.
-      if (state === "close" || state === "disconnected") {
-        await fetch("/api/evolution", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "delete", instanceName }),
-        });
-        await new Promise((r) => setTimeout(r, 1200));
-        await fetch("/api/evolution", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "create", instanceName }),
-        });
-        await new Promise((r) => setTimeout(r, 1500));
-      } else if (!state || state === "unknown" || statusData?.error) {
-        // No existe → crear fresca
-        await fetch("/api/evolution", {
+      const needsFresh = state === "close" || state === "disconnected" || !state || state === "unknown" || statusData?.error;
+      if (needsFresh) {
+        if (state === "close" || state === "disconnected") {
+          await fetch("/api/evolution", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "delete", instanceName }),
+          });
+          await new Promise((r) => setTimeout(r, 1500));
+        }
+        const createRes = await fetch("/api/evolution", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: "create", instanceName }),
         });
+        if (!createRes.ok) {
+          setError("Evolution rechazó crear la instancia. Espera un minuto e inténtalo de nuevo.");
+          setWaStatus("disconnected");
+          return;
+        }
+        // Esperar a que Baileys termine de inicializar (poll status máx 8s)
+        let ready = false;
+        for (let i = 0; i < 8; i++) {
+          await new Promise((r) => setTimeout(r, 1000));
+          const s = await fetch("/api/evolution", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "status", instanceName }),
+          });
+          const sd = await s.json().catch(() => ({}));
+          const st = sd?.instance?.state || sd?.state;
+          if (st === "connecting" || st === "close" || st === "qr") { ready = true; break; }
+        }
+        if (!ready) {
+          setError("La instancia tardó demasiado en inicializarse. Reintenta en 10 segundos.");
+          setWaStatus("disconnected");
+          return;
+        }
       }
 
       const res = await fetch("/api/evolution", {

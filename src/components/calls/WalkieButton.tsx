@@ -50,8 +50,16 @@ export default function WalkieButton({ senderId, receiverId }: Props) {
       }
       conn.startTalking();
       setTalking(true);
-    } catch {
+    } catch (err) {
       setTalking(false);
+      const msg = err instanceof Error ? err.message : "error";
+      if (/Permission|denied|NotAllowed/i.test(msg)) {
+        alert("Permiso de micrófono denegado. Actívalo en Ajustes → Safari → Micrófono.");
+      } else if (/NotFound|no microphone/i.test(msg)) {
+        alert("No se detectó micrófono en el dispositivo.");
+      } else {
+        alert("Walkie no pudo iniciar: " + msg);
+      }
     } finally {
       setBusy(false);
     }
