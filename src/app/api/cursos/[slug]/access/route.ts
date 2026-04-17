@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { requireUser } from "@/lib/auth/require-user";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -15,13 +16,13 @@ const supabase = createClient(
  * info.
  */
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
-  const userId = new URL(req.url).searchParams.get("userId");
-
-  if (!userId) return NextResponse.json({ error: "Missing userId" }, { status: 400 });
+  const auth = await requireUser();
+  if (auth.error) return auth.error;
+  const userId = auth.user.id;
 
   // Course metadata
   const { data: course, error: courseErr } = await supabase

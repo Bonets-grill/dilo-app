@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { createServerSupabase } from "@/lib/supabase/server";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -7,11 +8,17 @@ const supabase = createClient(
 );
 
 /**
- * GET /api/cursos/list?userId=...
- * Lists all published courses + whether the calling user has purchased each.
+ * GET /api/cursos/list
+ *
+ * Returns all published courses. If the caller is authenticated, each
+ * course is tagged with `owned: true|false` based on their user_skills.
+ * Anonymous callers get the list with every course marked `owned: false`.
  */
-export async function GET(req: NextRequest) {
-  const userId = new URL(req.url).searchParams.get("userId");
+export async function GET() {
+  // Optional auth — anon users also see the list
+  const supa = await createServerSupabase();
+  const { data: { user } } = await supa.auth.getUser();
+  const userId = user?.id ?? null;
 
   const { data: courses, error } = await supabase
     .from("courses")
