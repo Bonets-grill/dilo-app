@@ -8,6 +8,7 @@ import {
   Search,
   UserPlus,
   Check,
+  CheckCheck,
   X,
   ArrowLeft,
   Send,
@@ -127,12 +128,20 @@ export default function DMPage() {
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, []);
 
-  // Realtime global: cualquier mensaje entrante actualiza la lista de contactos
-  // (antes solo había subscription dentro del chat abierto → la lista no se
-  //  enteraba de mensajes nuevos hasta recargar la página).
+  // Realtime global + polling fallback de 10s. La subscription depende del JWT
+  // del usuario + RLS, y en iOS PWA a veces se pierde tras background. El poll
+  // garantiza que la lista siempre se actualice incluso si Realtime falla.
   useEffect(() => {
     if (!userId) return;
     const supabase = createBrowserSupabase();
+
+    // Inyectar sesión al cliente realtime antes de subscribe
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.access_token) {
+        supabase.realtime.setAuth(data.session.access_token);
+      }
+    });
+
     const ch = supabase
       .channel(`dm-inbox-${userId}`)
       .on(
@@ -141,7 +150,15 @@ export default function DMPage() {
         () => { loadContacts(userId); }
       )
       .subscribe();
-    return () => { ch.unsubscribe(); };
+
+    // Polling fallback — refresca contactos cada 10s mientras la vista esté visible
+    const pollId = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        loadContacts(userId);
+      }
+    }, 10_000);
+
+    return () => { ch.unsubscribe(); clearInterval(pollId); };
   }, [userId]);
 
   async function loadContacts(uid: string) {
@@ -212,21 +229,36 @@ export default function DMPage() {
     if (userId) loadContacts(userId);
   }
 
+  async function refreshMessages(otherId: string) {
+    const res = await fetch(`/api/dm?userId=${userId}&otherId=${otherId}`);
+    const data = await res.json();
+    if (data?.messages) {
+      setMessages(data.messages);
+    }
+  }
+
   async function openChat(otherId: string, name: string) {
     setChatWith({ id: otherId, name });
     setView("chat");
     setMessages([]);
     setShowMenu(false);
 
-    const res = await fetch(`/api/dm?userId=${userId}&otherId=${otherId}`);
-    const data = await res.json();
-    setMessages(data.messages || []);
+    await refreshMessages(otherId);
     setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
 
-    // Supabase Realtime for instant messages (replaces polling)
-    if (pollRef.current) clearInterval(pollRef.current);
+    if (pollRef.current) {
+      const prev = pollRef.current as unknown as { __channel?: { unsubscribe: () => void } } | null;
+      if (prev?.__channel) prev.__channel.unsubscribe();
+      else clearInterval(pollRef.current);
+    }
     const supabase = createBrowserSupabase();
+    // Sync JWT to realtime client so RLS allows seeing events for this user
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.access_token) supabase.realtime.setAuth(data.session.access_token);
+    });
+
     const channel = supabase.channel(`dm-${[userId, otherId].sort().join("-")}`)
+      // Nuevo mensaje entrante (el otro me escribió)
       .on("postgres_changes", {
         event: "INSERT",
         schema: "public",
@@ -238,26 +270,39 @@ export default function DMPage() {
           setMessages(prev => {
             if (prev.some(m => m.id === msg.id)) return prev;
             return [...prev, {
-              id: msg.id,
-              fromMe: false,
-              content: msg.content,
-              type: msg.message_type,
-              mediaUrl: msg.media_url,
-              read: !!msg.read_at,
-              time: msg.created_at,
+              id: msg.id, fromMe: false, content: msg.content, type: msg.message_type,
+              mediaUrl: msg.media_url, read: !!msg.read_at, time: msg.created_at,
             }];
           });
           setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
         }
       })
+      // El otro leyó mis mensajes (read_at se setea en GET /api/dm) → azul palomitas
+      .on("postgres_changes", {
+        event: "UPDATE",
+        schema: "public",
+        table: "direct_messages",
+        filter: `sender_id=eq.${userId}`,
+      }, (payload) => {
+        const msg = payload.new as { id: string; read_at: string | null };
+        if (msg.read_at) {
+          setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, read: true } : m));
+        }
+      })
       .subscribe();
 
-    // Store channel ref for cleanup (reuse pollRef)
-    pollRef.current = setTimeout(() => {}, 0); // placeholder
-    const origCleanup = pollRef.current;
-    clearTimeout(origCleanup);
-    // Override closeChat cleanup
-    (pollRef as { current: unknown }).current = { __channel: channel } as unknown as ReturnType<typeof setInterval>;
+    // Polling fallback cada 5s mientras el chat esté abierto y visible
+    const pollInterval = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        refreshMessages(otherId);
+      }
+    }, 5_000);
+
+    (pollRef as { current: unknown }).current = {
+      __channel: channel,
+      __poll: pollInterval,
+      unsubscribe() { channel.unsubscribe(); clearInterval(pollInterval); },
+    } as unknown as ReturnType<typeof setInterval>;
   }
 
   async function sendMessage() {
@@ -405,14 +450,13 @@ export default function DMPage() {
     setView("list");
     setChatWith(null);
     setShowMenu(false);
-    // Clean up Realtime channel
+    // Clean up Realtime channel + polling
     if (pollRef.current) {
-      const ref = pollRef.current as unknown as { __channel?: { unsubscribe: () => void } };
-      if (ref.__channel) {
-        ref.__channel.unsubscribe();
-      } else {
-        clearInterval(pollRef.current);
-      }
+      const ref = pollRef.current as unknown as { unsubscribe?: () => void; __channel?: { unsubscribe: () => void }; __poll?: ReturnType<typeof setInterval> };
+      if (ref.unsubscribe) ref.unsubscribe();
+      else if (ref.__channel) ref.__channel.unsubscribe();
+      else clearInterval(pollRef.current);
+      pollRef.current = null;
     }
     if (userId) loadContacts(userId);
   }
@@ -482,9 +526,16 @@ export default function DMPage() {
                 ) : (
                   <p>{m.content}</p>
                 )}
-                <p className={`text-[9px] mt-0.5 ${m.fromMe ? "text-white/60" : "text-[var(--dim)]"}`}>
-                  {formatTime(m.time)}
-                </p>
+                <div className={`flex items-center gap-1 mt-0.5 ${m.fromMe ? "justify-end" : "justify-start"}`}>
+                  <span className={`text-[9px] ${m.fromMe ? "text-white/60" : "text-[var(--dim)]"}`}>
+                    {formatTime(m.time)}
+                  </span>
+                  {m.fromMe && (
+                    m.read
+                      ? <CheckCheck size={12} className="text-blue-300" aria-label="Visto" />
+                      : <Check size={12} className="text-white/60" aria-label="Enviado" />
+                  )}
+                </div>
               </div>
             </div>
           ))}
