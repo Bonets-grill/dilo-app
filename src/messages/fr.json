@@ -100,7 +100,9 @@
       "subscriptions": "Abonnements",
       "education": "Formation",
       "other": "Autres"
-    }
+    },
+    "edit": "Modifier",
+    "delete": "Supprimer"
   },
   "store": {
     "title": "Boutique de Skills",

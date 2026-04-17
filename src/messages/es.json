@@ -100,7 +100,9 @@
       "subscriptions": "Suscripciones",
       "education": "Educación",
       "other": "Otros"
-    }
+    },
+    "edit": "Editar",
+    "delete": "Eliminar"
   },
   "store": {
     "title": "Tienda de Skills",

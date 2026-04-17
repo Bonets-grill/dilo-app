@@ -100,7 +100,9 @@
       "subscriptions": "Abonnements",
       "education": "Bildung",
       "other": "Sonstiges"
-    }
+    },
+    "edit": "Bearbeiten",
+    "delete": "Löschen"
   },
   "store": {
     "title": "Skill-Shop",

@@ -100,7 +100,9 @@
       "subscriptions": "Abbonamenti",
       "education": "Formazione",
       "other": "Altro"
-    }
+    },
+    "edit": "Modifica",
+    "delete": "Elimina"
   },
   "store": {
     "title": "Negozio Skill",

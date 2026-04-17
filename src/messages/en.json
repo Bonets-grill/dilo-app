@@ -100,7 +100,9 @@
       "subscriptions": "Subscriptions",
       "education": "Education",
       "other": "Other"
-    }
+    },
+    "edit": "Edit",
+    "delete": "Delete"
   },
   "store": {
     "title": "Skill Store",
