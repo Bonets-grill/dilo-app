@@ -2,7 +2,7 @@
 
 import { useTranslations, useLocale } from "next-intl";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ArrowUp, Mic, Square, Plus, MessageCircle, ImagePlus, X, Pencil, Copy, Reply, Search, Sparkles, Loader2, Phone } from "lucide-react";
+import { ArrowUp, Mic, Square, Plus, MessageCircle, ImagePlus, X, Pencil, Copy, Reply, Search, Sparkles, Loader2, Phone, Trash2 } from "lucide-react";
 import VoiceRealtime from "@/components/VoiceRealtime";
 import WakeWordListener from "@/components/WakeWordListener";
 import ShareMenu from "@/components/ui/ShareMenu";
@@ -40,6 +40,8 @@ export default function ChatPage() {
   const setConvId = (id: string | null) => { convIdRef.current = id; _setConvId(id); };
   const [convList, setConvList] = useState<Conv[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [historySearch, setHistorySearch] = useState("");
+  const [deletingConv, setDeletingConv] = useState<string | null>(null);
   const [pendingSend, setPendingSend] = useState<PendingSend | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -72,7 +74,8 @@ export default function ChatPage() {
       const uid = data.user.id;
       setUserId(uid);
       supabase.from("conversations").select("id, title, updated_at").eq("user_id", uid)
-        .order("updated_at", { ascending: false }).limit(20)
+        .eq("hidden_from_user", false)
+        .order("updated_at", { ascending: false }).limit(50)
         .then(async ({ data: convs }) => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const list = (convs as any[] || []) as Conv[];
@@ -113,6 +116,23 @@ export default function ChatPage() {
   }
 
   function newChat() { setConvId(null); setMsgs([]); setShowHistory(false); setPendingSend(null); }
+
+  async function deleteConversation(id: string) {
+    if (deletingConv) return;
+    const ok = typeof window !== "undefined"
+      ? window.confirm("¿Eliminar esta conversación de tu historial? La memoria del agente (lo aprendido sobre ti) no se borra.")
+      : true;
+    if (!ok) return;
+    setDeletingConv(id);
+    try {
+      const r = await fetch(`/api/conversations/${id}`, { method: "DELETE" });
+      if (!r.ok) return;
+      setConvList(prev => prev.filter(c => c.id !== id));
+      if (id === convIdRef.current) newChat();
+    } finally {
+      setDeletingConv(null);
+    }
+  }
 
   const scrollDown = useCallback(() => {
     setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
@@ -232,9 +252,12 @@ export default function ChatPage() {
         setMsgs(p => p.map(m => m.id === aId ? { ...m, content: analysis } : m));
         if (userId && convIdRef.current) {
           try {
+            // Guardamos el data URL con prefijo __IMAGE__ para que la edición
+            // posterior ("mejórala", "ponle músculos") pueda recuperarla.
+            // Antes se guardaba "[Foto enviada]" y perdíamos la imagen.
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             await (supabase.from("messages") as any).insert([
-              { conversation_id: convIdRef.current, user_id: userId, role: "user", content: "[Foto enviada]" },
+              { conversation_id: convIdRef.current, user_id: userId, role: "user", content: `__IMAGE__${img}` },
               { conversation_id: convIdRef.current, user_id: userId, role: "assistant", content: analysis },
             ]);
           } catch { /* best-effort */ }
@@ -257,7 +280,8 @@ export default function ChatPage() {
         setConvId(newConvId);
         if (userId) {
           supabase.from("conversations").select("id, title, updated_at").eq("user_id", userId)
-            .order("updated_at", { ascending: false }).limit(20).then(({ data }) => { if (data) setConvList(data as Conv[]); });
+            .eq("hidden_from_user", false)
+            .order("updated_at", { ascending: false }).limit(50).then(({ data }) => { if (data) setConvList(data as Conv[]); });
         }
       }
       const reader = res.body.getReader(); const dec = new TextDecoder(); let acc = "";
@@ -425,22 +449,55 @@ export default function ChatPage() {
   const hasText = input.trim().length > 0;
 
   if (showHistory) {
+    const filteredConvs = historySearch.trim()
+      ? convList.filter(c => (c.title || "").toLowerCase().includes(historySearch.trim().toLowerCase()))
+      : convList;
     return (
       <div className="flex flex-col h-full">
         <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
           <h2 className="text-sm font-semibold">{t("history")}</h2>
           <button type="button" onClick={() => setShowHistory(false)} className="text-xs text-[var(--muted)]">✕</button>
         </div>
+        <div className="px-4 py-2 border-b border-[var(--border)]">
+          <div className="flex items-center gap-2 bg-[var(--bg2)] border border-[var(--border)] rounded-xl px-3 py-2">
+            <Search size={14} className="text-[var(--dim)] flex-shrink-0" />
+            <input
+              type="text"
+              value={historySearch}
+              onChange={e => setHistorySearch(e.target.value)}
+              placeholder="Buscar conversación..."
+              className="flex-1 bg-transparent text-sm text-[#ccc] placeholder-[var(--dim)] focus:outline-none"
+            />
+            {historySearch && (
+              <button type="button" onClick={() => setHistorySearch("")} className="text-[var(--dim)] flex-shrink-0">
+                <X size={14} />
+              </button>
+            )}
+          </div>
+        </div>
         <div className="flex-1 overflow-y-auto">
           <button type="button" onClick={newChat} className="w-full flex items-center gap-3 px-4 py-3 text-left border-b border-[var(--border)] hover:bg-[var(--bg2)]">
             <Plus size={16} className="text-[var(--muted)]" /><span className="text-sm">{t("newChat")}</span>
           </button>
-          {convList.map(c => (
-            <button type="button" key={c.id} onClick={() => loadConversation(c.id)} className={`w-full flex items-center gap-3 px-4 py-3 text-left border-b border-[var(--border)] hover:bg-[var(--bg2)] ${c.id === convId ? "bg-[var(--bg2)]" : ""}`}>
-              <MessageCircle size={14} className="text-[var(--dim)] flex-shrink-0" />
-              <span className="text-sm text-[#ccc] truncate">{c.title || "Chat"}</span>
-            </button>
+          {filteredConvs.map(c => (
+            <div key={c.id} className={`flex items-center border-b border-[var(--border)] hover:bg-[var(--bg2)] ${c.id === convId ? "bg-[var(--bg2)]" : ""}`}>
+              <button type="button" onClick={() => loadConversation(c.id)}
+                className="flex-1 flex items-center gap-3 px-4 py-3 text-left min-w-0">
+                <MessageCircle size={14} className="text-[var(--dim)] flex-shrink-0" />
+                <span className="text-sm text-[#ccc] truncate">{c.title || "Chat"}</span>
+              </button>
+              <button type="button"
+                onClick={(e) => { e.stopPropagation(); deleteConversation(c.id); }}
+                disabled={deletingConv === c.id}
+                className="px-3 py-3 text-[var(--dim)] hover:text-red-400 flex-shrink-0 disabled:opacity-40"
+                aria-label="Eliminar conversación">
+                {deletingConv === c.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+              </button>
+            </div>
           ))}
+          {filteredConvs.length === 0 && historySearch && (
+            <p className="text-center text-xs text-[var(--dim)] py-6">Sin resultados</p>
+          )}
         </div>
       </div>
     );
