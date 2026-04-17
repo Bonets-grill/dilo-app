@@ -276,16 +276,9 @@ export default function DMPage() {
             }];
           });
           setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
-          // Auto-play walkie: si es audio, intentar reproducir. Safari lo puede
-          // bloquear sin user-gesture reciente; si falla, el user usa el Play.
-          if (msg.message_type === "voice" && msg.media_url) {
-            const a = new Audio(msg.media_url);
-            a.onerror = () => { /* bloqueado o formato no soportado, silent */ };
-            a.play().catch(() => { /* autoplay blocked */ });
-            audioRef.current = a;
-            setPlayingAudio(msg.media_url);
-            a.onended = () => setPlayingAudio(null);
-          }
+          // Nota: el walkie-talkie real-time va por WebRTC (WalkieButton),
+          // no se persiste como mensaje. Los "voice" aquí son clips async
+          // legacy; el user los reproduce pulsando el Play de la burbuja.
         }
       })
       // El otro leyó mis mensajes (read_at se setea en GET /api/dm) → azul palomitas
@@ -397,11 +390,20 @@ export default function DMPage() {
       return;
     }
     if (audioRef.current) audioRef.current.pause();
+
+    // Detectar formato del data URL y advertir si es webm en Safari (no lo decodifica)
+    const isWebm = /^data:audio\/webm/i.test(url);
+    const isSafari = typeof navigator !== "undefined" && /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    if (isWebm && isSafari) {
+      alert("Este audio está en formato webm y tu Safari no lo reproduce. Pide al otro que te envíe un walkie en vivo (botón radio) o un mensaje nuevo.");
+      return;
+    }
+
     const audio = new Audio(url);
     audio.onended = () => setPlayingAudio(null);
     audio.onerror = () => {
       setPlayingAudio(null);
-      alert("No se pudo reproducir este audio. Formato no soportado o audio dañado.");
+      alert("No se pudo reproducir este audio. Formato incompatible con tu navegador (el otro grabó en un formato que aquí no decodifica).");
     };
     audioRef.current = audio;
     setPlayingAudio(url);
@@ -409,7 +411,12 @@ export default function DMPage() {
       await audio.play();
     } catch (err) {
       setPlayingAudio(null);
-      alert("No se pudo reproducir: " + (err instanceof Error ? err.message : "error"));
+      const msg = err instanceof Error ? err.message : "error";
+      if (/not supported|NotSupportedError/i.test(msg)) {
+        alert("Audio en formato incompatible con tu dispositivo. Usa el walkie en vivo (🔘 radio) para tiempo real sin este problema.");
+      } else {
+        alert("No se pudo reproducir: " + msg);
+      }
     }
   }
 

@@ -137,6 +137,19 @@ export class PTTConnection {
     this.onStatusChange("disconnected");
   }
 
+  /**
+   * Lightweight listener: arranca el polling para recibir una "offer" del
+   * otro peer sin pedir el micrófono todavía. Cuando el otro pulse el botón
+   * y mande su offer, acceptCall se dispara y ahí sí pide el mic.
+   * Uso: el lado que NO habla primero abre el chat y llama a listen() para
+   * estar preparado a recibir audio en cuanto el otro empiece a hablar.
+   */
+  listen() {
+    if (this.signalPollInterval) return;
+    this.onStatusChange("listening");
+    this.startSignalPolling();
+  }
+
   private async sendSignal(type: string, data: unknown) {
     await fetch("/api/rtc/signal", {
       method: "POST",
