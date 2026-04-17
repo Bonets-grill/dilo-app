@@ -24,7 +24,11 @@ export async function GET(req: NextRequest) {
   // Store userId in state parameter so we can link it after callback
   const state = Buffer.from(JSON.stringify({ userId })).toString("base64url");
 
-  const redirectUri = `${url.origin}/api/oauth/google/callback`;
+  // OJO: siempre usamos NEXT_PUBLIC_APP_URL para que el consent screen de
+  // Google muestre "ordydilo.com" en vez del dominio de vista previa de Vercel.
+  // Si cae a url.origin, queda "dilo-app-five.vercel.app" que asusta al usuario.
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || url.origin;
+  const redirectUri = `${appUrl}/api/oauth/google/callback`;
   const scopes = [
     "https://www.googleapis.com/auth/gmail.readonly",
     "https://www.googleapis.com/auth/gmail.send",

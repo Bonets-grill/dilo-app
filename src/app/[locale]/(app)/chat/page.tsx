@@ -207,6 +207,17 @@ export default function ChatPage() {
     const editCliticRx = /\b(?:mej[oó]ral[ao]|ed[ií]tal[ao]|qu[ií]tal[aeo]|retócal[ao]|p[oó]nle|a[ñn][aá]del[aeo])\b/i;
     const editIntent = Boolean(text && !questionIntent && imgBase64 && (editVerbRx.test(text) || editCliticRx.test(text)));
 
+    // Si el usuario escribe un verbo de edición SIN foto en el historial,
+    // responde directo pidiendo la foto — evita la respuesta confusa del LLM
+    // "No tengo la capacidad de ver imágenes".
+    const hasEditVerb = text && !questionIntent && (editVerbRx.test(text) || editCliticRx.test(text));
+    if (hasEditVerb && !imgBase64) {
+      const reply = "Para editar una foto envíamela primero (toca 📷 abajo) y luego dime qué quieres cambiar. Por ejemplo: mándala y después di 'mejórala', 'ponle músculos', 'quita el fondo'.";
+      setMsgs(p => p.map(m => m.id === aId ? { ...m, content: reply } : m));
+      setBusy(false);
+      return;
+    }
+
     // IMAGEN + TEXTO: solo entra si hay intención de análisis O edición
     if (imgBase64 && text && (questionIntent || editIntent)) {
       if (questionIntent) {

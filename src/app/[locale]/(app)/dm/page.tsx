@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { createBrowserSupabase } from "@/lib/supabase/client";
+import CallButton from "@/components/calls/CallButton";
 import {
   Search,
   UserPlus,
@@ -489,6 +490,7 @@ export default function DMPage() {
             {getInitials(chatWith.name)}
           </div>
           <span className="text-sm font-semibold flex-1">{chatWith.name} <span className="text-[9px] text-[var(--dim)] font-normal ml-1">v1057</span></span>
+          <CallButton calleeId={chatWith.id} calleeName={chatWith.name} />
           <div className="relative">
             <button type="button" onClick={() => setShowMenu(!showMenu)} className="p-2 text-[var(--dim)]">
               <MoreVertical size={18} />

@@ -30,7 +30,10 @@ export async function GET(req: NextRequest) {
 
   const clientId = process.env.GOOGLE_CLIENT_ID!;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET!;
-  const redirectUri = `${url.origin}/api/oauth/google/callback`;
+  // Debe coincidir con el redirect_uri del inicio del flow — hardcodeado al
+  // APP_URL para que Google acepte el intercambio (si no, "redirect_uri_mismatch").
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || url.origin;
+  const redirectUri = `${appUrl}/api/oauth/google/callback`;
 
   try {
     // Exchange code for tokens
