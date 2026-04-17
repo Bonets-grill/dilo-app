@@ -92,6 +92,7 @@ export function getTeacherPrompt(
   studyContext?: string,
   planTopic?: string,
   history?: TopicHistoryEntry[],
+  isOpening?: boolean,
 ): string {
   const persona = TEACHER_PERSONAS[subject] || TEACHER_PERSONAS["Ciencias"];
   const modeRules = mode === "plan" ? PLAN_MODE_RULES : SCHOOL_MODE_RULES;
@@ -107,8 +108,9 @@ export function getTeacherPrompt(
   }
 
   let historyBlock = "";
-  if (history && history.length > 0) {
-    const lines = history.slice(-5).map((h) => {
+  const completed = (history || []).filter((h) => h.summary);
+  if (completed.length > 0) {
+    const lines = completed.slice(-5).map((h) => {
       const name = h.topic_name || `Tema ${h.topic_idx + 1}`;
       const summary = h.summary ? ` — ${h.summary}` : "";
       const struggled = h.struggled.length > 0
@@ -121,5 +123,19 @@ export function getTeacherPrompt(
       `Usa este historial para referirte a lo visto antes ("como vimos con..."). NUNCA empieces otra vez un tema ya completado salvo que el alumno pida repaso.`;
   }
 
-  return `${persona}\n${BASE_RULES}\n${modeRules}${topicBlock}${materialBlock}${historyBlock}`;
+  let openingBlock = "";
+  if (isOpening && completed.length > 0) {
+    const last = completed[completed.length - 1];
+    const lastName = last.topic_name || `el último tema`;
+    openingBlock =
+      `\n\nCHECK-IN DE APERTURA (OBLIGATORIO ANTES DE ENTRAR EN MATERIA):\n` +
+      `Es el INICIO de esta conversación y ya has dado clases antes. Antes de empezar el tema de hoy:\n` +
+      `1. Saluda breve al alumno por su nombre si lo sabes.\n` +
+      `2. Pregúntale cómo se sintió con "${lastName}" — ¿lo entendió, le costó, quiere repasar algo?\n` +
+      `3. Pregúntale si tiene alguna duda concreta de lo estudiado antes.\n` +
+      `4. ESPERA su respuesta. NO avances al tema nuevo en este mensaje.\n` +
+      `Si el alumno dice que tiene dudas o quiere repasar, resuélvelas primero. Si dice que todo bien, en el SIGUIENTE mensaje ya pasas al tema actual.`;
+  }
+
+  return `${persona}\n${BASE_RULES}\n${modeRules}${topicBlock}${materialBlock}${historyBlock}${openingBlock}`;
 }

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import {
-  Play, Square, Loader2, GraduationCap, Camera, FileText, ArrowUp, Volume2, VolumeX, ClipboardCheck,
+  Play, Square, Loader2, GraduationCap, Camera, FileText, ArrowUp, Volume2, VolumeX, ClipboardCheck, CheckCircle2,
 } from "lucide-react";
 import type { QuizQuestion } from "@/components/study/Quiz";
 
@@ -46,6 +46,8 @@ export default function StudyPage() {
   const [showWhiteboard, setShowWhiteboard] = useState<string | null>(null);
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[] | null>(null);
   const [quizLoading, setQuizLoading] = useState(false);
+  const [completingTopic, setCompletingTopic] = useState(false);
+  const [currentTopicName, setCurrentTopicName] = useState<string | null>(null);
 
   const interactedRef = useRef(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -79,6 +81,29 @@ export default function StudyPage() {
     }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── Cargar historial de chat persistido al tener sesión ──
+  useEffect(() => {
+    if (!session) return;
+    let cancelled = false;
+    fetch(`/api/study/history?subject=${encodeURIComponent(subject)}&limit=60`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return;
+        if (d?.currentTopicName) setCurrentTopicName(d.currentTopicName);
+        if (Array.isArray(d?.messages) && d.messages.length > 0) {
+          const msgs: Msg[] = d.messages.map((m: { id: string; role: string; content: string }) => ({
+            id: m.id,
+            role: m.role === "user" ? "user" : "assistant",
+            content: m.content,
+          }));
+          setChatMsgs(msgs);
+          setChatStarted(true);
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [session, subject]);
 
   // ── Heartbeat ──
   useEffect(() => {
@@ -352,6 +377,38 @@ Donde "correct" es el índice (0-3) de la opción correcta. Solo el JSON, nada m
     } catch {} finally { setQuizLoading(false); }
   }
 
+  async function completeTopic() {
+    if (completingTopic) return;
+    const ok = typeof window !== "undefined"
+      ? window.confirm(`¿Seguro que has terminado "${currentTopicName || "este tema"}"? El maestro lo guardará y pasaréis al siguiente.`)
+      : true;
+    if (!ok) return;
+    setCompletingTopic(true);
+    try {
+      const r = await fetch("/api/study/progress/complete-topic", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subject }),
+      });
+      const d = await r.json();
+      if (d?.plan_finished) {
+        const aId = crypto.randomUUID();
+        setChatMsgs((p) => [
+          ...p,
+          { id: aId, role: "assistant", content: `🎉 ¡Has completado todo el plan de ${subject}! Increíble trabajo.` },
+        ]);
+        setCurrentTopicName(null);
+      } else if (d?.next_topic) {
+        setCurrentTopicName(d.next_topic.name || null);
+        // Reset chat para la siguiente clase — el maestro abrirá con check-in
+        setChatMsgs([]);
+        setChatStarted(false);
+      }
+    } finally {
+      setCompletingTopic(false);
+    }
+  }
+
   function fmt(secs: number) {
     const h = Math.floor(secs / 3600);
     const m = Math.floor((secs % 3600) / 60);
@@ -428,6 +485,13 @@ Donde "correct" es el índice (0-3) de la opción correcta. Solo el JSON, nada m
                   <button type="button" onClick={startQuiz} disabled={quizLoading}
                     className="p-1.5 rounded-lg bg-blue-500/20 text-blue-400 disabled:opacity-50" title="Quiz">
                     {quizLoading ? <Loader2 size={14} className="animate-spin" /> : <ClipboardCheck size={14} />}
+                  </button>
+                )}
+                {mode === "plan" && chatStarted && !quizQuestions && currentTopicName && (
+                  <button type="button" onClick={completeTopic} disabled={completingTopic}
+                    className="p-1.5 rounded-lg bg-green-500/20 text-green-400 disabled:opacity-50"
+                    title={`Marcar "${currentTopicName}" como terminado`}>
+                    {completingTopic ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
                   </button>
                 )}
                 <button type="button" onClick={stop} disabled={stopping}

@@ -72,12 +72,17 @@ export async function POST(req: NextRequest) {
       }));
   }
 
+  // Es el primer turno del alumno en esta conversación → activar check-in
+  const userTurns = messages.filter((m: { role: string }) => m?.role === "user").length;
+  const isOpening = userTurns <= 1;
+
   const systemPrompt = getTeacherPrompt(
     subjectKey,
     studyMode,
     studyContext || undefined,
     planTopic,
-    history
+    history,
+    isOpening
   );
 
   const llmMessages = [
