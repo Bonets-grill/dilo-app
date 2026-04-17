@@ -3,7 +3,6 @@
 import { useTranslations } from "next-intl";
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { Link } from "@/i18n/navigation";
 import { createBrowserSupabase } from "@/lib/supabase/client";
 import {
   Search,
@@ -12,7 +11,6 @@ import {
   X,
   ArrowLeft,
   Send,
-  MessageCircle,
   Users,
   Clock,
   Loader2,
@@ -24,6 +22,7 @@ import {
   Ban,
   MoreVertical,
   Sparkles,
+  Share2,
 } from "lucide-react";
 
 interface Contact {
@@ -76,6 +75,7 @@ export default function DMPage() {
   const [sending, setSending] = useState(false);
   const [suggestLoading, setSuggestLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [inviting, setInviting] = useState(false);
 
   async function requestSuggestions() {
     if (suggestLoading || !userId || !chatWith) return;
@@ -155,6 +155,36 @@ export default function DMPage() {
       body: JSON.stringify({ userId, targetId, action: "request" }),
     });
     doSearch(searchQuery); // Refresh results
+  }
+
+  async function inviteFriend() {
+    if (!userId || inviting) return;
+    setInviting(true);
+    try {
+      const r = await fetch(`/api/referral?userId=${userId}`);
+      const d = await r.json();
+      const link: string | undefined = d?.link;
+      if (!link) { alert("No se pudo generar el enlace, inténtalo de nuevo"); return; }
+      const shareText = `Te invito a DILO, mi asistente personal. Descárgala y quedaremos vinculados directamente: ${link}`;
+      if (typeof navigator !== "undefined" && "share" in navigator) {
+        try {
+          await (navigator as Navigator & { share: (d: ShareData) => Promise<void> }).share({
+            title: "Te invito a DILO",
+            text: shareText,
+            url: link,
+          });
+          return;
+        } catch { /* user cancelled or share failed → fallback */ }
+      }
+      try {
+        await navigator.clipboard.writeText(link);
+        alert("Enlace copiado:\n" + link);
+      } catch {
+        alert("Tu enlace de invitación:\n" + link);
+      }
+    } finally {
+      setInviting(false);
+    }
   }
 
   async function acceptRequest(targetId: string) {
@@ -677,15 +707,28 @@ export default function DMPage() {
           </div>
         )}
 
-        {/* Link to WhatsApp/Telegram channels */}
+        {/* Invitar amigos a DILO — quedan vinculados como contactos directos */}
         <div className="mt-6 pt-4 border-t border-[var(--border)]">
-          <Link href="/channels" className="flex items-center gap-3 p-3 rounded-xl bg-[var(--bg2)] border border-[var(--border)]">
-            <MessageCircle size={18} className="text-green-400" />
-            <div className="flex-1">
-              <p className="text-sm font-medium">{t("externalChannels")}</p>
-              <p className="text-[10px] text-[var(--dim)]">WhatsApp, Telegram</p>
+          <button
+            type="button"
+            onClick={inviteFriend}
+            disabled={inviting || !userId}
+            className="w-full flex items-center gap-3 p-3 rounded-xl bg-[var(--bg2)] border border-[var(--border)] disabled:opacity-60 active:bg-[var(--bg3)] transition"
+          >
+            <div className="w-9 h-9 rounded-lg bg-[var(--accent)]/15 flex items-center justify-center flex-shrink-0">
+              {inviting ? (
+                <Loader2 size={16} className="animate-spin text-[var(--accent)]" />
+              ) : (
+                <Share2 size={16} className="text-[var(--accent)]" />
+              )}
             </div>
-          </Link>
+            <div className="flex-1 text-left">
+              <p className="text-sm font-medium">Invitar a un amigo a DILO</p>
+              <p className="text-[10px] text-[var(--dim)]">
+                Se descarga la app y queda vinculado contigo automáticamente
+              </p>
+            </div>
+          </button>
         </div>
       </div>
     </div>

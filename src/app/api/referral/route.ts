@@ -137,6 +137,22 @@ export async function POST(req: NextRequest) {
         .update({ referred_by: code })
         .eq("id", newUserId);
 
+      // Auto-vincular al referrer y al nuevo usuario como contactos DILO directos.
+      // Idempotente gracias al UNIQUE(requester_id, receiver_id) en user_connections.
+      if (referral.referrer_id && referral.referrer_id !== newUserId) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase.from("user_connections") as any)
+          .upsert(
+            {
+              requester_id: referral.referrer_id,
+              receiver_id: newUserId,
+              status: "accepted",
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "requester_id,receiver_id" }
+          );
+      }
+
       // Check if referrer earned premium (10 signups)
       const newSignups = (referral.signups || 0) + 1;
       if (newSignups >= 10 && !referral.reward_granted) {
