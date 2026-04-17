@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
       for (const sub of subs) {
         await webpush.sendNotification(
           { endpoint: sub.endpoint, keys: sub.keys as { p256dh: string; auth: string } },
-          JSON.stringify({ title: sender?.name || "Mensaje", body: preview, url: "/channels" })
+          JSON.stringify({ title: sender?.name || "Mensaje", body: preview, url: "/dm" })
         ).catch(() => {});
       }
     } catch { /* skip */ }

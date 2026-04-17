@@ -13,23 +13,26 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No audio" }, { status: 400 });
   }
 
-  // Primary: AssemblyAI Universal-3 Pro (best quality, 3.2% WER)
-  if (ASSEMBLYAI_KEY && ASSEMBLYAI_KEY !== "placeholder") {
-    try {
-      const text = await transcribeAssemblyAI(audio, locale);
-      if (text) return NextResponse.json({ text: normalizeTranscription(text) });
-    } catch (err) {
-      console.error("[AssemblyAI] Error, falling back to OpenAI:", err);
-    }
-  }
-
-  // Fallback: OpenAI Whisper (4.2% WER, reliable)
+  // Primary: OpenAI Whisper — typical latency 1-3s, 4.2% WER
+  // (Antes era AssemblyAI primario con polling 3-30s; Mario reportó que se
+  //  demora demasiado. Whisper responde sync en ~1s, la diferencia de WER es
+  //  marginal para español.)
   if (OPENAI_KEY && OPENAI_KEY !== "placeholder") {
     try {
       const text = await transcribeOpenAI(audio, locale);
+      if (text) return NextResponse.json({ text: normalizeTranscription(text) });
+    } catch (err) {
+      console.error("[Whisper] Error, falling back to AssemblyAI:", err);
+    }
+  }
+
+  // Fallback: AssemblyAI Universal-3 Pro (3.2% WER, con polling)
+  if (ASSEMBLYAI_KEY && ASSEMBLYAI_KEY !== "placeholder") {
+    try {
+      const text = await transcribeAssemblyAI(audio, locale);
       return NextResponse.json({ text: normalizeTranscription(text || "") });
     } catch (err) {
-      console.error("[Whisper] Error:", err);
+      console.error("[AssemblyAI] Error:", err);
     }
   }
 

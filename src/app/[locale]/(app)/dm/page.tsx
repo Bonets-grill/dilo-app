@@ -106,11 +106,7 @@ export default function DMPage() {
   const [loading, setLoading] = useState(true);
   const [recording, setRecording] = useState(false);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
-  const [pttActive, setPttActive] = useState(false);
-  const [pttStatus, setPttStatus] = useState<string>("disconnected");
-  const [pttTalking, setPttTalking] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  const pttRef = useRef<import("@/lib/rtc/ptt").PTTConnection | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mediaRecRef = useRef<MediaRecorder | null>(null);
@@ -129,6 +125,23 @@ export default function DMPage() {
     });
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, []);
+
+  // Realtime global: cualquier mensaje entrante actualiza la lista de contactos
+  // (antes solo había subscription dentro del chat abierto → la lista no se
+  //  enteraba de mensajes nuevos hasta recargar la página).
+  useEffect(() => {
+    if (!userId) return;
+    const supabase = createBrowserSupabase();
+    const ch = supabase
+      .channel(`dm-inbox-${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "direct_messages", filter: `receiver_id=eq.${userId}` },
+        () => { loadContacts(userId); }
+      )
+      .subscribe();
+    return () => { ch.unsubscribe(); };
+  }, [userId]);
 
   async function loadContacts(uid: string) {
     const res = await fetch(`/api/connections?userId=${uid}`);
@@ -272,38 +285,22 @@ export default function DMPage() {
     setSending(false);
   }
 
-  async function togglePTT() {
-    if (pttActive) {
-      pttRef.current?.disconnect();
-      pttRef.current = null;
-      setPttActive(false);
-      setPttStatus("disconnected");
-    } else if (chatWith && userId) {
-      const { PTTConnection } = await import("@/lib/rtc/ptt");
-      const conn = new PTTConnection(userId, chatWith.id, (status) => setPttStatus(status));
-      pttRef.current = conn;
-      setPttActive(true);
-      await conn.startCall();
-    }
-  }
-
-  function pttDown() {
-    if (pttRef.current) { pttRef.current.startTalking(); setPttTalking(true); }
-  }
-
-  function pttUp() {
-    if (pttRef.current) { pttRef.current.stopTalking(); setPttTalking(false); }
-  }
 
   async function startRecording() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mr = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      // Safari iOS no soporta audio/webm — detectar MIME soportado
+      const pickedMime =
+        MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus"
+        : MediaRecorder.isTypeSupported("audio/mp4") ? "audio/mp4"
+        : MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm"
+        : "";
+      const mr = pickedMime ? new MediaRecorder(stream, { mimeType: pickedMime }) : new MediaRecorder(stream);
       const chunks: Blob[] = [];
       mr.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
       mr.onstop = async () => {
         stream.getTracks().forEach(t => t.stop());
-        const blob = new Blob(chunks, { type: "audio/webm" });
+        const blob = new Blob(chunks, { type: mr.mimeType || "audio/webm" });
         const reader = new FileReader();
         reader.onloadend = async () => {
           const base64 = reader.result as string;
@@ -336,17 +333,26 @@ export default function DMPage() {
     setRecording(false);
   }
 
-  function toggleAudio(url: string) {
+  async function toggleAudio(url: string) {
     if (playingAudio === url) {
       audioRef.current?.pause();
       setPlayingAudio(null);
-    } else {
-      if (audioRef.current) audioRef.current.pause();
-      const audio = new Audio(url);
-      audio.onended = () => setPlayingAudio(null);
-      audio.play();
-      audioRef.current = audio;
-      setPlayingAudio(url);
+      return;
+    }
+    if (audioRef.current) audioRef.current.pause();
+    const audio = new Audio(url);
+    audio.onended = () => setPlayingAudio(null);
+    audio.onerror = () => {
+      setPlayingAudio(null);
+      alert("No se pudo reproducir este audio. Formato no soportado o audio dañado.");
+    };
+    audioRef.current = audio;
+    setPlayingAudio(url);
+    try {
+      await audio.play();
+    } catch (err) {
+      setPlayingAudio(null);
+      alert("No se pudo reproducir: " + (err instanceof Error ? err.message : "error"));
     }
   }
 
@@ -438,10 +444,6 @@ export default function DMPage() {
             {getInitials(chatWith.name)}
           </div>
           <span className="text-sm font-semibold flex-1">{chatWith.name} <span className="text-[9px] text-[var(--dim)] font-normal ml-1">v1057</span></span>
-          <button type="button" onClick={togglePTT}
-            className={`p-2 rounded-lg transition-colors ${pttActive ? "bg-green-500/20 text-green-400" : "text-[var(--dim)]"}`}>
-            <Mic size={18} />
-          </button>
           <div className="relative">
             <button type="button" onClick={() => setShowMenu(!showMenu)} className="p-2 text-[var(--dim)]">
               <MoreVertical size={18} />
@@ -456,27 +458,6 @@ export default function DMPage() {
           </div>
         </div>
         {showMenu && <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />}
-
-        {/* PTT Bar */}
-        {pttActive && (
-          <div className="flex-shrink-0 px-4 py-2 border-b border-[var(--border)] bg-[var(--bg2)]">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] text-[var(--dim)]">
-                {t("walkieTalkie")}: {pttStatus === "connected" ? t("connected") : pttStatus === "receiving" ? t("receiving") : pttStatus}
-              </span>
-              <span className={`w-2 h-2 rounded-full ${pttStatus === "connected" || pttStatus === "receiving" ? "bg-green-400" : "bg-yellow-400 animate-pulse"}`} />
-            </div>
-            <button type="button"
-              onTouchStart={pttDown} onTouchEnd={pttUp}
-              onMouseDown={pttDown} onMouseUp={pttUp} onMouseLeave={pttUp}
-              className={`w-full py-4 rounded-xl font-bold text-sm transition-all ${
-                pttTalking ? "bg-red-500 text-white scale-[0.98]" : "bg-[var(--bg3)] border border-[var(--border)] text-[var(--dim)]"
-              }`}
-            >
-              {pttTalking ? t("talking") : t("holdToTalk")}
-            </button>
-          </div>
-        )}
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto overscroll-y-contain px-4 py-3 space-y-2">

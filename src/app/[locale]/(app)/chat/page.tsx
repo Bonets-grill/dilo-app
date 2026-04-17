@@ -408,8 +408,19 @@ export default function ChatPage() {
           const blob = new Blob(chunks, { type: mr.mimeType }); const fd = new FormData();
           fd.append("audio", blob, mr.mimeType.includes("mp4") ? "a.m4a" : "a.webm"); fd.append("locale", locale);
           const res = await fetch("/api/transcribe", { method: "POST", body: fd });
-          if (res.ok) { const { text } = await res.json(); if (text?.trim()) { setVoicePreview(text.trim()); } }
-        } catch { /* */ }
+          if (res.ok) {
+            const { text } = await res.json();
+            if (text?.trim()) setVoicePreview(text.trim());
+            else setVoicePreview("(No se pudo transcribir — habla más fuerte o vuelve a grabar)");
+          } else if (res.status === 429) {
+            setVoicePreview("(Límite temporal alcanzado, espera unos segundos y prueba otra vez)");
+          } else {
+            const errBody = await res.text().catch(() => "");
+            setVoicePreview(`(Error transcribiendo — ${res.status}${errBody ? ": " + errBody.slice(0,100) : ""})`);
+          }
+        } catch (err) {
+          setVoicePreview(`(Error de red al transcribir — ${err instanceof Error ? err.message : "sin detalle"})`);
+        }
         setTranscribing(false);
       };
       mr.start(); setRec(true);
