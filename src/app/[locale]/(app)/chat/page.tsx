@@ -197,10 +197,18 @@ export default function ChatPage() {
     // Detección de intención: stems de verbos en todas las conjugaciones
     // mejores/mejora/mejorar/mejorando, cambia/cambies/cambiar, etc.
     const questionIntent = text && /\b(qu[eé]\s+(es|hay|ves|dice|pone|significa)|anal[ií]z|descri[bp]|lee|traduc|explic|identific|cu[aá]nt[oa]s?)\w*/i.test(text);
-    const editIntent = text && !questionIntent && imgBase64;
+    // editIntent requiere verbo de edición EXPLÍCITO. Antes bastaba con que
+    // hubiese imagen en el historial para disparar /api/image-edit con
+    // cualquier texto (incluido un recordatorio) → siempre fallaba con
+    // "Error al editar imagen" en mensajes no relacionados con la foto.
+    // Verbo de edición + complemento de imagen explícito (foto/imagen/rostro/cara/fondo).
+    // También matchea imperativos con pronombre clítico: mejórala, edítala, quítale, ponle, etc.
+    const editVerbRx = /(?:mejor\w*|edit\w+|retoc\w+|modifi\w+|transform\w+|quit\w+|cambi\w+|conviert\w+|agreg\w+)\b.*?\b(?:foto|imagen|rostro|cara|fondo)/i;
+    const editCliticRx = /\b(?:mej[oó]ral[ao]|ed[ií]tal[ao]|qu[ií]tal[aeo]|retócal[ao]|p[oó]nle|a[ñn][aá]del[aeo])\b/i;
+    const editIntent = Boolean(text && !questionIntent && imgBase64 && (editVerbRx.test(text) || editCliticRx.test(text)));
 
-    // IMAGEN + TEXTO: si hay imagen adjunta y el usuario escribió algo
-    if (imgBase64 && text) {
+    // IMAGEN + TEXTO: solo entra si hay intención de análisis O edición
+    if (imgBase64 && text && (questionIntent || editIntent)) {
       if (questionIntent) {
         // PREGUNTA sobre la imagen → GPT-4o-mini vision
         try {
