@@ -107,6 +107,7 @@ export default function DMPage() {
   const [recording, setRecording] = useState(false);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const [showMenu, setShowMenu] = useState(false);
+  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mediaRecRef = useRef<MediaRecorder | null>(null);
@@ -472,7 +473,7 @@ export default function DMPage() {
                   : "bg-[var(--bg2)] border border-[var(--border)] rounded-bl-md"
               }`}>
                 {m.type === "image" && m.mediaUrl ? (
-                  <Image src={m.mediaUrl} alt="Imagen" width={300} height={200} className="rounded-xl max-w-full max-h-[200px] object-cover cursor-pointer" onClick={() => window.open(m.mediaUrl!, "_blank")} />
+                  <Image src={m.mediaUrl} alt="Imagen" width={300} height={200} className="rounded-xl max-w-full max-h-[200px] object-cover cursor-pointer" onClick={() => setFullscreenImage(m.mediaUrl!)} />
                 ) : m.type === "voice" && m.mediaUrl ? (
                   <button type="button" onClick={() => toggleAudio(m.mediaUrl!)} className="flex items-center gap-2">
                     {playingAudio === m.mediaUrl ? <Pause size={16} /> : <Play size={16} />}
@@ -519,16 +520,16 @@ export default function DMPage() {
                 onChange={e => setMsgInput(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && !e.shiftKey && sendMessage()}
                 placeholder={t("typeMessage")}
-                className="flex-1 bg-[var(--bg2)] border border-[var(--border)] rounded-full px-4 py-2 text-sm text-[var(--fg)] placeholder-[var(--dim)] focus:outline-none focus:border-[var(--accent)]/50"
+                className="flex-1 min-w-0 bg-[var(--bg2)] border border-[var(--border)] rounded-full px-4 py-2 text-sm text-[var(--fg)] placeholder-[var(--dim)] focus:outline-none focus:border-[var(--accent)]/50"
               />
               {msgInput.trim() ? (
                 <button type="button" onClick={sendMessage} disabled={sending}
-                  className="w-9 h-9 rounded-full bg-[var(--accent)] text-white flex items-center justify-center disabled:opacity-40">
+                  className="w-9 h-9 rounded-full bg-[var(--accent)] text-white flex items-center justify-center disabled:opacity-40 flex-shrink-0">
                   <Send size={16} />
                 </button>
               ) : (
                 <button type="button" onClick={startRecording}
-                  className="w-9 h-9 rounded-full bg-[var(--bg2)] border border-[var(--border)] text-[var(--dim)] flex items-center justify-center">
+                  className="w-9 h-9 rounded-full bg-[var(--bg2)] border border-[var(--border)] text-[var(--dim)] flex items-center justify-center flex-shrink-0">
                   <Mic size={16} />
                 </button>
               )}
@@ -548,6 +549,16 @@ export default function DMPage() {
               className="shrink-0 w-7 h-7 rounded-full bg-[var(--bg2)] border border-[var(--border)] text-[var(--dim)] flex items-center justify-center">
               <X size={12} />
             </button>
+          </div>
+        )}
+        {fullscreenImage && (
+          <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4" onClick={() => setFullscreenImage(null)}>
+            <button type="button" onClick={(e) => { e.stopPropagation(); setFullscreenImage(null); }}
+              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center">
+              <X size={20} />
+            </button>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={fullscreenImage} alt="Imagen" className="max-w-full max-h-full object-contain rounded-lg" onClick={(e) => e.stopPropagation()} />
           </div>
         )}
       </div>
