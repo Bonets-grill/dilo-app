@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { requireCronAuth } from "@/lib/cron/auth";
 import { createClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
 import { sendPush } from "@/lib/push/send";
@@ -13,7 +14,8 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 const EVO_URL = process.env.EVOLUTION_API_URL || "";
 const EVO_KEY = process.env.EVOLUTION_API_KEY || "";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const gate = requireCronAuth(req); if (gate) return gate;
   try {
     // Get all active users
     const { data: users } = await supabase

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { requireUser } from "@/lib/auth/require-user";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -25,7 +26,11 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { userId, name, phone, relationship } = await req.json();
+  const auth = await requireUser();
+  if (auth.error) return auth.error;
+  const body = await req.json();
+  const userId = auth.user.id;
+  const { name, phone, relationship  } = body;
   if (!userId || !name || !phone) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
 
   const { data, error } = await supabase

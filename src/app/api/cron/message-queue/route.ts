@@ -1,6 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { requireCronAuth } from "@/lib/cron/auth";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const gate = requireCronAuth(req); if (gate) return gate;
   // In production: query message_queue WHERE scheduled_at <= now() AND status = 'pending'
   // For each message:
   //   - Get user's channel (whatsapp/telegram)

@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { requireCronAuth } from "@/lib/cron/auth";
 import { createClient } from "@supabase/supabase-js";
 import { validateWeightChange, calculateFullProfile } from "@/lib/nutrition/engine";
 import { generateWeeklyPlan } from "@/lib/nutrition/meal-planner";
@@ -8,7 +9,8 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const gate = requireCronAuth(req); if (gate) return gate;
   try {
     // Get all users with active nutrition profiles
     const { data: profiles } = await supabase

@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { requireCronAuth } from "@/lib/cron/auth";
 import { createClient } from "@supabase/supabase-js";
 import webpush from "web-push";
 
@@ -19,7 +20,8 @@ try {
   }
 } catch (e) { console.error("[Push] VAPID setup failed:", e); }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const gate = requireCronAuth(req); if (gate) return gate;
   const now = new Date().toISOString();
 
   // Find reminders that are due

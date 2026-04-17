@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { requireCronAuth } from "@/lib/cron/auth";
 import OpenAI from "openai";
 import { createClient } from "@supabase/supabase-js";
 import { sendPush } from "@/lib/push/send";
@@ -57,7 +58,8 @@ FORMATO DE SALIDA (SOLO JSON, máx 5 insights, priorizar por urgencia):
 
 Si no hay nada accionable: {"insights":[]}. NO inventes. NO seas alarmista.`;
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const gate = requireCronAuth(req); if (gate) return gate;
   try {
     // Find users with Google OAuth connected. DILO stores tokens at
     // users.preferences.google_oauth (not a separate table) — filter by

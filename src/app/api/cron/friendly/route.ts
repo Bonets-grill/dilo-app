@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { requireCronAuth } from "@/lib/cron/auth";
 import { createClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
 
@@ -21,7 +22,8 @@ const messageTypes = [
   "gratitude", // Recordar algo positivo
 ];
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const gate = requireCronAuth(req); if (gate) return gate;
   try {
     // Get users who have WhatsApp connected
     const { data: channels } = await supabase

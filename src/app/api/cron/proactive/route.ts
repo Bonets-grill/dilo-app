@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { requireCronAuth } from "@/lib/cron/auth";
 import { createClient } from "@supabase/supabase-js";
 import webpush from "web-push";
 
@@ -28,7 +29,8 @@ try {
  * - Never repeat same insight type within 24h
  * - Learn from dismissals
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const gate = requireCronAuth(req); if (gate) return gate;
   const now = new Date();
   const today = now.toISOString().slice(0, 10);
   const hour = now.getHours();

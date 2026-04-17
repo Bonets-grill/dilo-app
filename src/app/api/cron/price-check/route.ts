@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { requireCronAuth } from "@/lib/cron/auth";
 import { createClient } from "@supabase/supabase-js";
 import { sendPush } from "@/lib/push/send";
 
@@ -11,7 +12,8 @@ const supabase = createClient(
  * Price Check Cron — runs daily at 10:00
  * Checks all active price alerts against current Google Shopping prices
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const gate = requireCronAuth(req); if (gate) return gate;
   const key = process.env.SERPER_API_KEY;
   if (!key) return NextResponse.json({ status: "ok", reason: "no serper key" });
 

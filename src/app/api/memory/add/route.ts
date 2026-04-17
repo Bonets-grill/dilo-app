@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { createClient } from "@supabase/supabase-js";
+import { requireUser } from "@/lib/auth/require-user";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 const supabase = createClient(
@@ -34,7 +35,11 @@ async function embed(text: string): Promise<number[]> {
  * if not given.
  */
 export async function POST(req: NextRequest) {
-  const { userId, fact, category } = await req.json();
+  const auth = await requireUser();
+  if (auth.error) return auth.error;
+  const body = await req.json();
+  const userId = auth.user.id;
+  const { fact, category  } = body;
   if (!userId || typeof fact !== "string" || fact.trim().length < 3) {
     return NextResponse.json({ error: "Missing userId or fact (min 3 chars)" }, { status: 400 });
   }

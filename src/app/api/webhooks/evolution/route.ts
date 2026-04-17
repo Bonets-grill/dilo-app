@@ -19,6 +19,17 @@ try {
 } catch { /* VAPID keys invalid */ }
 
 export async function POST(req: NextRequest) {
+  // Evolution sends an `apikey` header on every webhook delivery. We require
+  // it matches our configured secret — otherwise any JSON POST could forge
+  // inbound messages on behalf of any connected WhatsApp instance.
+  const evoSecret = process.env.EVOLUTION_WEBHOOK_SECRET || process.env.EVOLUTION_API_KEY;
+  if (evoSecret && evoSecret !== "placeholder") {
+    const got = req.headers.get("apikey");
+    if (got !== evoSecret) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
+  }
+
   try {
     const body = await req.json();
     const event = body.event;

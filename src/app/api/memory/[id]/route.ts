@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { createClient } from "@supabase/supabase-js";
+import { requireUser } from "@/lib/auth/require-user";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 const supabase = createClient(
@@ -32,7 +33,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const { userId } = await req.json();
+  const auth = await requireUser();
+  if (auth.error) return auth.error;
+  const userId = auth.user.id;
+  await req.json().catch(() => ({})); // body may be empty
   if (!userId || !id) return NextResponse.json({ error: "Missing userId or id" }, { status: 400 });
 
   const { error } = await supabase

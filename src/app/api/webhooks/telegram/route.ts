@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
+  // Telegram signs each request with the secret_token set during setWebhook.
+  // Without this check, anyone can POST forged updates attributed to any chat.
+  const tgSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
+  if (tgSecret && tgSecret !== "placeholder") {
+    const got = req.headers.get("x-telegram-bot-api-secret-token");
+    if (got !== tgSecret) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
+  }
+
   try {
     const update = await req.json();
 

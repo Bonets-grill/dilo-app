@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { requireCronAuth } from "@/lib/cron/auth";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -13,7 +14,8 @@ const EVO_KEY = process.env.EVOLUTION_API_KEY || "";
  * Daily 8PM cron: For users with wellness activity but no mood check-in today,
  * send a WhatsApp reminder to check in.
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const gate = requireCronAuth(req); if (gate) return gate;
   try {
     const today = new Date().toISOString().split("T")[0];
 

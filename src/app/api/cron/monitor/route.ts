@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { requireCronAuth } from "@/lib/cron/auth";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -30,7 +31,8 @@ const EXPECTED_CRONS: Record<string, string> = {
  * Cron Monitor — runs at 23:00 daily
  * Checks if all crons executed today. Alerts via WhatsApp if something is wrong.
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const gate = requireCronAuth(req); if (gate) return gate;
   const today = new Date().toISOString().slice(0, 10);
   const todayStart = `${today}T00:00:00.000Z`;
   const now = new Date().toISOString();

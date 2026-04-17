@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { requireCronAuth } from "@/lib/cron/auth";
 import { createClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
 import { sendPush } from "@/lib/push/send";
@@ -15,7 +16,8 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
  * Analyzes user's day and profile to find patterns, anomalies, and opportunities.
  * Sends 0-2 proactive insights via push notification.
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const gate = requireCronAuth(req); if (gate) return gate;
   try {
     const { data: users } = await supabase
       .from("users")
