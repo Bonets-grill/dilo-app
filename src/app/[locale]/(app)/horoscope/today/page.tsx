@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Sparkles, Loader2, Volume2, VolumeX, AlertCircle } from "lucide-react";
+import Link from "next/link";
+import { useLocale } from "next-intl";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Sparkles, Loader2, Volume2, VolumeX, AlertCircle, Clock } from "lucide-react";
 
 interface Meta {
   luckyColor?: string;
@@ -27,6 +29,7 @@ interface ZodiacInfo {
 }
 
 export default function HoroscopeTodayPage() {
+  const locale = useLocale();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [horoscope, setHoroscope] = useState<Horoscope | null>(null);
@@ -34,6 +37,31 @@ export default function HoroscopeTodayPage() {
   const [playing, setPlaying] = useState(false);
   const [audioError, setAudioError] = useState("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Safari se niega a reproducir data:audio/mpeg de >~500KB en <audio>. Como
+  // el TTS de 30-40s pesa ~1.3MB, lo convertimos a blob: URL en cliente:
+  // - data:audio/mpeg;base64,XXX → Uint8Array → Blob → URL.createObjectURL
+  // - Safari reproduce blobs sin límite de tamaño.
+  const blobUrl = useMemo(() => {
+    const url = horoscope?.audio_url;
+    if (!url || !url.startsWith("data:")) return url || null;
+    try {
+      const m = url.match(/^data:([^;]+);base64,(.+)$/);
+      if (!m) return url;
+      const [, mime, b64] = m;
+      const bytes = atob(b64);
+      const arr = new Uint8Array(bytes.length);
+      for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+      return URL.createObjectURL(new Blob([arr], { type: mime }));
+    } catch (err) {
+      console.error("[horoscope.audio] blob convert failed", err);
+      return url;
+    }
+  }, [horoscope?.audio_url]);
+
+  useEffect(() => () => {
+    if (blobUrl?.startsWith("blob:")) URL.revokeObjectURL(blobUrl);
+  }, [blobUrl]);
 
   useEffect(() => {
     let cancelled = false;
@@ -51,21 +79,21 @@ export default function HoroscopeTodayPage() {
   }, []);
 
   async function togglePlay() {
-    if (!horoscope?.audio_url) return;
+    if (!blobUrl) return;
     setAudioError("");
     if (playing) {
       audioRef.current?.pause();
       setPlaying(false);
       return;
     }
-    if (!audioRef.current) audioRef.current = new Audio(horoscope.audio_url);
-    else audioRef.current.src = horoscope.audio_url;
+    if (!audioRef.current) audioRef.current = new Audio(blobUrl);
+    else audioRef.current.src = blobUrl;
     audioRef.current.onended = () => setPlaying(false);
     audioRef.current.onerror = () => {
       setPlaying(false);
       const e = audioRef.current?.error;
       const msg = e ? `MediaError code=${e.code} msg=${e.message || "(empty)"}` : "audio element error";
-      console.error("[horoscope.audio]", msg, "url_len=", horoscope.audio_url?.length);
+      console.error("[horoscope.audio]", msg, "src_prefix=", audioRef.current?.src?.slice(0, 40));
       setAudioError(msg);
     };
     try {
@@ -109,7 +137,7 @@ export default function HoroscopeTodayPage() {
           </p>
         </div>
 
-        {horoscope.audio_url && (
+        {blobUrl && (
           <>
             <button
               type="button"
@@ -127,11 +155,9 @@ export default function HoroscopeTodayPage() {
               </div>
               <Sparkles size={16} className="text-purple-400" />
             </button>
-            {/* Nativo <audio controls> como fallback — algunos navegadores se
-                niegan a reproducir data:audio/mpeg vía new Audio() pero SÍ lo
-                tocan cuando el <audio> está en el DOM. Además enseña la barra
-                de progreso y controles nativos. */}
-            <audio controls src={horoscope.audio_url} className="w-full mt-1 rounded-xl" preload="metadata" />
+            {/* Nativo <audio controls> como backup con blob: URL (Safari
+                reproduce blob: sin límite, a diferencia de data:). */}
+            <audio controls src={blobUrl} className="w-full mt-1 rounded-xl" preload="metadata" />
             {audioError && (
               <p className="text-[11px] text-red-400 px-2">
                 ⚠ {audioError}
@@ -139,6 +165,13 @@ export default function HoroscopeTodayPage() {
             )}
           </>
         )}
+
+        <Link
+          href={`/${locale}/horoscope/history`}
+          className="flex items-center justify-center gap-1.5 text-[11px] text-[var(--dim)] hover:text-[var(--fg)] py-2"
+        >
+          <Clock size={12} /> Ver horóscopos anteriores
+        </Link>
 
         <article className="rounded-2xl bg-[var(--bg2)] border border-[var(--border)] p-4 text-sm leading-relaxed whitespace-pre-line">
           {horoscope.text}
