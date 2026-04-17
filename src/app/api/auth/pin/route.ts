@@ -28,11 +28,18 @@ export async function POST(req: NextRequest) {
   if (action === "set") {
     if (!userId || !email) return NextResponse.json({ error: "Missing userId or email" }, { status: 400 });
 
-    const hash = hashPin(pin, email);
+    const normalizedEmail = email.toLowerCase().trim();
+    const hash = hashPin(pin, normalizedEmail);
+
+    // UPSERT en lugar de UPDATE: si la row en public.users no existe aún
+    // (signup con RLS silent-fail), la creamos aquí con service role. Sin esto,
+    // el UPDATE afectaba 0 filas pero devolvía OK → PIN jamás se guardaba.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from("users") as any)
-      .update({ pin_hash: hash })
-      .eq("id", userId);
+      .upsert(
+        { id: userId, email: normalizedEmail, pin_hash: hash },
+        { onConflict: "id" }
+      );
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ ok: true });
