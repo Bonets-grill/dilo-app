@@ -42,7 +42,18 @@ export async function POST(req: NextRequest) {
   const cleaned = fact.trim();
   const cat: Category = (CATEGORIES.includes(category as Category) ? category : "preferences") as Category;
 
-  const embedding = await embed(cleaned);
+  // El embedding requiere OpenAI. Si la key está sin cuota (429) o hay
+  // problema de red, preferimos guardar el hecho sin embedding a perderlo.
+  // La búsqueda semántica se degrada para ese row hasta que se regenere,
+  // pero el usuario nunca pierde lo que escribió a mano.
+  let embedding: number[] | null = null;
+  let embedError: string | null = null;
+  try {
+    embedding = await embed(cleaned);
+  } catch (err) {
+    embedError = err instanceof Error ? err.message : "embedding_failed";
+    console.warn("[memory/add] embedding failed, storing without vector:", embedError);
+  }
 
   const { data, error } = await supabase
     .from("memory_facts")
@@ -58,5 +69,5 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true, memory: data });
+  return NextResponse.json({ ok: true, memory: data, embedding_degraded: !!embedError, embedding_error: embedError });
 }

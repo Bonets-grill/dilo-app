@@ -71,11 +71,20 @@ export default function MemorySettings({ userId }: { userId: string | null }) {
     if (!userId || !addingText.trim() || saving) return;
     setSaving(true);
     try {
-      await fetch("/api/memory/add", {
+      const r = await fetch("/api/memory/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, fact: addingText.trim(), category: addingCategory }),
       });
+      if (!r.ok) {
+        const body = await r.json().catch(() => ({}));
+        alert("No se pudo guardar: " + (body?.error || r.status));
+        return;
+      }
+      const body = await r.json().catch(() => ({}));
+      if (body?.embedding_degraded) {
+        alert("Guardado, pero la búsqueda semántica no está disponible ahora (cuota de OpenAI agotada). El hecho quedó registrado.");
+      }
       setAddingText("");
       setShowAdd(false);
       load();
