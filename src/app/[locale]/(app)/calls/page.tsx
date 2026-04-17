@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { createBrowserSupabase } from "@/lib/supabase/client";
 import { PTTConnection } from "@/lib/rtc/ptt";
+import { playOutgoingChirp, playIncomingChirp, playEndChirp } from "@/lib/rtc/chirp";
 import {
   Phone,
   Video,
@@ -66,7 +67,15 @@ export default function CallsPage() {
   const [talking, setTalking] = useState(false);
   const [pttBusy, setPttBusy] = useState(false);
   const [pttError, setPttError] = useState("");
+  const [debugLog, setDebugLog] = useState<string[]>([]);
+  const [showDebug, setShowDebug] = useState(false);
   const pttRef = useRef<PTTConnection | null>(null);
+
+  function dbg(line: string) {
+    const ts = new Date().toISOString().slice(11, 19);
+    setDebugLog((prev) => [`${ts} ${line}`, ...prev].slice(0, 30));
+    console.log("[walkie.ui]", line);
+  }
 
   // Load user + contacts + call history
   useEffect(() => {
@@ -106,7 +115,11 @@ export default function CallsPage() {
   // Re-mount PTTConnection whenever the selected peer changes
   useEffect(() => {
     if (!userId || !selectedPeer) return;
-    const conn = new PTTConnection(userId, selectedPeer.userId, (s) => setPttStatus(s));
+    dbg(`mount peer=${selectedPeer.userId.slice(0, 8)} name=${selectedPeer.name}`);
+    const conn = new PTTConnection(userId, selectedPeer.userId, (s) => {
+      dbg(`status → ${s}`);
+      setPttStatus(s);
+    });
     pttRef.current = conn;
     conn.listen();
     return () => {
@@ -115,20 +128,38 @@ export default function CallsPage() {
     };
   }, [userId, selectedPeer]);
 
+  // Nextel chirps on status transitions
+  const prevStatusRef = useRef(pttStatus);
+  useEffect(() => {
+    const prev = prevStatusRef.current;
+    if (prev !== "receiving" && pttStatus === "receiving") {
+      playIncomingChirp();
+    } else if (prev === "receiving" && pttStatus !== "receiving") {
+      playEndChirp();
+    }
+    prevStatusRef.current = pttStatus;
+  }, [pttStatus]);
+
   async function onPressPTT() {
     const conn = pttRef.current;
     if (!conn || pttBusy) return;
     setPttError("");
     setPttBusy(true);
+    dbg(`PRESS status=${pttStatus}`);
+    playOutgoingChirp();
     try {
       if (pttStatus === "idle" || pttStatus === "listening" || pttStatus === "disconnected") {
+        dbg("calling startCall()");
         await conn.startCall();
+        dbg("startCall OK");
       }
       conn.startTalking();
       setTalking(true);
+      dbg("talking=true");
     } catch (err) {
       setTalking(false);
       const msg = err instanceof Error ? err.message : "error";
+      dbg(`ERROR press: ${msg}`);
       if (/Permission|denied|NotAllowed/i.test(msg)) {
         setPttError("Permiso de micrófono denegado. Ajustes → Safari → Micrófono.");
       } else if (/NotFound|no microphone/i.test(msg)) {
@@ -144,7 +175,11 @@ export default function CallsPage() {
   function onReleasePTT() {
     const conn = pttRef.current;
     if (!conn) return;
-    if (talking) conn.stopTalking();
+    if (talking) {
+      dbg("RELEASE");
+      conn.stopTalking();
+      playEndChirp();
+    }
     setTalking(false);
   }
 
@@ -286,6 +321,30 @@ export default function CallsPage() {
               <p className="text-[11px] text-red-400 bg-red-500/10 border border-red-500/25 rounded-xl px-3 py-2 max-w-xs text-center">
                 ⚠ {pttError}
               </p>
+            )}
+
+            {/* Debug panel — toggle button + visible log (sin DevTools) */}
+            <button
+              type="button"
+              onClick={() => setShowDebug((v) => !v)}
+              className="text-[10px] text-[var(--dim)] underline decoration-dotted"
+            >
+              {showDebug ? "Ocultar diagnóstico" : `Diagnóstico (${debugLog.length} eventos · ${pttStatus})`}
+            </button>
+            {showDebug && (
+              <div className="w-full max-w-md text-[10px] font-mono bg-[var(--bg2)] border border-[var(--border)] rounded-xl p-3 max-h-64 overflow-y-auto">
+                <div className="flex justify-between mb-1 pb-1 border-b border-[var(--border)]">
+                  <span className="text-[var(--dim)]">status: <span className="text-[var(--fg)]">{pttStatus}</span></span>
+                  <span className="text-[var(--dim)]">peer: <span className="text-[var(--fg)]">{selectedPeer?.name || "(ninguno)"}</span></span>
+                </div>
+                {debugLog.length === 0 ? (
+                  <p className="text-[var(--dim)]">Sin eventos aún. Pulsa el botón radio.</p>
+                ) : (
+                  debugLog.map((l, i) => (
+                    <div key={i} className="text-[var(--fg)] leading-tight">{l}</div>
+                  ))
+                )}
+              </div>
             )}
           </div>
         </div>
