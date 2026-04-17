@@ -14,9 +14,11 @@ const BLOCKED_PATHS = new Set([
   "/vercel.json", "/.file-locks", "/CLAUDE.md", "/AGENTS.md",
 ]);
 
-// LLM-cost endpoints that need rate limiting (skipped for cron which authenticates via header)
-const LLM_PATHS = /^\/api\/(chat|journal|transcribe|skills\/)/;
-const IMG_PATHS = /^\/api\/(enhance-image)/;
+// LLM-cost endpoints that need rate limiting. Extended from the minimal
+// (chat|journal|transcribe|skills) set to cover every paid-API endpoint
+// that a scripted caller could hit to drain budget (CN-011).
+const LLM_PATHS = /^\/api\/(chat|journal|transcribe|skills\/|tts|ocr|voice\/|study\/(chat|plan|upload-material)|nutrition\/generate-plan|horoscope\/|memory\/add|dm\/suggest|chat\/suggest)/;
+const IMG_PATHS = /^\/api\/(enhance-image|image-edit)/;
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -59,7 +61,10 @@ export async function middleware(request: NextRequest) {
             response.cookies.set(name, value, {
               ...options,
               httpOnly: true,
-              secure: process.env.NODE_ENV === "production",
+              // CN-024: force Secure always (not gated on NODE_ENV), and
+              // default to SameSite=Lax which is fine for auth cookies.
+              secure: true,
+              sameSite: options?.sameSite ?? "lax",
             });
           });
         },

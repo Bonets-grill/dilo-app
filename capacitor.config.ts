@@ -5,9 +5,11 @@ const config: CapacitorConfig = {
   appName: 'DILO',
   webDir: 'out',
   server: {
-    // Use the production URL — Capacitor loads the web app from here
-    url: 'https://ordydilo.com',
+    // CN-017: build-time swap — dev/TestFlight builds point at staging/local,
+    // release builds at prod. Default keeps prior behaviour.
+    url: process.env.CAP_SERVER_URL || 'https://ordydilo.com',
     cleartext: false,
+    allowNavigation: ['ordydilo.com', '*.ordydilo.com'],
   },
   plugins: {
     PushNotifications: {

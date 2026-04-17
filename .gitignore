@@ -43,5 +43,14 @@ next-env.d.ts
 # Security
 .env.local
 .env.production
+.env.production.local
+.env.development.local
+.env*.local
 *.key
+*.p12
+*.pfx
+*.jks
+id_rsa*
+id_ed25519*
 credentials.json
+service-account*.json

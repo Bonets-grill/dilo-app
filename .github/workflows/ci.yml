@@ -6,6 +6,10 @@ on:
   push:
     branches: [develop]
 
+# CN-020: minimal permissions on GITHUB_TOKEN. Build+test never needs write.
+permissions:
+  contents: read
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -13,10 +17,14 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        # CN-021: pin to 40-char SHA (actions/checkout v4.2.2). Dependabot
+        # for github-actions keeps this current. Tags are mutable and the
+        # tj-actions incident (March 2025) showed why pinning matters.
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        # actions/setup-node v4.4.0 pinned to SHA.
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 22
           cache: npm

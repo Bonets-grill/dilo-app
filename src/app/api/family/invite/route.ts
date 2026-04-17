@@ -24,10 +24,12 @@ export async function POST(req: NextRequest) {
   // Marca al user como parent si todavía no lo es
   await admin.from("users").update({ family_role: "parent" }).eq("id", auth.user.id).in("family_role", ["adult"]);
 
-  // Generar código 6-char alfanumérico sin ambigüedades (sin 0,O,I,1)
+  // CN-025: crypto.randomInt instead of Math.random for invite codes.
+  // 6-char alphanumeric sin ambigüedades (sin 0,O,I,1).
+  const { randomInt } = await import("node:crypto");
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code = "";
-  for (let i = 0; i < 6; i++) code += alphabet[Math.floor(Math.random() * alphabet.length)];
+  for (let i = 0; i < 6; i++) code += alphabet[randomInt(0, alphabet.length)];
 
   const { data, error } = await admin
     .from("family_invites")
