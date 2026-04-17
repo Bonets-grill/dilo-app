@@ -1,6 +1,6 @@
 import { useTranslations } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
-import { createClient } from "@supabase/supabase-js";
+import { getServiceRoleClient } from "@/lib/supabase/service";
 import { Link } from "@/i18n/navigation";
 import {
   ArrowRight,
@@ -30,10 +30,8 @@ interface Course {
 }
 
 async function getFeaturedCourses(): Promise<Course[]> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) return [];
-  const supabase = createClient(url, key);
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) return [];
+  const supabase = getServiceRoleClient();
   const { data } = await supabase
     .from("courses")
     .select("slug, title, subtitle, description, cover_emoji, price_eur, pages")

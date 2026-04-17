@@ -96,12 +96,21 @@ export const config = {
     "/.file-locks",
     "/CLAUDE.md",
     "/AGENTS.md",
-    // Rate-limited LLM endpoints
+    // Rate-limited LLM/paid endpoints — must match LLM_PATHS/IMG_PATHS regex
     "/api/chat/:path*",
     "/api/journal/:path*",
     "/api/transcribe/:path*",
     "/api/skills/:path*",
     "/api/enhance-image/:path*",
+    "/api/image-edit/:path*",
+    "/api/tts/:path*",
+    "/api/ocr/:path*",
+    "/api/voice/:path*",
+    "/api/study/:path*",
+    "/api/horoscope/:path*",
+    "/api/memory/:path*",
+    "/api/nutrition/:path*",
+    "/api/dm/:path*",
     // All pages (existing pattern)
     "/((?!api|_next|icons|.*\\..*).*)"],
 };

@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { getServiceRoleClient } from "@/lib/supabase/service";
+import { sanitizeOrFilter } from "@/lib/auth/validate";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabase = getServiceRoleClient();
 
 const VALID_CATEGORIES = [
   "tech", "fashion", "home", "motor", "sports",
@@ -37,9 +35,13 @@ export async function GET(req: NextRequest) {
     .select("id, seller_id, title, description, price, currency, category, condition, photos, video_url, city, status, featured, views, likes, created_at")
     .eq("status", "active");
 
-  // Full text search on title + description
+  // Full text search on title + description.
+  // sanitizeOrFilter strips PostgREST filter metacharacters (CN-007).
   if (q) {
-    query = query.or(`title.ilike.%${q}%,description.ilike.%${q}%`);
+    const safe = sanitizeOrFilter(q, 80);
+    if (safe.length >= 2) {
+      query = query.or(`title.ilike.%${safe}%,description.ilike.%${safe}%`);
+    }
   }
 
   // Filters

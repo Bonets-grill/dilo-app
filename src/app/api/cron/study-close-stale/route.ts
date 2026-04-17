@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { requireCronAuth } from "@/lib/cron/auth";
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,11 +15,7 @@ const admin = createClient(
  * la sesión queda abierta para siempre.
  */
 export async function GET(req: NextRequest) {
-  // Vercel cron auth
-  const auth = req.headers.get("authorization");
-  if (process.env.CRON_SECRET && auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  const gate = requireCronAuth(req); if (gate) return gate;
 
   const cutoffIso = new Date(Date.now() - 3 * 60 * 1000).toISOString();
 

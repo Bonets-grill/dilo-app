@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { generateHoroscope } from "@/lib/horoscope/generate";
 import { fetchExternalContext } from "@/lib/horoscope/context";
 import { zodiacInfoBySign, type ZodiacSign } from "@/lib/zodiac";
+import { requireCronAuth } from "@/lib/cron/auth";
 
 const admin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -19,15 +20,7 @@ const admin = createClient(
  *   5. Envía push notification linkando a /horoscope/today
  */
 export async function GET(req: NextRequest) {
-  const auth = req.headers.get("authorization");
-  const expected = `Bearer ${process.env.CRON_SECRET}`;
-  if (process.env.CRON_SECRET && auth !== expected) {
-    // Vercel cron llega sin auth header por default; también permitimos
-    // la cabecera automática x-vercel-cron como señal.
-    if (!req.headers.get("x-vercel-cron")) {
-      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-    }
-  }
+  const gate = requireCronAuth(req); if (gate) return gate;
 
   const today = new Date().toISOString().slice(0, 10);
 

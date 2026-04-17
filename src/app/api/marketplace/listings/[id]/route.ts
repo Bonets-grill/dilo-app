@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { getServiceRoleClient } from "@/lib/supabase/service";
+import { requireUser } from "@/lib/auth/require-user";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabase = getServiceRoleClient();
 
 const VALID_CATEGORIES = [
   "tech", "fashion", "home", "motor", "sports",
@@ -20,9 +18,13 @@ interface RouteContext {
 /**
  * GET /api/marketplace/listings/[id] — Detalle de un producto
  */
-export async function GET(req: NextRequest, ctx: RouteContext) {
+export async function GET(_req: NextRequest, ctx: RouteContext) {
   const { id } = await ctx.params;
-  const userId = req.nextUrl.searchParams.get("userId");
+  // Optional auth — viewing a listing is public; we just need userId to
+  // tag the "liked" flag if present.
+  const supa = await (await import("@/lib/supabase/server")).createServerSupabase();
+  const { data: { user } } = await supa.auth.getUser();
+  const userId = user?.id ?? null;
 
   const { data: listing, error } = await supabase
     .from("market_listings")
@@ -97,11 +99,12 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
  * PATCH /api/marketplace/listings/[id] — Actualizar producto (solo owner)
  */
 export async function PATCH(req: NextRequest, ctx: RouteContext) {
+  const auth = await requireUser();
+  if (auth.error) return auth.error;
+  const userId = auth.user.id;
   const { id } = await ctx.params;
   const body = await req.json();
-  const { userId, ...updates } = body;
-
-  if (!userId) return NextResponse.json({ error: "userId requerido" }, { status: 400 });
+  const updates = body;
 
   // Verify ownership
   const { data: existing } = await supabase
@@ -142,11 +145,11 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
 /**
  * DELETE /api/marketplace/listings/[id] — Soft delete (solo owner)
  */
-export async function DELETE(req: NextRequest, ctx: RouteContext) {
+export async function DELETE(_req: NextRequest, ctx: RouteContext) {
+  const auth = await requireUser();
+  if (auth.error) return auth.error;
+  const userId = auth.user.id;
   const { id } = await ctx.params;
-  const userId = req.nextUrl.searchParams.get("userId");
-
-  if (!userId) return NextResponse.json({ error: "userId requerido" }, { status: 400 });
 
   // Verify ownership
   const { data: existing } = await supabase

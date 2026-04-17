@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { getServiceRoleClient } from "@/lib/supabase/service";
+import { sanitizeOrFilter } from "@/lib/auth/validate";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabase = getServiceRoleClient();
 
 const VALID_CATEGORIES = [
   "tech", "fashion", "home", "motor", "sports",
@@ -38,7 +36,11 @@ export async function GET(req: NextRequest) {
     query = query.ilike("city", `%${city}%`);
   }
   if (search) {
-    query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
+    // Strip PostgREST .or() metacharacters to close CN-007 injection vector.
+    const safe = sanitizeOrFilter(search, 80);
+    if (safe.length >= 2) {
+      query = query.or(`title.ilike.%${safe}%,description.ilike.%${safe}%`);
+    }
   }
 
   // Sorting

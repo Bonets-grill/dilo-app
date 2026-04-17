@@ -72,20 +72,29 @@ export async function verifyPinWithUpgrade(
   return { ok: true, shouldUpgrade: true, newHash };
 }
 
-/** Brute-force gate: returns true if the email has ≥5 failed attempts in 15 min. */
+/** Brute-force gate: returns true if the email has ≥5 failed attempts in 15 min.
+ *
+ * Fail-closed (CN-005b): on DB error the function reports LOCKED. Better to
+ * inconvenience legit users during a Supabase outage than to leave the PIN
+ * brute-force gate open. Alerts via console.error so ops can react. */
 export async function isEmailLocked(email: string): Promise<boolean> {
   try {
     const admin = getServiceRoleClient();
     const since = new Date(Date.now() - 15 * 60 * 1000).toISOString();
-    const { count } = await admin
+    const { count, error } = await admin
       .from("login_attempts")
       .select("*", { count: "exact", head: true })
       .eq("email", email.toLowerCase())
       .eq("succeeded", false)
       .gte("created_at", since);
+    if (error) {
+      console.error("[pin.lockout] DB error — failing closed:", error.message);
+      return true;
+    }
     return (count ?? 0) >= 5;
-  } catch {
-    return false;
+  } catch (err) {
+    console.error("[pin.lockout] unexpected error — failing closed:", err);
+    return true;
   }
 }
 

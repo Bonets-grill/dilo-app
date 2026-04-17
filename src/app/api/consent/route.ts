@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { getServiceRoleClient } from "@/lib/supabase/service";
+import { requireUser } from "@/lib/auth/require-user";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabase = getServiceRoleClient();
 
 /**
- * GET /api/consent?userId=xxx — Get user's consent status
- * POST /api/consent — Record consent granted/withdrawn
+ * GET /api/consent — Current user's consent status.
+ * POST /api/consent — Record consent granted/withdrawn for current user.
  */
-export async function GET(req: NextRequest) {
-  const userId = req.nextUrl.searchParams.get("userId");
-  if (!userId) return NextResponse.json({ error: "Missing userId" }, { status: 400 });
+export async function GET(_req: NextRequest) {
+  const auth = await requireUser();
+  if (auth.error) return auth.error;
+  const userId = auth.user.id;
 
   // Get latest consent for each type
   const types = ["privacy_policy", "terms", "trading", "whatsapp", "location", "voice", "photos", "journal"];
@@ -35,10 +34,13 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireUser();
+  if (auth.error) return auth.error;
+  const userId = auth.user.id;
   let body;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid request body" }, { status: 400 }); }
-  const { userId, consentType, granted, version } = body;
-  if (!userId || !consentType || granted === undefined || !version) {
+  const { consentType, granted, version } = body;
+  if (!consentType || granted === undefined || !version) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 

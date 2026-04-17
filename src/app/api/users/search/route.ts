@@ -1,21 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { getServiceRoleClient } from "@/lib/supabase/service";
+import { requireUser } from "@/lib/auth/require-user";
+import { sanitizeOrFilter } from "@/lib/auth/validate";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabase = getServiceRoleClient();
 
 /**
- * GET /api/users/search?q=mario&userId=xxx
- * Search for DILO users by name or email
+ * GET /api/users/search?q=mario — Search DILO users by name or email.
+ * userId derived from session. `q` is sanitized to strip PostgREST filter
+ * metacharacters before interpolation into .or() (CN-007).
  */
 export async function GET(req: NextRequest) {
+  const auth = await requireUser();
+  if (auth.error) return auth.error;
+  const userId = auth.user.id;
   const q = req.nextUrl.searchParams.get("q");
-  const userId = req.nextUrl.searchParams.get("userId");
-  if (!q || !userId) return NextResponse.json({ error: "Missing q or userId" }, { status: 400 });
+  if (!q) return NextResponse.json({ error: "Missing q" }, { status: 400 });
 
-  const query = q.trim().toLowerCase();
+  const rawQuery = q.trim().toLowerCase();
+  if (rawQuery.length < 2) return NextResponse.json({ users: [] });
+  const query = sanitizeOrFilter(rawQuery, 80);
   if (query.length < 2) return NextResponse.json({ users: [] });
 
   const { data: users } = await supabase

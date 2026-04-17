@@ -1,20 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { getServiceRoleClient } from "@/lib/supabase/service";
+import { requireUser } from "@/lib/auth/require-user";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabase = getServiceRoleClient();
 
 /**
- * GET /api/calls/history?userId=xxx
- * Devuelve las últimas 50 llamadas del usuario (como caller o callee).
+ * GET /api/calls/history — Last 50 calls of the authenticated user.
  */
-export async function GET(req: NextRequest) {
-  const userId = req.nextUrl.searchParams.get("userId");
-  if (!userId) {
-    return NextResponse.json({ error: "Falta userId" }, { status: 400 });
-  }
+export async function GET(_req: NextRequest) {
+  const auth = await requireUser();
+  if (auth.error) return auth.error;
+  const userId = auth.user.id;
 
   // Obtener llamadas donde el usuario es caller o callee
   const { data: calls, error } = await supabase

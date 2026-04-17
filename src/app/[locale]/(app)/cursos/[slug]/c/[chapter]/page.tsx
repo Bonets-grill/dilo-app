@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { createServerSupabase } from "@/lib/supabase/server";
-import { createClient } from "@supabase/supabase-js";
+import { getServiceRoleClient } from "@/lib/supabase/service";
 import { getAudioManifest, getLesson } from "@/lib/course/loader";
 import { findChapterByNumber, findChapterBySlug } from "@/lib/course/slugs";
 import { LessonViewer } from "@/components/course/LessonViewer";
@@ -9,10 +9,7 @@ import { CourseSidebar } from "@/components/course/CourseSidebar";
 import { ProgressSync } from "@/components/course/ProgressSync";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const admin = getServiceRoleClient();
 
 interface PageParams {
   locale: string;

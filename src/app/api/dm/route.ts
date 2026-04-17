@@ -1,19 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { getServiceRoleClient } from "@/lib/supabase/service";
+import { requireUser } from "@/lib/auth/require-user";
+import { isUuid } from "@/lib/auth/validate";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabase = getServiceRoleClient();
 
 /**
- * GET /api/dm?userId=xxx&otherId=yyy&limit=50 — Get messages in a conversation
+ * GET /api/dm?otherId=yyy&limit=50 — Messages in a conversation between the
+ * authenticated user and otherId. `otherId` must be a UUID (validated to
+ * prevent PostgREST .or() filter injection).
  */
 export async function GET(req: NextRequest) {
-  const userId = req.nextUrl.searchParams.get("userId");
+  const auth = await requireUser();
+  if (auth.error) return auth.error;
+  const userId = auth.user.id;
   const otherId = req.nextUrl.searchParams.get("otherId");
   const limit = parseInt(req.nextUrl.searchParams.get("limit") || "50");
-  if (!userId || !otherId) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+  if (!otherId || !isUuid(otherId)) return NextResponse.json({ error: "Missing or invalid otherId" }, { status: 400 });
 
   // Verify connection exists and is accepted
   const { data: conn } = await supabase
@@ -68,14 +71,21 @@ export async function GET(req: NextRequest) {
 }
 
 /**
- * POST /api/dm — Send a direct message
+ * POST /api/dm — Send a direct message. Sender is the authenticated user;
+ * receiverId must be UUID (PostgREST filter injection vector).
  */
 export async function POST(req: NextRequest) {
+  const auth = await requireUser();
+  if (auth.error) return auth.error;
+  const userId = auth.user.id;
   let body;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid request body" }, { status: 400 }); }
-  const { userId, receiverId, content, messageType = "text", mediaUrl } = body;
-  if (!userId || !receiverId || !content) {
+  const { receiverId, content, messageType = "text", mediaUrl } = body;
+  if (!receiverId || !content) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+  }
+  if (!isUuid(receiverId)) {
+    return NextResponse.json({ error: "Invalid receiverId" }, { status: 400 });
   }
 
   // Verify connection
@@ -102,7 +112,10 @@ export async function POST(req: NextRequest) {
     .select("id, created_at")
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error("[dm.send]", error.message);
+    return NextResponse.json({ error: "internal_error" }, { status: 500 });
+  }
 
   // Send push notification to receiver
   const { data: subs } = await supabase

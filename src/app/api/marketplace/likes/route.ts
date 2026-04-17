@@ -1,19 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { getServiceRoleClient } from "@/lib/supabase/service";
+import { requireUser } from "@/lib/auth/require-user";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabase = getServiceRoleClient();
 
 /**
- * GET /api/marketplace/likes?userId=xxx — Productos que le gustan al usuario
+ * GET /api/marketplace/likes — Listings liked by the current user.
  */
 export async function GET(req: NextRequest) {
-  const userId = req.nextUrl.searchParams.get("userId");
+  const auth = await requireUser();
+  if (auth.error) return auth.error;
+  const userId = auth.user.id;
   const limit = Math.min(parseInt(req.nextUrl.searchParams.get("limit") || "30"), 50);
-
-  if (!userId) return NextResponse.json({ error: "userId requerido" }, { status: 400 });
 
   const { data: likes, error } = await supabase
     .from("market_likes")
@@ -60,11 +58,13 @@ export async function GET(req: NextRequest) {
  * POST /api/marketplace/likes — Toggle like en un producto
  */
 export async function POST(req: NextRequest) {
+  const auth = await requireUser();
+  if (auth.error) return auth.error;
+  const userId = auth.user.id;
   let body;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid request body" }, { status: 400 }); }
-  const { userId, listingId } = body;
+  const { listingId } = body;
 
-  if (!userId) return NextResponse.json({ error: "userId requerido" }, { status: 400 });
   if (!listingId) return NextResponse.json({ error: "listingId requerido" }, { status: 400 });
 
   // Check if already liked

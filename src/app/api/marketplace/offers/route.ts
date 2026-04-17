@@ -1,21 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { getServiceRoleClient } from "@/lib/supabase/service";
+import { requireUser } from "@/lib/auth/require-user";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabase = getServiceRoleClient();
 
 /**
- * GET /api/marketplace/offers?userId=xxx&role=buyer|seller
- * Obtiene ofertas del usuario como comprador o vendedor
+ * GET /api/marketplace/offers?role=buyer|seller
+ * Current user's offers (as buyer or seller).
  */
 export async function GET(req: NextRequest) {
-  const userId = req.nextUrl.searchParams.get("userId");
+  const auth = await requireUser();
+  if (auth.error) return auth.error;
+  const userId = auth.user.id;
   const role = req.nextUrl.searchParams.get("role") || "buyer";
   const limit = Math.min(parseInt(req.nextUrl.searchParams.get("limit") || "30"), 50);
-
-  if (!userId) return NextResponse.json({ error: "userId requerido" }, { status: 400 });
 
   const column = role === "seller" ? "seller_id" : "buyer_id";
 
@@ -78,11 +76,13 @@ export async function GET(req: NextRequest) {
  * POST /api/marketplace/offers — Crear oferta en un producto
  */
 export async function POST(req: NextRequest) {
+  const auth = await requireUser();
+  if (auth.error) return auth.error;
+  const userId = auth.user.id;
   let body;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid request body" }, { status: 400 }); }
-  const { userId, listingId, amount, message } = body;
+  const { listingId, amount, message } = body;
 
-  if (!userId) return NextResponse.json({ error: "userId requerido" }, { status: 400 });
   if (!listingId) return NextResponse.json({ error: "listingId requerido" }, { status: 400 });
   if (amount == null || amount <= 0) return NextResponse.json({ error: "Cantidad inválida" }, { status: 400 });
 
@@ -131,11 +131,13 @@ export async function POST(req: NextRequest) {
  * PATCH /api/marketplace/offers — Aceptar/rechazar oferta (solo vendedor)
  */
 export async function PATCH(req: NextRequest) {
+  const auth = await requireUser();
+  if (auth.error) return auth.error;
+  const userId = auth.user.id;
   let body;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid request body" }, { status: 400 }); }
-  const { userId, offerId, action } = body;
+  const { offerId, action } = body;
 
-  if (!userId) return NextResponse.json({ error: "userId requerido" }, { status: 400 });
   if (!offerId) return NextResponse.json({ error: "offerId requerido" }, { status: 400 });
   if (!action || !["accepted", "rejected"].includes(action)) {
     return NextResponse.json({ error: "Acción inválida (accepted/rejected)" }, { status: 400 });

@@ -1,22 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { getServiceRoleClient } from "@/lib/supabase/service";
+import { requireUser } from "@/lib/auth/require-user";
 import OpenAI from "openai";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabase = getServiceRoleClient();
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
 /**
- * GET /api/journal?userId=xxx&limit=20 — Get journal entries
- * POST /api/journal — Send a journal message, DILO responds as mentor
+ * GET /api/journal?limit=20 — Get current user's journal entries.
+ * POST /api/journal — Send a journal message, DILO responds as mentor.
  */
 export async function GET(req: NextRequest) {
-  const userId = req.nextUrl.searchParams.get("userId");
+  const auth = await requireUser();
+  if (auth.error) return auth.error;
+  const userId = auth.user.id;
   const limit = parseInt(req.nextUrl.searchParams.get("limit") || "20");
-  if (!userId) return NextResponse.json({ error: "Missing userId" }, { status: 400 });
 
   const { data: entries } = await supabase
     .from("user_journal")
@@ -48,10 +47,13 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireUser();
+  if (auth.error) return auth.error;
+  const userId = auth.user.id;
   let body;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid request body" }, { status: 400 }); }
-  const { userId, content } = body;
-  if (!userId || !content) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+  const { content } = body;
+  if (!content) return NextResponse.json({ error: "Missing content" }, { status: 400 });
 
   // Get user context
   const [userRes, lessonsRes, goalsRes, recentRes] = await Promise.all([
