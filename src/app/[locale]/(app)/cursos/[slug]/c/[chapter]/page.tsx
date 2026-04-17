@@ -5,6 +5,8 @@ import { createClient } from "@supabase/supabase-js";
 import { getAudioManifest, getLesson } from "@/lib/course/loader";
 import { findChapterByNumber, findChapterBySlug } from "@/lib/course/slugs";
 import { LessonViewer } from "@/components/course/LessonViewer";
+import { CourseSidebar } from "@/components/course/CourseSidebar";
+import { ProgressSync } from "@/components/course/ProgressSync";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
 const admin = createClient(
@@ -57,7 +59,9 @@ export default async function CourseChapterPage({
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="mx-auto max-w-3xl px-4 py-4">
+      <CourseSidebar courseSlug={slug} locale={locale} />
+      <ProgressSync courseSlug={slug} />
+      <div className="mx-auto max-w-3xl px-4 py-4 pt-14">
         <Link
           href={`/${locale}/cursos/${slug}`}
           className="inline-flex items-center gap-1 text-xs text-[var(--dim)] hover:text-[var(--fg)] mb-4"
