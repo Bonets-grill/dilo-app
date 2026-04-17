@@ -12,7 +12,16 @@ import { findChapterBySlug } from "./slugs";
 const ROOT = process.cwd();
 export const CHAPTERS_DIR = path.join(ROOT, "content", "claude-de-cero", "chapters");
 export const DRAFTS_DIR = path.join(ROOT, "content", "drafts");
-export const AUDIO_DIR = path.join(ROOT, "public", "audio");
+
+/**
+ * Audio manifests live in Supabase Storage (bucket `course-audio`) — each
+ * chunk.url inside the manifest already points to the public CDN URL for
+ * the corresponding MP3, so the browser can stream without us proxying.
+ *
+ * Base = https://<supabase>/storage/v1/object/public/course-audio
+ * Path = cap-NN/manifest.json
+ */
+const COURSE_AUDIO_BASE = `${process.env.NEXT_PUBLIC_SUPABASE_URL || ""}/storage/v1/object/public/course-audio`;
 
 export type LoadedLesson = {
   frontmatter: LessonFrontmatter;
@@ -66,14 +75,18 @@ export async function getAudioManifest(
   const entry = findChapterBySlug(slug);
   if (!entry) return null;
   const padded = String(entry.chapterNumber).padStart(2, "0");
-  const manifestPath = path.join(
-    AUDIO_DIR,
-    `cap-${padded}`,
-    "manifest.json",
-  );
-  if (!(await fileExists(manifestPath))) return null;
-  const raw = await fs.readFile(manifestPath, "utf8");
-  return AudioManifestSchema.parse(JSON.parse(raw));
+  const url = `${COURSE_AUDIO_BASE}/cap-${padded}/manifest.json`;
+  try {
+    // Cache the manifest for 5min at the edge — it changes only when we
+    // regenerate audio (rare) and each chunk.url already has a content hash
+    // so stale URLs keep pointing to the right file.
+    const res = await fetch(url, { next: { revalidate: 300 } });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return AudioManifestSchema.parse(json);
+  } catch {
+    return null;
+  }
 }
 
 export async function listLessons(
