@@ -372,11 +372,18 @@ export default function DMPage() {
         let deliverBlob = recordedBlob;
         const srcMime = (mr.mimeType || recordedBlob.type || "").toLowerCase();
         const needsTranscode = /webm|ogg/.test(srcMime);
+        console.log("[dm.audio] mime=", srcMime, "size=", recordedBlob.size, "needsTranscode=", needsTranscode);
         if (needsTranscode) {
           try {
             deliverBlob = await toWavBlob(recordedBlob);
+            console.log("[dm.audio] transcoded to WAV, size=", deliverBlob.size, "type=", deliverBlob.type);
           } catch (err) {
-            console.error("[dm] wav transcode failed, sending original:", err);
+            console.error("[dm.audio] wav transcode FAILED — sending original webm:", err);
+            // Surface visible so Mario sabe que falló y por qué el receptor
+            // Safari no lo va a reproducir. No silenciar nunca.
+            alert("Aviso: no pude convertir el audio a WAV en tu navegador (" +
+              (err instanceof Error ? err.message : "error") +
+              "). Se envía webm — en Safari no se escuchará.");
           }
         }
         const reader = new FileReader();
@@ -420,16 +427,18 @@ export default function DMPage() {
     }
     if (audioRef.current) audioRef.current.pause();
 
-    // Nota: los audios nuevos se entregan en WAV (Chrome emisor) o MP4/AAC
-    // (Safari emisor) — ambos se decodifican en cualquier navegador. Mensajes
-    // legacy grabados antes del 2026-04-17 pueden seguir en webm; se avisa
-    // en onerror si el navegador no puede reproducirlos.
+    // Nota: audios nuevos post-2026-04-17 se entregan en WAV/MP4 reproducibles
+    // en cualquier navegador. Legacy webm sólo suena en Chrome/Firefox.
+    const urlMime = (url.match(/^data:([^;]+);/) || [])[1] || "unknown";
+    console.log("[dm.audio.play] mime=", urlMime, "len=", url.length);
 
     const audio = new Audio(url);
     audio.onended = () => setPlayingAudio(null);
     audio.onerror = () => {
       setPlayingAudio(null);
-      alert("No se pudo reproducir este audio. Formato incompatible con tu navegador (el otro grabó en un formato que aquí no decodifica).");
+      const detail = audio.error ? `code=${audio.error.code} msg=${audio.error.message}` : "no-error";
+      console.error("[dm.audio.play] <audio> error", detail, "mime=", urlMime);
+      alert(`Audio no reproducible. Formato: ${urlMime}. Detalle: ${detail}. Si es legacy webm en Safari, es esperable — los audios NUEVOS (post-2026-04-17) ya van en WAV.`);
     };
     audioRef.current = audio;
     setPlayingAudio(url);
@@ -532,7 +541,7 @@ export default function DMPage() {
           <div className="w-8 h-8 rounded-full bg-[var(--accent)]/20 flex items-center justify-center text-xs font-bold text-[var(--accent)]">
             {getInitials(chatWith.name)}
           </div>
-          <span className="text-sm font-semibold flex-1">{chatWith.name} <span className="text-[9px] text-[var(--dim)] font-normal ml-1">v1057</span></span>
+          <span className="text-sm font-semibold flex-1">{chatWith.name} <span className="text-[9px] text-[var(--dim)] font-normal ml-1">v1058</span></span>
           {userId && <WalkieButton senderId={userId} receiverId={chatWith.id} />}
           {userId && <CallButton calleeId={chatWith.id} calleeName={chatWith.name} />}
           <div className="relative">

@@ -25,6 +25,7 @@ import {
   X,
 } from "lucide-react";
 import { useLocale } from "next-intl";
+import HoroscopeCard from "@/components/home/HoroscopeCard";
 
 interface JournalEntry {
   id: string;
@@ -224,6 +225,8 @@ export default function JournalPage() {
 
   return (
     <div className="h-full flex flex-col">
+      {/* Horoscope daily entry point */}
+      <div className="pt-3 flex-shrink-0"><HoroscopeCard /></div>
       {/* Header */}
       <div className="flex-shrink-0 px-4 py-3 border-b border-[var(--border)]">
         <div className="flex items-center justify-between">

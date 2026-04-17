@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dilo-v3';
+const CACHE_NAME = 'dilo-v4-20260417';
 const SUPPORTED_LOCALES = ['es', 'en', 'fr', 'it', 'de'];
 const DEFAULT_LOCALE = 'es';
 
