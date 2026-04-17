@@ -2,11 +2,9 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { getModuleSummaries, type Locale } from "@/lib/wellness/modules";
+import { getServiceRoleClient } from "@/lib/supabase/service";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+const supabaseAdmin = getServiceRoleClient();
 
 export async function GET(request: Request) {
   try {

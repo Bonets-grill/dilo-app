@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { createServerSupabase } from "@/lib/supabase/server";
+import { getServiceRoleClient } from "@/lib/supabase/service";
+import { sanitizeError } from "@/lib/errors";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const admin = getServiceRoleClient();
 
 /**
  * GET  /api/cursos/[slug]/progress → { state, updated_at } (o 404 si no hay)
@@ -30,7 +28,7 @@ export async function GET(
     .eq("course_slug", slug)
     .maybeSingle();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return sanitizeError(error, "cursos.[slug].progress", 500);
   if (!data) return NextResponse.json({ state: null, updated_at: null });
   return NextResponse.json(data);
 }
@@ -65,7 +63,7 @@ export async function PUT(
     .select("updated_at")
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return sanitizeError(error, "cursos.[slug].progress", 500);
   return NextResponse.json({ ok: true, updated_at: data.updated_at });
 }
 

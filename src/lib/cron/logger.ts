@@ -2,12 +2,9 @@
  * Cron Logger — logs every cron execution to cron_logs table
  */
 
-import { createClient } from "@supabase/supabase-js";
+import { getServiceRoleClient } from "@/lib/supabase/service";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabase = getServiceRoleClient();
 
 /** Log a successful cron execution */
 export async function logCronResult(

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceRoleClient } from "@/lib/supabase/service";
 import { requireUser } from "@/lib/auth/require-user";
+import { sanitizeError } from "@/lib/errors";
 
 const supabase = getServiceRoleClient();
 
@@ -20,7 +21,7 @@ export async function GET(req: NextRequest) {
     .order("created_at", { ascending: false })
     .limit(limit);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return sanitizeError(error, "marketplace.likes", 500);
   if (!likes || likes.length === 0) return NextResponse.json({ listings: [] });
 
   const listingIds = likes.map((l) => l.listing_id);
@@ -90,7 +91,7 @@ export async function POST(req: NextRequest) {
     .from("market_likes")
     .insert({ user_id: userId, listing_id: listingId });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return sanitizeError(error, "marketplace.likes", 500);
 
   // Increment likes count
   await supabase.rpc("increment_listing_likes", { p_listing_id: listingId });

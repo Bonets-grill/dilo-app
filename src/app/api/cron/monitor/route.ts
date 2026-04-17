@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireCronAuth } from "@/lib/cron/auth";
-import { createClient } from "@supabase/supabase-js";
+import { getServiceRoleClient } from "@/lib/supabase/service";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabase = getServiceRoleClient();
 
 const EVO_URL = process.env.EVOLUTION_API_URL || "";
 const EVO_KEY = process.env.EVOLUTION_API_KEY || "";

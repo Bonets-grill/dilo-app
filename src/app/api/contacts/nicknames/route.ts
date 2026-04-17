@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { createServerSupabase } from "@/lib/supabase/server";
+import { getServiceRoleClient } from "@/lib/supabase/service";
+import { sanitizeError } from "@/lib/errors";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const admin = getServiceRoleClient();
 
 export async function GET() {
   const supa = await createServerSupabase();
@@ -49,7 +47,7 @@ export async function POST(req: NextRequest) {
     .select("id, nickname, phone, note")
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return sanitizeError(error, "contacts.nicknames", 500);
   return NextResponse.json(data);
 }
 

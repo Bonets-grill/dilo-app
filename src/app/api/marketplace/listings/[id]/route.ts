@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceRoleClient } from "@/lib/supabase/service";
 import { requireUser } from "@/lib/auth/require-user";
+import { sanitizeError } from "@/lib/errors";
 
 const supabase = getServiceRoleClient();
 
@@ -137,7 +138,7 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
     .select("*")
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return sanitizeError(error, "marketplace.listings.[id]", 500);
 
   return NextResponse.json({ ok: true, listing: updated });
 }
@@ -166,7 +167,7 @@ export async function DELETE(_req: NextRequest, ctx: RouteContext) {
     .update({ status: "deleted", updated_at: new Date().toISOString() })
     .eq("id", id);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return sanitizeError(error, "marketplace.listings.[id]", 500);
 
   return NextResponse.json({ ok: true });
 }

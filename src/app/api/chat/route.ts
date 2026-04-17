@@ -1,20 +1,17 @@
 import { NextRequest } from "next/server";
 import OpenAI from "openai";
-import { createClient } from "@supabase/supabase-js";
 
 const langNames: Record<string, string> = {
   es: "español", en: "English", fr: "français", it: "italiano", de: "Deutsch",
 };
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabase = getServiceRoleClient();
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
 import { EXTENDED_TOOLS, KNOWLEDGE_TOOLS, ENTERTAINMENT_TOOLS, executeExtendedTool } from "@/lib/skills";
 import { planAgents, getAgentDefinition, executeAgent, synthesize } from "@/lib/agent/orchestrator";
+import { getServiceRoleClient } from "@/lib/supabase/service";
 
 // Tool definitions for OpenAI function calling (base — trading added dynamically)
 const baseTools: OpenAI.ChatCompletionTool[] = [
@@ -1459,7 +1456,7 @@ ${userFacts}${journalKnowledge}`;
   const readable = new ReadableStream({
     async start(controller) {
       try {
-        let chatMessages: OpenAI.ChatCompletionMessageParam[] = [
+        const chatMessages: OpenAI.ChatCompletionMessageParam[] = [
           { role: "system", content: systemPrompt + tradingProfilePrompt + executorContext + expertContext },
           ...messages.map((m: { role: string; content: string }) => ({
             role: m.role as "user" | "assistant",

@@ -29,15 +29,13 @@
  *   if (!res.ok) console.warn("blocked:", res.reason);
  */
 
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { getServiceRoleClient } from "@/lib/supabase/service";
 
 const EVO_URL = process.env.EVOLUTION_API_URL || "";
 const EVO_KEY = process.env.EVOLUTION_API_KEY || "";
 
-const admin: SupabaseClient = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const admin: SupabaseClient = getServiceRoleClient();
 
 // ── Tunables (all in ms unless noted) ────────────────────────────────────────
 const MIN_SPACING_TO_SAME_JID_MS = 2_000;

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
 import { createServerSupabase } from "@/lib/supabase/server";
+import { getServiceRoleClient } from "@/lib/supabase/service";
+import { sanitizeError } from "@/lib/errors";
 
-const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+const admin = getServiceRoleClient();
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
 /**
@@ -107,7 +108,7 @@ Solo el JSON, nada más.`,
       current_topic: 0,
     }).select("*").single();
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return sanitizeError(error, "study.plan", 500);
     return NextResponse.json(data);
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "generation_failed" }, { status: 500 });

@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { zodiacInfoBySign, type ZodiacSign } from "@/lib/zodiac";
+import { getServiceRoleClient } from "@/lib/supabase/service";
+import { sanitizeError } from "@/lib/errors";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const admin = getServiceRoleClient();
 
 /**
  * GET /api/horoscope/[date]
@@ -33,7 +31,7 @@ export async function GET(
     .eq("for_date", date)
     .maybeSingle();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return sanitizeError(error, "horoscope.[date]", 500);
   if (!data) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
   const info = zodiacInfoBySign(data.zodiac_sign as ZodiacSign);

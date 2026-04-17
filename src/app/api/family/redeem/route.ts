@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { createServerSupabase } from "@/lib/supabase/server";
+import { getServiceRoleClient } from "@/lib/supabase/service";
+import { sanitizeError } from "@/lib/errors";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const admin = getServiceRoleClient();
 
 /**
  * POST /api/family/redeem
@@ -60,7 +58,7 @@ export async function POST(req: NextRequest) {
     .update({ family_role: "kid", parent_user_id: invite.parent_user_id })
     .eq("id", auth.user.id);
 
-  if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 });
+  if (upErr) return sanitizeError(upErr, "family.redeem", 500);
 
   // Marcar invite como usado
   await admin

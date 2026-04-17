@@ -2,12 +2,9 @@
  * Google OAuth Token Helper — retrieves and auto-refreshes tokens
  */
 
-import { createClient } from "@supabase/supabase-js";
+import { getServiceRoleClient } from "@/lib/supabase/service";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabase = getServiceRoleClient();
 
 /** Get a valid Google access token for a user (auto-refreshes if expired) */
 export async function getGoogleAccessToken(userId: string): Promise<string | null> {

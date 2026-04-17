@@ -3,11 +3,9 @@ import { requireCronAuth } from "@/lib/cron/auth";
 import { createClient } from "@supabase/supabase-js";
 import { validateWeightChange, calculateFullProfile } from "@/lib/nutrition/engine";
 import { generateWeeklyPlan } from "@/lib/nutrition/meal-planner";
+import { getServiceRoleClient } from "@/lib/supabase/service";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+const supabase = getServiceRoleClient();
 
 export async function GET(req: NextRequest) {
   const gate = requireCronAuth(req); if (gate) return gate;

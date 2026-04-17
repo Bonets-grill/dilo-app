@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceRoleClient } from "@/lib/supabase/service";
 import { requireUser } from "@/lib/auth/require-user";
+import { sanitizeError } from "@/lib/errors";
 
 const supabase = getServiceRoleClient();
 
@@ -24,7 +25,7 @@ export async function GET(req: NextRequest) {
     .order("created_at", { ascending: false })
     .limit(limit);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return sanitizeError(error, "marketplace.offers", 500);
 
   if (!offers || offers.length === 0) {
     return NextResponse.json({ offers: [] });
@@ -122,7 +123,7 @@ export async function POST(req: NextRequest) {
     .select("*")
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return sanitizeError(error, "marketplace.offers", 500);
 
   return NextResponse.json({ ok: true, offer }, { status: 201 });
 }
@@ -160,7 +161,7 @@ export async function PATCH(req: NextRequest) {
     .update({ status: action })
     .eq("id", offerId);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return sanitizeError(error, "marketplace.offers", 500);
 
   // If accepted, mark listing as reserved and reject other pending offers
   if (action === "accepted") {

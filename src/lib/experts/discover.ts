@@ -1,11 +1,8 @@
 import OpenAI from "openai";
-import { createClient } from "@supabase/supabase-js";
+import { getServiceRoleClient } from "@/lib/supabase/service";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabase = getServiceRoleClient();
 
 const DISCOVER_PROMPT = `Eres un creador de "expertos" especializados para un asistente personal (DILO). Dado un mensaje del usuario donde pregunta sobre un dominio que no conocemos, genera un experto de ese dominio.
 

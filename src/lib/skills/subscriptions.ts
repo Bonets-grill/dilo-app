@@ -3,13 +3,10 @@
  * DILO tracks, calculates totals, and flags unused ones
  */
 
-import { createClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
+import { getServiceRoleClient } from "@/lib/supabase/service";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabase = getServiceRoleClient();
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 

@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { zodiacInfoBySign, type ZodiacSign } from "@/lib/zodiac";
+import { getServiceRoleClient } from "@/lib/supabase/service";
+import { sanitizeError } from "@/lib/errors";
 
-const admin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const admin = getServiceRoleClient();
 
 /**
  * GET /api/horoscope/history
@@ -27,7 +25,7 @@ export async function GET(_req: NextRequest) {
     .order("for_date", { ascending: false })
     .limit(60);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return sanitizeError(error, "horoscope.history", 500);
 
   const items = (data || []).map((row) => {
     const info = zodiacInfoBySign(row.zodiac_sign as ZodiacSign);

@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { requireAdmin, adminForbidden } from "@/lib/admin/auth";
+import { getServiceRoleClient } from "@/lib/supabase/service";
+import { sanitizeError } from "@/lib/errors";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabase = getServiceRoleClient();
 
 /**
  * POST /api/admin/grant
@@ -39,7 +37,7 @@ export async function POST(req: NextRequest) {
     .select("id, skill_id, status, source")
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return sanitizeError(error, "admin.grant", 500);
   return NextResponse.json({ ok: true, skill: data });
 }
 
@@ -63,7 +61,7 @@ export async function DELETE(req: NextRequest) {
     .eq("user_id", userId)
     .eq("skill_id", skillId);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return sanitizeError(error, "admin.grant", 500);
   return NextResponse.json({ ok: true });
 }
 

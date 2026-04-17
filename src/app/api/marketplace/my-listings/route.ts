@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceRoleClient } from "@/lib/supabase/service";
 import { requireUser } from "@/lib/auth/require-user";
+import { sanitizeError } from "@/lib/errors";
 
 const supabase = getServiceRoleClient();
 
@@ -27,7 +28,7 @@ export async function GET(req: NextRequest) {
   }
 
   const { data: listings, error } = await query;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return sanitizeError(error, "marketplace.my-listings", 500);
 
   if (!listings || listings.length === 0) {
     return NextResponse.json({ listings: [], stats: null });

@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
-import { createClient } from "@supabase/supabase-js";
 import { requireUser } from "@/lib/auth/require-user";
+import { getServiceRoleClient } from "@/lib/supabase/service";
+import { sanitizeError } from "@/lib/errors";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabase = getServiceRoleClient();
 
 async function embed(text: string): Promise<number[]> {
   const res = await openai.embeddings.create({
@@ -45,7 +43,7 @@ export async function DELETE(
     .eq("id", id)
     .eq("user_id", userId);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return sanitizeError(error, "memory.[id]", 500);
   return NextResponse.json({ ok: true });
 }
 
@@ -79,6 +77,6 @@ export async function PATCH(
     .eq("id", id)
     .eq("user_id", userId);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return sanitizeError(error, "memory.[id]", 500);
   return NextResponse.json({ ok: true });
 }

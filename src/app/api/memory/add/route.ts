@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
-import { createClient } from "@supabase/supabase-js";
 import { requireUser } from "@/lib/auth/require-user";
+import { getServiceRoleClient } from "@/lib/supabase/service";
+import { sanitizeError } from "@/lib/errors";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const supabase = getServiceRoleClient();
 
 const CATEGORIES = [
   "identity", "preferences", "goals", "relationships",
@@ -73,6 +71,6 @@ export async function POST(req: NextRequest) {
     .select("id, fact, category, confidence, created_at")
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return sanitizeError(error, "memory.add", 500);
   return NextResponse.json({ ok: true, memory: data, embedding_degraded: !!embedError, embedding_error: embedError });
 }

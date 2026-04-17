@@ -2,11 +2,9 @@ import OpenAI from "openai";
 import { createClient } from "@supabase/supabase-js";
 import { detectCrisis } from "@/lib/wellness/crisis";
 import { getModule, getModuleSummaries, WELLNESS_MODULES, type Locale } from "@/lib/wellness/modules";
+import { getServiceRoleClient } from "@/lib/supabase/service";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+const supabase = getServiceRoleClient();
 
 const WELLNESS_DISCLAIMER =
   "\n\n_DILO ofrece tecnicas de bienestar basadas en evidencia. No es terapia ni diagnostico. Si necesitas ayuda profesional: 717 003 717 (24h, gratuito)._";
