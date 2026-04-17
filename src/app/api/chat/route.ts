@@ -958,8 +958,11 @@ Dime qué necesitas y empezamos.`;
   const lastMsg = lastMsgContent.toLowerCase();
   const isImageRequest = /(?:crea|genera|dibuja|hazme|diseña|haz).*(?:imagen|foto|ilustracion|logo|dibujo)/i.test(lastMsg)
     || /(?:create|generate|draw|make).*(?:image|photo|picture|logo)/i.test(lastMsg);
-  const isImageEdit = /(?:mejora|edita|edítala|retoca|modifica|transforma|quítale|quita|p[oó]nle|pon|a[ñn][aá]dele|a[ñn]ade|agrega|cambia|convierte)\b.*?\b(?:foto|imagen|esta|esto|esa|eso|la)/i.test(lastMsg)
-    || /(?:improve|edit|retouch|modify|transform|remove|add|change).*(?:photo|image|picture|this)/i.test(lastMsg);
+  // Raíces verbales con \w* para cubrir imperativo ("mejora"), subjuntivo
+  // ("que mejores"), infinitivo ("mejorar"), etc. El bug original era que
+  // "Quiero que mejores esta foto" no matcheaba con "mejora" literal.
+  const isImageEdit = /(?:mejor\w*|edit\w+|edítal\w*|retoc\w+|modifi\w+|transform\w+|quít\w*|quit\w+|p[oó]nle|pon\w*|a[ñn][aá]d\w+|agreg\w+|cambi\w+|conviert\w+)\b.*?\b(?:foto|imagen|esta|esto|esa|eso|la|lo)/i.test(lastMsg)
+    || /(?:improve|edit|retouch|modify|transform|remove|add|change)\w*.*(?:photo|image|picture|this|it)/i.test(lastMsg);
 
   // Edit path: only if we actually have a previous image in the conversation.
   // Looks backwards for the most recent message whose content starts with __IMAGE__.

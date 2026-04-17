@@ -13,6 +13,7 @@ import { DECISION_HELPER_TOOLS, executeDecisionHelperTool } from "./decision-hel
 import { EMAIL_WRITER_TOOLS, executeEmailWriterTool } from "./email-writer";
 import { RESUME_BUILDER_TOOLS, executeResumeBuilderTool } from "./resume-builder";
 import { BUSINESS_ADVISOR_TOOLS, executeBusinessAdvisorTool } from "./business-advisor";
+import { APPOINTMENT_TOOLS, executeAppointmentTool } from "./appointments";
 
 // Base extended tools (always available)
 export const EXTENDED_TOOLS: OpenAI.ChatCompletionTool[] = [
@@ -28,6 +29,7 @@ export const EXTENDED_TOOLS: OpenAI.ChatCompletionTool[] = [
   ...EMAIL_WRITER_TOOLS,
   ...RESUME_BUILDER_TOOLS,
   ...BUSINESS_ADVISOR_TOOLS,
+  ...APPOINTMENT_TOOLS,
 ];
 
 // Knowledge tools (always available)
@@ -114,6 +116,11 @@ export async function executeExtendedTool(
   // Business tools (model, competitors, pricing, SEO, social, earn)
   if (toolName.startsWith("business_")) {
     return executeBusinessAdvisorTool(toolName, input);
+  }
+
+  // Appointments (internal, Supabase-backed alternative to Google Calendar)
+  if (toolName.startsWith("appointment_")) {
+    return executeAppointmentTool(toolName, input, userId);
   }
 
   // Not an extended tool — return null so the main executor handles it
