@@ -70,6 +70,7 @@ export default function CallsPage() {
   const [debugLog, setDebugLog] = useState<string[]>([]);
   const [showDebug, setShowDebug] = useState(false);
   const pttRef = useRef<PTTConnection | null>(null);
+  const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
 
   function dbg(line: string) {
     const ts = new Date().toISOString().slice(11, 19);
@@ -116,10 +117,18 @@ export default function CallsPage() {
   useEffect(() => {
     if (!userId || !selectedPeer) return;
     dbg(`mount peer=${selectedPeer.userId.slice(0, 8)} name=${selectedPeer.name}`);
-    const conn = new PTTConnection(userId, selectedPeer.userId, (s) => {
-      dbg(`status → ${s}`);
-      setPttStatus(s);
-    });
+    const conn = new PTTConnection(
+      userId,
+      selectedPeer.userId,
+      (s) => {
+        dbg(`status → ${s}`);
+        setPttStatus(s);
+      },
+      {
+        audioEl: remoteAudioRef.current,
+        onDebug: (m) => dbg(`rtc: ${m}`),
+      }
+    );
     pttRef.current = conn;
     conn.listen();
     return () => {
@@ -207,6 +216,17 @@ export default function CallsPage() {
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
+      {/* Hidden audio sink for the remote walkie stream. Must be mounted in the
+          DOM (not `new Audio()`) so iOS Safari accepts the autoplay of the
+          incoming WebRTC track. `playsInline` is required on iOS. */}
+      <audio
+        ref={remoteAudioRef}
+        autoPlay
+        playsInline
+        {...{ "webkit-playsinline": "true" }}
+        hidden
+      />
+
       <div className="flex-shrink-0 px-4 py-3 border-b border-[var(--border)]">
         <h1 className="text-lg font-bold">Walkie Talkie · {t("callHistory")}</h1>
       </div>

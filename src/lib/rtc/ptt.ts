@@ -15,91 +15,121 @@ export class PTTConnection {
   private userId: string;
   private peerId: string;
   private onStatusChange: (status: string) => void;
+  private onDebug: (msg: string) => void;
+  private externalAudioEl: HTMLAudioElement | null;
+  private pendingIce: RTCIceCandidateInit[] = [];
 
-  constructor(userId: string, peerId: string, onStatusChange: (status: string) => void) {
+  constructor(
+    userId: string,
+    peerId: string,
+    onStatusChange: (status: string) => void,
+    opts?: { audioEl?: HTMLAudioElement | null; onDebug?: (msg: string) => void }
+  ) {
     this.userId = userId;
     this.peerId = peerId;
     this.onStatusChange = onStatusChange;
+    this.onDebug = opts?.onDebug ?? (() => {});
+    this.externalAudioEl = opts?.audioEl ?? null;
   }
 
-  async startCall() {
-    this.onStatusChange("connecting");
+  setAudioEl(el: HTMLAudioElement | null) {
+    this.externalAudioEl = el;
+  }
 
-    // Create peer connection
-    this.pc = new RTCPeerConnection({ iceServers: getIceServers() });
+  private getAudioEl(): HTMLAudioElement {
+    // Prefer the DOM-attached element supplied by the UI. On iOS Safari a
+    // detached `new Audio()` silently refuses to play incoming WebRTC
+    // tracks; attaching + explicit play() is the only reliable path.
+    if (this.externalAudioEl) return this.externalAudioEl;
+    const el = new Audio();
+    el.autoplay = true;
+    (el as HTMLAudioElement & { playsInline?: boolean }).playsInline = true;
+    return el;
+  }
 
-    // Handle incoming audio
-    this.remoteAudio = new Audio();
-    this.remoteAudio.autoplay = true;
+  private attachRemoteStream(stream: MediaStream) {
+    const el = this.getAudioEl();
+    el.srcObject = stream;
+    el.muted = false;
+    el.volume = 1;
+    this.remoteAudio = el;
+    this.onDebug(`remote track tracks=${stream.getAudioTracks().length}`);
+    el.play()
+      .then(() => this.onDebug("remote audio playing"))
+      .catch((err) => this.onDebug(`play() failed: ${err?.name || err}`));
+  }
 
-    this.pc.ontrack = (event) => {
-      if (this.remoteAudio) {
-        this.remoteAudio.srcObject = event.streams[0];
-      }
+  private wirePeer(pc: RTCPeerConnection) {
+    pc.ontrack = (event) => {
+      this.attachRemoteStream(event.streams[0]);
     };
-
-    // Send ICE candidates
-    this.pc.onicecandidate = (event) => {
+    pc.onicecandidate = (event) => {
       if (event.candidate) {
         this.sendSignal("ice-candidate", event.candidate.toJSON());
       }
     };
-
-    this.pc.onconnectionstatechange = () => {
-      this.onStatusChange(this.pc?.connectionState || "unknown");
+    pc.onconnectionstatechange = () => {
+      const s = pc.connectionState;
+      this.onDebug(`pc state=${s}`);
+      this.onStatusChange(s || "unknown");
     };
+    pc.oniceconnectionstatechange = () => {
+      this.onDebug(`ice=${pc.iceConnectionState}`);
+    };
+    pc.onicegatheringstatechange = () => {
+      this.onDebug(`ice-gather=${pc.iceGatheringState}`);
+    };
+  }
 
-    // Get microphone
+  async startCall() {
+    this.onStatusChange("connecting");
+    this.onDebug("startCall: creating pc");
+    this.pc = new RTCPeerConnection({ iceServers: getIceServers() });
+    this.wirePeer(this.pc);
+
+    this.onDebug("getUserMedia…");
     this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    this.onDebug(`mic tracks=${this.localStream.getAudioTracks().length}`);
 
-    // Add tracks but muted (PTT — unmute on push)
     for (const track of this.localStream.getAudioTracks()) {
       track.enabled = false; // Muted by default
       this.pc.addTrack(track, this.localStream);
     }
 
-    // Create and send offer
     const offer = await this.pc.createOffer();
     await this.pc.setLocalDescription(offer);
+    this.onDebug("offer sent");
     await this.sendSignal("offer", offer);
 
-    // Start polling for signals
     this.startSignalPolling();
   }
 
   async acceptCall(offer: RTCSessionDescriptionInit) {
     this.onStatusChange("connecting");
-
+    this.onDebug("acceptCall: creating pc");
     this.pc = new RTCPeerConnection({ iceServers: getIceServers() });
+    this.wirePeer(this.pc);
 
-    this.remoteAudio = new Audio();
-    this.remoteAudio.autoplay = true;
-
-    this.pc.ontrack = (event) => {
-      if (this.remoteAudio) {
-        this.remoteAudio.srcObject = event.streams[0];
-      }
-    };
-
-    this.pc.onicecandidate = (event) => {
-      if (event.candidate) {
-        this.sendSignal("ice-candidate", event.candidate.toJSON());
-      }
-    };
-
-    this.pc.onconnectionstatechange = () => {
-      this.onStatusChange(this.pc?.connectionState || "unknown");
-    };
-
+    this.onDebug("getUserMedia…");
     this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    this.onDebug(`mic tracks=${this.localStream.getAudioTracks().length}`);
+
     for (const track of this.localStream.getAudioTracks()) {
       track.enabled = false;
       this.pc.addTrack(track, this.localStream);
     }
 
     await this.pc.setRemoteDescription(new RTCSessionDescription(offer));
+    // Flush any ICE candidates that arrived before the remote description
+    // was ready (rare but possible if they share a single polling batch).
+    for (const c of this.pendingIce) {
+      try { await this.pc.addIceCandidate(new RTCIceCandidate(c)); } catch { /* ignore */ }
+    }
+    this.pendingIce = [];
+
     const answer = await this.pc.createAnswer();
     await this.pc.setLocalDescription(answer);
+    this.onDebug("answer sent");
     await this.sendSignal("answer", answer);
   }
 
@@ -177,12 +207,22 @@ export class PTTConnection {
             case "answer":
               if (this.pc) {
                 await this.pc.setRemoteDescription(new RTCSessionDescription(signal.data));
+                this.onDebug("answer applied; flushing queued ICE=" + this.pendingIce.length);
+                for (const c of this.pendingIce) {
+                  try { await this.pc.addIceCandidate(new RTCIceCandidate(c)); } catch { /* ignore */ }
+                }
+                this.pendingIce = [];
                 this.onStatusChange("connected");
               }
               break;
             case "ice-candidate":
-              if (this.pc) {
-                await this.pc.addIceCandidate(new RTCIceCandidate(signal.data));
+              if (this.pc && this.pc.remoteDescription) {
+                try { await this.pc.addIceCandidate(new RTCIceCandidate(signal.data)); } catch (e) {
+                  this.onDebug("ice add err: " + (e as Error).message);
+                }
+              } else {
+                // pc not ready yet → queue until remote description is set.
+                this.pendingIce.push(signal.data);
               }
               break;
             case "ptt-start":
