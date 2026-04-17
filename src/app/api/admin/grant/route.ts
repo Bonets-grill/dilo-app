@@ -18,7 +18,7 @@ const supabase = createClient(
  *   - pack_* ids work the same way.
  */
 export async function POST(req: NextRequest) {
-  if (!requireAdmin(req)) return adminForbidden();
+  if (!(await requireAdmin(req))) return adminForbidden();
 
   const { userId, skillId, source } = await req.json();
   if (!userId || !skillId) {
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
  * Revokes a user_skills row (marks status='revoked', keeps history).
  */
 export async function DELETE(req: NextRequest) {
-  if (!requireAdmin(req)) return adminForbidden();
+  if (!(await requireAdmin(req))) return adminForbidden();
 
   const url = new URL(req.url);
   const userId = url.searchParams.get("userId");

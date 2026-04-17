@@ -1,23 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import crypto from "crypto";
+import { hashPin, verifyPinWithUpgrade, isEmailLocked, recordAttempt } from "@/lib/auth/pin";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
-function hashPin(pin: string, email: string): string {
-  return crypto.createHash("sha256").update(`${pin}:${email.toLowerCase()}`).digest("hex");
-}
-
 /**
- * POST: Set or verify PIN
- * { action: "set", userId, email, pin } — save PIN hash
- * { action: "verify", email, pin } — verify PIN, return userId
+ * POST /api/auth/pin
+ *   { action: "set", userId, email, pin } — store argon2id hash
+ *   { action: "verify", email, pin }       — return userId (with lockout)
+ *
+ * Hash: argon2id (CN-005). Legacy SHA-256 PINs are accepted once and
+ * transparently re-hashed on first successful verify (opportunistic
+ * migration, zero user friction).
  */
 export async function POST(req: NextRequest) {
-  let body;
+  let body: { action?: string; userId?: string; email?: string; pin?: string };
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid request body" }, { status: 400 }); }
   const { action, userId, email, pin } = body;
 
@@ -25,38 +25,61 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "PIN must be 4-6 digits" }, { status: 400 });
   }
 
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    || req.headers.get("x-real-ip")
+    || null;
+
   if (action === "set") {
     if (!userId || !email) return NextResponse.json({ error: "Missing userId or email" }, { status: 400 });
-
     const normalizedEmail = email.toLowerCase().trim();
-    const hash = hashPin(pin, normalizedEmail);
-
-    // UPSERT en lugar de UPDATE: si la row en public.users no existe aún
-    // (signup con RLS silent-fail), la creamos aquí con service role. Sin esto,
-    // el UPDATE afectaba 0 filas pero devolvía OK → PIN jamás se guardaba.
+    const hash = await hashPin(pin, normalizedEmail);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from("users") as any)
-      .upsert(
-        { id: userId, email: normalizedEmail, pin_hash: hash },
-        { onConflict: "id" }
-      );
-
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      .upsert({ id: userId, email: normalizedEmail, pin_hash: hash }, { onConflict: "id" });
+    if (error) {
+      console.error("[pin.set]", error.message);
+      return NextResponse.json({ error: "set_failed" }, { status: 500 });
+    }
     return NextResponse.json({ ok: true });
   }
 
   if (action === "verify") {
     if (!email) return NextResponse.json({ error: "Missing email" }, { status: 400 });
+    const normalizedEmail = email.toLowerCase().trim();
 
-    const hash = hashPin(pin, email);
+    // Brute-force gate
+    if (await isEmailLocked(normalizedEmail)) {
+      return NextResponse.json(
+        { error: "too_many_attempts", retry_after_s: 900 },
+        { status: 429, headers: { "Retry-After": "900" } }
+      );
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data } = await (supabase.from("users") as any)
       .select("id, email, pin_hash")
-      .eq("email", email.toLowerCase())
-      .eq("pin_hash", hash)
-      .single();
+      .eq("email", normalizedEmail)
+      .maybeSingle();
 
-    if (!data) return NextResponse.json({ error: "Invalid PIN" }, { status: 401 });
+    if (!data?.pin_hash) {
+      await recordAttempt(normalizedEmail, ip, false);
+      return NextResponse.json({ error: "Invalid PIN" }, { status: 401 });
+    }
+
+    const result = await verifyPinWithUpgrade(data.pin_hash, pin, normalizedEmail);
+    if (!result.ok) {
+      await recordAttempt(normalizedEmail, ip, false);
+      return NextResponse.json({ error: "Invalid PIN" }, { status: 401 });
+    }
+
+    if (result.shouldUpgrade && result.newHash) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase.from("users") as any)
+        .update({ pin_hash: result.newHash })
+        .eq("id", data.id);
+    }
+
+    await recordAttempt(normalizedEmail, ip, true);
     return NextResponse.json({ ok: true, userId: data.id, email: data.email });
   }
 

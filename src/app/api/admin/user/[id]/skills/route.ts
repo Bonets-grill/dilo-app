@@ -16,7 +16,7 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!requireAdmin(req)) return adminForbidden();
+  if (!(await requireAdmin(req))) return adminForbidden();
   const { id: userId } = await params;
 
   const { data: skills } = await supabase

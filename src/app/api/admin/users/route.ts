@@ -13,7 +13,7 @@ const supabase = createClient(
  * Includes basic counts (skills, conversations) for quick overview.
  */
 export async function GET(req: NextRequest) {
-  if (!requireAdmin(req)) return adminForbidden();
+  if (!(await requireAdmin(req))) return adminForbidden();
 
   const url = new URL(req.url);
   const q = (url.searchParams.get("q") || "").trim();

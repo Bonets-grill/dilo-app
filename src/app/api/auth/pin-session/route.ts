@@ -1,49 +1,65 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import crypto from "crypto";
+import { verifyPinWithUpgrade, isEmailLocked, recordAttempt } from "@/lib/auth/pin";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-function hashPin(pin: string, email: string): string {
-  return crypto.createHash("sha256").update(`${pin}:${email.toLowerCase()}`).digest("hex");
-}
-
 /**
- * POST: Verify PIN and generate a magic link for session creation
- * { email, pin } → { token, redirect } or { error }
+ * POST /api/auth/pin-session — body { email, pin }
  *
- * Flow:
- * 1. Verify PIN hash against DB
- * 2. Use admin API to generate a magic link
- * 3. Return the token so the client can exchange it for a session
+ * Verifies PIN (argon2id, legacy SHA-256 auto-upgraded), then mints a
+ * Supabase magic link the client can exchange for a session.
+ *
+ * Brute-force: 5 failed attempts per email in 15 min → 429.
  */
 export async function POST(req: NextRequest) {
   try {
     const { email, pin } = await req.json();
-
     if (!email || !pin || pin.length < 4 || pin.length > 6 || !/^\d+$/.test(pin)) {
       return NextResponse.json({ error: "Invalid input" }, { status: 400 });
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-    const hash = hashPin(pin, normalizedEmail);
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+      || req.headers.get("x-real-ip")
+      || null;
 
-    // Verify PIN against DB
+    if (await isEmailLocked(normalizedEmail)) {
+      return NextResponse.json(
+        { error: "too_many_attempts", retry_after_s: 900 },
+        { status: 429, headers: { "Retry-After": "900" } }
+      );
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: user } = await (supabase.from("users") as any)
       .select("id, email, pin_hash")
       .eq("email", normalizedEmail)
-      .eq("pin_hash", hash)
-      .single();
+      .maybeSingle();
 
-    if (!user) {
+    if (!user?.pin_hash) {
+      await recordAttempt(normalizedEmail, ip, false);
       return NextResponse.json({ error: "Invalid PIN" }, { status: 401 });
     }
 
-    // Generate magic link using admin API
+    const result = await verifyPinWithUpgrade(user.pin_hash, pin, normalizedEmail);
+    if (!result.ok) {
+      await recordAttempt(normalizedEmail, ip, false);
+      return NextResponse.json({ error: "Invalid PIN" }, { status: 401 });
+    }
+
+    if (result.shouldUpgrade && result.newHash) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase.from("users") as any)
+        .update({ pin_hash: result.newHash })
+        .eq("id", user.id);
+    }
+
+    await recordAttempt(normalizedEmail, ip, true);
+
     const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
       type: "magiclink",
       email: normalizedEmail,
@@ -54,15 +70,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Session creation failed" }, { status: 500 });
     }
 
-    // Extract the token from the generated link
-    const properties = linkData.properties;
-    const hashedToken = properties?.hashed_token;
-
+    const hashedToken = linkData.properties?.hashed_token;
     if (!hashedToken) {
       return NextResponse.json({ error: "Token generation failed" }, { status: 500 });
     }
 
-    // Return token details for client-side verification
     return NextResponse.json({
       ok: true,
       token_hash: hashedToken,
