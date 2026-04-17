@@ -1,0 +1,335 @@
+---
+chapterNumber: 15
+slug: permisos-seguridad
+title: 'Permisos, Seguridad y Automatización con Claude'
+part: claude-code
+estimatedMinutes: 21
+prerequisites:
+  - Uso básico de Claude Code
+  - Familiaridad con la terminal
+status: approved
+generatedAt: '2025-01-27T10:00:00Z'
+sourcePagesFrom: 451
+sourcePagesTo: 475
+model: claude-opus-4-7
+---
+<NarratedSection id="intro-gancho" heading="Cuando Claude trabaja solo" sourcePage="466">
+
+Imagina que tienes un asistente muy bueno. Al principio te quedas a su lado mientras trabaja. Le dices qué hacer, él lo hace, tú revisas. Pero después de un tiempo le tienes confianza y quieres dejarlo trabajando sin ti.
+
+Eso es de lo que trata este capítulo: **poner a Claude a trabajar solo**, con reglas claras de seguridad. Porque cuando alguien trabaja sin supervisión, los permisos y los límites importan más que nunca.
+
+Vamos a ver cómo darle a Claude las llaves justas: ni más, ni menos.
+
+</NarratedSection>
+
+<NarratedSection id="cowork-intro" heading="Cowork: un pasante en tu escritorio" sourcePage="466">
+
+**Cowork** es una función de Claude Desktop. Deja que Claude toque archivos en tu computadora: leerlos, editarlos, crear documentos Excel con fórmulas, organizar carpetas, armar presentaciones.
+
+Piensa en Cowork como un **pasante capaz** sentado frente a tu computadora. Tú le dices qué hacer y él trabaja. Pero, como a cualquier pasante nuevo, le pides permiso antes de hacer cosas importantes (por ejemplo, borrar archivos).
+
+Cowork está disponible en planes pagos: Pro, Max, Team y Enterprise. Necesitas la app de Claude Desktop para macOS o Windows (solo x64).
+
+</NarratedSection>
+
+<NarratedSection id="cowork-seguridad" heading="¿Qué tan seguro es esto?" sourcePage="466">
+
+Aquí viene lo importante. El código que ejecuta Cowork corre en una **VM aislada**. Una VM (máquina virtual) es como una computadora de juguete dentro de tu computadora real. Si algo sale mal ahí dentro, no afecta a tu sistema principal.
+
+Además, tú decides **qué carpetas** puede ver Claude. Y decides si puede conectarse a internet. Antes de acciones importantes (como borrar un archivo), Claude pide permiso.
+
+Es como darle las llaves de ciertas habitaciones de tu casa. Tú eliges cuáles. Y si quiere mover un mueble, te pregunta primero.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-vm-aislada"
+  question="¿Por qué Cowork ejecuta el código en una VM aislada?"
+  options='["Para que Claude vaya más rápido","Para que lo que pasa ahí dentro no afecte a tu sistema operativo principal","Para poder usar Claude sin internet","Porque las VMs cuestan menos que el disco duro"]'
+  correctIndex="1"
+  explanation="Una VM aislada es un entorno separado. Si Claude comete un error o hay algo raro, queda contenido ahí dentro y no toca el resto de tu computadora."
+/>
+
+<NarratedSection id="cowork-limites" heading="Los límites de Cowork" sourcePage="468">
+
+Cowork tiene reglas que conviene recordar:
+
+- La **app Desktop debe estar abierta** mientras dure la tarea.
+- Tu computadora debe estar encendida y despierta.
+- Necesitas conexión a internet.
+- La memoria solo se guarda dentro de **Projects** (espacios de trabajo persistentes). Fuera de ahí, cada sesión empieza de cero.
+- No hay audit logging: la actividad **no queda registrada** en los logs de auditoría de la organización.
+- Si cierras la app, las sesiones activas terminan.
+
+Un detalle útil: si tienes plan Pro o Max, puedes asignar tareas desde tu teléfono. Claude las ejecuta en tu computadora de escritorio (que debe estar encendida con la app abierta).
+
+</NarratedSection>
+
+<NarratedSection id="flag-print" heading="El flag --print: del chat al script" sourcePage="468">
+
+Hasta ahora usaste Claude Code como una conversación. Tú escribes, él responde, tú vuelves a escribir. Eso se llama modo **interactivo**.
+
+Pero a veces no quieres conversar. Quieres que Claude procese una pregunta y se vaya. Para eso existe el flag `-p` (o `--print`).
+
+Es la diferencia entre **hablar por teléfono** (interactivo) y **enviar un mensaje de texto** (--print). Envías tu pregunta, recibes la respuesta, y listo.
+
+Ejemplo básico:
+
+```
+claude -p "Qué hace el modulo de auth?"
+```
+
+También puedes conectar Claude con otros programas usando un **pipe** (tubería). Un pipe toma la salida de un programa y la manda como entrada a otro:
+
+```
+cat archivo.txt | claude -p "explica esto" > output.txt
+```
+
+Esto lee `archivo.txt`, se lo pasa a Claude y guarda la respuesta en `output.txt`. Es la base de toda la automatización que veremos después.
+
+</NarratedSection>
+
+<NarratedSection id="formatos-salida" heading="Formatos de salida: elige cómo recibir la respuesta" sourcePage="469">
+
+Claude puede darte la respuesta de tres formas distintas, según lo que vayas a hacer con ella:
+
+- `--output-format text` — Texto normal. El formato por defecto. Ideal para leerlo tú.
+- `--output-format json` — JSON con el resultado, session ID y metadata. Ideal para que otro script lea la respuesta.
+- `--output-format stream-json` — JSON que llega token por token, conforme Claude va pensando.
+
+Para automatización, casi siempre quieres `json`. Te da información extra (como el `session_id`) que necesitas para encadenar pasos.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-print"
+  question="¿Cuándo usarías `claude -p` en lugar del modo interactivo?"
+  options='["Cuando quieres tener una conversación larga con ida y vuelta","Cuando quieres que Claude procese algo dentro de un script y devuelva una respuesta","Cuando quieres ver la cara de Claude","Cuando no tienes API key"]'
+  correctIndex="1"
+  explanation="El flag -p convierte a Claude en una herramienta de una sola pasada. Perfecto para scripts, pipelines y automatización, donde no hay una persona leyendo en vivo."
+/>
+
+<TerminalTask
+  id="task-print-basico"
+  instruction="Prueba el modo no interactivo de Claude Code. Abre tu terminal y pide un resumen corto usando el flag -p. Observa cómo Claude responde una sola vez y termina, sin abrir una conversación."
+  command="claude -p &quot;Explica en 2 frases qué es un pipe en la terminal&quot;"
+  expectedOutcome="Claude imprime una respuesta corta en la terminal y vuelve al prompt del sistema. No queda una sesión abierta."
+  verifyHint="Si aparece la respuesta y tu terminal vuelve al prompt normal (sin seguir esperando input de Claude), funcionó."
+/>
+
+<NarratedSection id="continuar-sesiones" heading="Encadenar conversaciones en scripts" sourcePage="469">
+
+A veces necesitas que Claude recuerde lo que hablaron antes, incluso en modo no interactivo. Para eso usas `--continue`:
+
+```
+claude -p "Revisa este codigo por problemas de performance"
+claude -p "Ahora enfocate en las queries de base de datos" --continue
+claude -p "Resume todos los problemas encontrados" --continue
+```
+
+El flag `--continue` dice: *sigue la conversación más reciente*. Claude recuerda todo lo anterior.
+
+Si necesitas retomar una conversación específica (no la más reciente), captura el `session_id` desde el JSON y úsalo con `--resume`:
+
+```
+session_id=$(claude -p "Empieza la revision" --output-format json | jq -r '.session_id')
+claude -p "Continua la revision" --resume "$session_id"
+```
+
+Esto es como guardar el número de una conversación para volver a ella más tarde.
+
+</NarratedSection>
+
+<NarratedSection id="limites-costos" heading="Frenos de mano: límites de costo y de vueltas" sourcePage="470">
+
+Cuando Claude corre solo, sin nadie mirando, necesitas **frenos de mano**. Dos flags que no deberían faltar en tu automatización:
+
+- `--max-turns 5` — Limita cuántas veces Claude puede iterar (por ejemplo, usar herramientas). Evita que entre en un bucle infinito.
+- `--max-budget-usd 5.00` — Limita cuánto puede gastar en dólares.
+
+Piensa en estos flags como el freno de mano de un auto. Si algo sale mal, el auto no se va rodando colina abajo.
+
+Usarlos siempre en scripts automatizados es una buena costumbre. Es más fácil perdonar un script que se detuvo de más, que un script que gastó 200 dólares de la noche a la mañana.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-frenos"
+  question="¿Para qué sirve el flag --max-turns 5 en un script?"
+  options='["Para que Claude responda más bonito","Para limitar cuántas iteraciones puede hacer y evitar bucles infinitos o gastos descontrolados","Para que Claude use 5 modelos distintos","Para traducir la respuesta a 5 idiomas"]'
+  correctIndex="1"
+  explanation="Limitar las vueltas es una protección básica cuando Claude trabaja sin supervisión. Si algo se atasca, se detiene en vez de seguir gastando créditos."
+/>
+
+<NarratedSection id="flag-bare" heading="El flag --bare: arranque en modo seguro" sourcePage="470">
+
+El flag `--bare` hace que Claude Code arranque en **modo mínimo**. Se salta toda la auto-detección de hooks, skills, plugins, MCP servers, auto memory y archivos `CLAUDE.md`. Solo los flags que le pases explícitamente tienen efecto.
+
+Es como arrancar una computadora en **modo seguro**: se carga lo mínimo para funcionar.
+
+```
+claude --bare -p 'Resume este archivo' --allowedTools 'Read'
+```
+
+¿Cuándo usarlo? En **CI/CD** y scripts donde quieres que Claude se comporte igual en cada máquina. Sin sorpresas por configuraciones locales que cambien el resultado. Además, arranca más rápido porque no busca archivos de configuración.
+
+En modo bare, Claude tiene acceso a Bash, lectura y edición de archivos. Si necesitas más contexto, lo cargas a mano con flags como `--append-system-prompt-file`, `--settings`, `--mcp-config` o `--agents`.
+
+Nota: en una futura versión, `--bare` será el modo por defecto cuando uses `-p`. Si tus scripts ya funcionan con `--bare`, estás listo para el cambio.
+
+</NarratedSection>
+
+<NarratedSection id="tareas-programadas" heading="Cuatro niveles de tareas programadas" sourcePage="471">
+
+A veces quieres que Claude trabaje **a una hora específica**, sin que tú tengas que ejecutar nada. Hay cuatro formas de hacerlo, cada una con más durabilidad que la anterior. Piensa en ellas como cuatro tipos de alarmas:
+
+1. **/loop en el CLI** — Dentro de tu sesión actual. Se borra al cerrar la terminal. Expira a los 3 días.
+2. **Cowork Desktop (/schedule)** — En tu computadora. Más durable, pero la máquina debe estar encendida y la app abierta.
+3. **Tareas Cloud** — En la nube de Anthropic. Funciona con tu PC apagada. Intervalo mínimo: 1 hora.
+4. **GitHub Actions con cron** — En los servidores de GitHub. La más confiable, integrada con tu repositorio.
+
+La regla es simple: **cuanto más importante la tarea, más alto debe ser el nivel**. Para recordatorios rápidos, `/loop`. Para reportes diarios que no pueden fallar, GitHub Actions.
+
+</NarratedSection>
+
+<NarratedSection id="loop-ejemplos" heading="Ejemplos de /loop y /schedule" sourcePage="471">
+
+El comando `/loop` repite una tarea cada cierto intervalo dentro de tu sesión:
+
+```
+/loop 5m revisa si el deployment termino y dime que paso
+```
+
+Puedes usar `s` (segundos, se redondea al minuto), `m` (minutos), `h` (horas) o `d` (días). También puedes hacer loop sobre otros comandos:
+
+```
+/loop 20m /review-pr 1234
+```
+
+Y crear recordatorios únicos en lenguaje natural:
+
+```
+recuerdame a las 3pm que haga push de la rama de release
+```
+
+En **Cowork Desktop**, el comando `/schedule` crea tareas más durables. Hay una sección *Scheduled* en la barra lateral para gestionarlas. Si tu computadora estuvo apagada, Desktop ejecuta automáticamente la **ejecución perdida más reciente** de los últimos 7 días cuando vuelves a abrir la app. Solo una, no todas.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-niveles"
+  question="Quieres un reporte diario que se genere a las 9am, incluso si tu computadora está apagada. ¿Qué nivel te conviene?"
+  options='["/loop dentro del CLI","/schedule en Cowork Desktop","Tareas Cloud o GitHub Actions con cron","Ninguno, tienes que dejar la computadora encendida siempre"]'
+  correctIndex="2"
+  explanation="Las tareas Cloud corren en la infraestructura de Anthropic y GitHub Actions en los servidores de GitHub. Ninguna depende de que tu computadora esté encendida. /loop y /schedule sí dependen de tu máquina."
+/>
+
+<NarratedSection id="github-actions" heading="GitHub Actions: Claude dentro de tu repositorio" sourcePage="473">
+
+**GitHub Actions** es un sistema de automatización de GitHub. Ejecuta tareas cuando pasan cosas en tu repositorio: alguien abre un PR (pull request, una propuesta de cambio de código), comenta en un issue o hace push.
+
+Claude tiene una acción oficial: `anthropics/claude-code-action@v1`. Con ella, Claude se convierte en un miembro más de tu equipo: responde comentarios, revisa código, hasta crea PRs.
+
+La forma más fácil de instalarla es desde el CLI:
+
+```
+/install-github-app
+```
+
+Si lo haces manual, son tres pasos: instalar la GitHub App de Claude, agregar tu `ANTHROPIC_API_KEY` como secreto del repositorio, y copiar un archivo workflow a `.github/workflows/`.
+
+**Nunca** pongas tu API key directamente en el archivo. Siempre desde secretos. Es como la contraseña de tu casa: no la escribes en la puerta.
+
+</NarratedSection>
+
+<NarratedSection id="workflow-minimo" heading="Un workflow que responde a @claude" sourcePage="474">
+
+Este es el workflow mínimo para que Claude responda cuando alguien escribe `@claude` en un comentario:
+
+```yaml
+name: Claude Code
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+jobs:
+  claude:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+```
+
+Con esto, cualquier persona del equipo puede escribir `@claude explica esta funcion` en un comentario y Claude responde.
+
+Para **code review automático** en cada PR:
+
+```yaml
+on:
+  pull_request:
+    types: [opened, synchronize]
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: "Revisa este PR por calidad, correctitud y seguridad."
+          claude_args: "--max-turns 5"
+```
+
+Fíjate en `--max-turns 5`. Otra vez el freno de mano, para que Claude no se pase de vueltas (ni de presupuesto).
+
+</NarratedSection>
+
+<NarratedSection id="parametros-eventos" heading="Parámetros y eventos disponibles" sourcePage="475">
+
+Los parámetros más usados de `anthropics/claude-code-action@v1`:
+
+- `anthropic_api_key` — Tu clave, siempre desde secretos de GitHub.
+- `prompt` — Las instrucciones para Claude.
+- `claude_args` — Flags del CLI, como `--max-turns 5` o `--model opus`.
+- `trigger_phrase` — La frase que activa a Claude. Por defecto: `@claude`.
+- `use_bedrock` — Usa AWS Bedrock en vez de la API directa.
+- `use_vertex` — Usa Google Vertex AI.
+
+Y los eventos que pueden activar a Claude:
+
+- `issue_comment` — comentarios en issues.
+- `pull_request_review_comment` — comentarios en reviews de PRs.
+- `issues` (opened, assigned) — cuando se abren o asignan issues.
+- `pull_request` (opened, synchronize) — cuando se abren o actualizan PRs.
+- `schedule` (cron) — ejecución programada por horario.
+
+Si tu equipo usa GitLab en vez de GitHub, también existe una integración (en beta, mantenida por GitLab). La idea es similar: Claude escucha eventos y responde.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-api-key"
+  question="¿Cuál es la forma correcta de usar tu ANTHROPIC_API_KEY en un workflow de GitHub Actions?"
+  options='["Escribirla directamente en el archivo .yml del workflow","Ponerla en el README del repositorio","Guardarla como secreto del repositorio y referenciarla con ${{ secrets.ANTHROPIC_API_KEY }}","No hace falta, GitHub la adivina automáticamente"]'
+  correctIndex="2"
+  explanation="Las API keys nunca deben quedar visibles en el código. GitHub permite guardarlas como 'secretos' del repositorio, que se inyectan en tiempo de ejecución sin que nadie pueda leerlas desde el código."
+/>
+
+<NarratedSection id="cierre" heading="Cerrando el círculo" sourcePage="475">
+
+En este capítulo viste cómo Claude pasa de ser un asistente que responde en vivo a un **trabajador que puede operar solo**.
+
+Las piezas clave:
+
+- **Cowork** para trabajar con archivos locales, con permisos por carpeta y VM aislada.
+- El flag **`-p`** para convertir Claude en una herramienta de scripts.
+- Flags de seguridad como **`--max-turns`** y **`--max-budget-usd`** para poner frenos.
+- **`--bare`** para arranques predecibles en CI/CD.
+- Cuatro niveles de **tareas programadas**, cada uno con más durabilidad.
+- **GitHub Actions** para integrar Claude directamente en el flujo de tu repositorio.
+
+La idea que une todo: cuando alguien (o algo) trabaja sin supervisión, los **permisos explícitos** y los **límites claros** son parte del trabajo, no un extra. No es desconfianza: es diseño responsable.
+
+</NarratedSection>

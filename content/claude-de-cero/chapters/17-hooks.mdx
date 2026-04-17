@@ -1,0 +1,282 @@
+---
+chapterNumber: 17
+slug: hooks
+title: Hooks
+part: claude-code
+estimatedMinutes: 26
+prerequisites: []
+status: approved
+generatedAt: '2026-04-17T02:00:00.000Z'
+sourcePagesFrom: 313
+sourcePagesTo: 336
+model: hand-written-by-claude
+---
+
+<NarratedSection id="intro-hooks" heading="Vigilantes automáticos en tu terminal" sourcePage="313">
+
+Imagina que pones una cámara de seguridad en la puerta de tu casa. Cada vez que alguien entra, la cámara se enciende sola. Tú no tienes que pulsar nada. Solo ocurre.
+
+Un **hook** es exactamente eso dentro de Claude Code. Es una acción que se dispara sola cuando pasa algo concreto. Tú la configuras una vez y se queda ahí, vigilando. Cuando Claude hace lo que tú dijiste que vigilara, el hook se ejecuta sin avisar.
+
+Piensa en el ayudante de una cocina. Cada vez que termina de cocinar, quieres que lave los platos. No quieres tener que pedirlo todos los días. Quieres que lo haga solo. Eso es un hook: una instrucción del tipo **cuando pase ESTO, haz AQUELLO**.
+
+Un **evento** es el "ESTO": el momento que dispara el hook. Un **handler** es el "AQUELLO": la acción que se ejecuta. Claude Code ya tiene una lista de eventos predefinidos (veremos todos en este capítulo). Tú solo eliges cuál vigilar y qué hacer.
+
+¿Por qué esto es útil? Porque Claude es un modelo de lenguaje y a veces se olvida. Puedes escribir en tu `CLAUDE.md`: *"Siempre formatea el código con Prettier después de editar"*. A veces Claude lo hace. A veces no. Un hook no se olvida nunca. Es como una alarma programada: suena siempre.
+
+La regla sencilla es esta. Usa hooks cuando necesites que algo ocurra **el 100% de las veces**. Usa instrucciones en `CLAUDE.md` cuando sea una preferencia amable, no una obligación.
+
+</NarratedSection>
+
+<Quiz
+  id="q-que-es-hook"
+  question="¿Qué es un hook en Claude Code?"
+  options='["Un atajo de teclado para ir más rápido", "Una acción que se dispara sola cuando ocurre un evento específico", "Un comando de terminal nuevo", "Una forma de chatear con Claude sin escribir"]'
+  correctIndex="1"
+  explanation="Un hook es como una cámara de seguridad: vigila un momento concreto y, cuando ocurre, ejecuta una acción. Tú lo configuras una vez y se queda ahí vigilando."
+/>
+
+<NarratedSection id="cuatro-tipos" heading="Los cuatro tipos de hook" sourcePage="314">
+
+Hay cuatro formas distintas de crear un hook. Cada una sirve para cosas diferentes. Piensa en cuatro tipos de vigilantes con personalidades distintas.
+
+**Command**. Es el más común. Ejecuta un comando de terminal, como si lo hubieras escrito tú a mano. Ejemplo: correr `prettier` para formatear un archivo después de editarlo. Es rápido y simple.
+
+**HTTP**. Envía los datos del evento a una URL. Útil cuando quieres conectar Claude con un servicio que vive fuera. Ejemplo: avisar a un servidor de tu empresa cada vez que Claude termina una tarea.
+
+**Prompt**. Le pregunta a un modelo de IA (Haiku por defecto) si la acción está bien. Es como tener un segundo par de ojos que lee la situación y decide. Ejemplo: antes de que Claude pare, preguntarle a Haiku *"¿de verdad ha terminado todo?"*.
+
+**Agent**. El más completo. Lanza un mini-agente con acceso a herramientas (Read, Grep, Glob) que puede inspeccionar archivos antes de decidir. Ejemplo: revisar que los tests pasen antes de dar luz verde.
+
+Los dos primeros (command y HTTP) son **determinísticos**: hacen siempre lo mismo, no piensan. Los dos últimos (prompt y agent) usan **juicio de IA**: leen el contexto y deciden. Los dos primeros son como un interruptor de luz. Los dos últimos son como un portero que mira tu cara antes de abrir.
+
+Empieza siempre con command. Es el 90% de los casos. Solo salta a los otros cuando realmente necesites hablar con un servicio externo (HTTP) o pedir una segunda opinión inteligente (prompt/agent).
+
+</NarratedSection>
+
+<Quiz
+  id="q-tipo-prompt"
+  question="¿Cuál de estos tipos de hook le pregunta a un modelo de IA si la acción está bien antes de seguir?"
+  options='["Command", "HTTP", "Prompt", "Todos a la vez"]'
+  correctIndex="2"
+  explanation="El tipo prompt usa un modelo (Haiku por defecto) para leer la situación y responder con JSON tipo ok true o ok false. Es como un segundo par de ojos."
+/>
+
+<NarratedSection id="ciclo-vida" heading="El ciclo de vida: cuándo se disparan" sourcePage="315">
+
+Claude Code sigue un **ciclo** durante cada sesión. Es como tu día: te levantas, desayunas, trabajas, almuerzas, duermes. Podrías poner una alarma en cualquiera de esos momentos.
+
+Con Claude Code funciona igual. Estos son los momentos principales donde puedes enganchar un hook:
+
+- **SessionStart**: Claude arranca o se reanuda.
+- **UserPromptSubmit**: tú envías un mensaje.
+- **PreToolUse**: Claude está a punto de usar una herramienta.
+- **PermissionRequest**: Claude pide permiso para algo.
+- **PostToolUse**: la herramienta terminó con éxito.
+- **PostToolUseFailure**: la herramienta falló.
+- **Stop**: Claude termina de responder.
+- **SessionEnd**: la sesión se cierra.
+
+Hay más eventos (los veremos), pero estos ocho cubren el 90% de lo que vas a usar. Cada vez que Claude usa una herramienta, dispara varios de estos. Puede repetirse muchas veces en una misma sesión.
+
+El flujo paso a paso es así. Cuando inicias Claude Code, se lanza **SessionStart**. Tú escribes algo y se lanza **UserPromptSubmit**. Claude decide usar Bash y se lanza **PreToolUse**. Si Bash necesita tu permiso, se lanza **PermissionRequest**. Si Bash termina bien, se lanza **PostToolUse**. Si falla, **PostToolUseFailure**. Cuando Claude termina de contestarte, **Stop**. Y al cerrar la sesión, **SessionEnd**.
+
+Los pasos intermedios se repiten todas las veces que Claude use herramientas. Si en una sesión Claude usa Bash tres veces y Edit dos veces, tendrás cinco PreToolUse y cinco PostToolUse. Los hooks se ejecutan en cada uno. Por eso, si pones un hook pesado, tu sesión se puede ralentizar. Mide antes de abusar.
+
+</NarratedSection>
+
+<Quiz
+  id="q-ciclo"
+  question="¿En qué evento engancharías un hook que debe ejecutarse JUSTO ANTES de que Claude use una herramienta (para poder bloquearla si es peligrosa)?"
+  options='["SessionStart", "UserPromptSubmit", "PreToolUse", "Stop"]'
+  correctIndex="2"
+  explanation="PreToolUse es tu última oportunidad para detener una herramienta antes de que se ejecute. Es donde se ponen los hooks de protección (como bloquear rm -rf)."
+/>
+
+<NarratedSection id="configurar" heading="Cómo configurar tu primer hook" sourcePage="316">
+
+Hay dos formas de crear hooks: el **menú interactivo** y **editando JSON directo**.
+
+La forma fácil es el menú `/hooks`. Dentro de Claude Code, escribe `/hooks` y pulsa Enter. Se abre un menú donde puedes ver todos los hooks configurados, agregar nuevos de tipo command, eliminar los que ya no quieres, y deshabilitar todos de golpe con un toggle. El menú muestra etiquetas: `[User]` para hooks globales, `[Project]` para los del proyecto, y `[Local]` para los locales. Esta es la mejor forma de empezar. Pero solo soporta hooks de tipo command. Para HTTP, prompt o agent, necesitas editar el JSON a mano.
+
+La forma completa es editar el JSON. Los hooks viven dentro de archivos de settings. La estructura tiene tres niveles, como cajas dentro de cajas. La caja grande es el **evento** (cuándo se dispara). La mediana es el **matcher** (qué filtra). La pequeña es el **handler** (qué hace).
+
+En JSON queda así: dentro de la clave `hooks`, pones el nombre del evento (por ejemplo `PostToolUse`). Dentro, una lista con objetos que tienen `matcher` (por ejemplo `&quot;Edit|Write&quot;`) y otra lista interna `hooks` con cada handler (por ejemplo `type: command` y `command: echo 'Se editó un archivo!'`). Traducido al castellano: *"después de que Claude use Edit o Write, ejecuta este comando"*.
+
+Hay varios sitios donde guardar tus hooks, y cada uno tiene un alcance distinto. `~/.claude/settings.json` es **usuario**: aplica a todos tus proyectos y no se comparte. `.claude/settings.json` dentro del proyecto es **proyecto**: aplica solo a ese repo y se puede commitear al equipo. `.claude/settings.local.json` es **local**: solo tú lo ves (está en gitignore). Y **managed policy** lo configura un admin de la organización y no se puede deshabilitar.
+
+La regla: si es personal (como notificaciones de escritorio), ponlo en user. Si es del equipo (como formateo de código), ponlo en project.
+
+</NarratedSection>
+
+<TerminalTask
+  id="t-abrir-menu-hooks"
+  instruction="Abre Claude Code en una terminal y escribe el comando /hooks (con la barra) para ver el menú interactivo de hooks. No necesitas configurar nada todavía, solo explora qué aparece en tu sistema."
+  command="claude"
+  expectedOutcome="Se abre Claude Code. Dentro, escribe /hooks y verás el menú. Si no tienes hooks, dirá 'no hooks configured'. Si tienes, verás etiquetas [User], [Project] o [Local]."
+  verifyHint="Si el comando claude no se encuentra, revisa que tengas Claude Code instalado. Sal del menú con Esc."
+/>
+
+<NarratedSection id="matchers" heading="Matchers: filtrar cuándo se dispara" sourcePage="317">
+
+Un **matcher** es un filtro. Le dice al hook *"dispárate solo cuando coincida con esto"*. Es como el portero de una discoteca: no deja pasar a todos, solo a los que están en la lista.
+
+El matcher usa **expresiones regulares** (regex). No te asustes con el nombre. Los patrones más comunes son muy simples. `&quot;Bash&quot;` dispara solo cuando la herramienta es Bash. `&quot;Edit|Write&quot;` dispara cuando es Edit O Write (la barra significa *"o"*). `&quot;mcp__github__.*&quot;` dispara con cualquier herramienta del servidor MCP de GitHub (el `.*` significa *"cualquier cosa detrás"*). Un matcher vacío `&quot;&quot;` o sin matcher dispara **siempre**.
+
+Cada evento filtra por un campo diferente. Esta es la guía rápida. **PreToolUse**, **PostToolUse**, **PostToolUseFailure** y **PermissionRequest** filtran por `tool_name` (por ejemplo `Bash`, `Edit`, o `mcp__memory__create_entities`). **SessionStart** filtra por `source`, que puede ser `startup`, `resume`, `clear` o `compact`. **SessionEnd** filtra por `reason`: `clear`, `logout`, `prompt_input_exit` u `other`. **Notification** filtra por `notification_type`: `permission_prompt`, `idle_prompt` o `auth_success`. **SubagentStart** y **SubagentStop** filtran por `agent_type` (ejemplo: `Explore`, `Plan`). **ConfigChange** filtra por `source`. **PreCompact** filtra por `trigger`: `manual` o `auto`.
+
+Hay eventos que **no soportan matchers**: `UserPromptSubmit`, `Stop`, `TeammateIdle`, `TaskCompleted`, `WorktreeCreate`, `WorktreeRemove` e `InstructionsLoaded`. Estos siempre se disparan. No hay filtro posible.
+
+Cuidado con una cosa: el matcher es **case-sensitive**. `bash` no es lo mismo que `Bash`. Si tu hook no se dispara, el 50% de las veces es porque escribiste el matcher con la mayúscula equivocada.
+
+</NarratedSection>
+
+<Quiz
+  id="q-matcher-or"
+  question="Si quieres que un hook se dispare tanto con la herramienta Edit como con Write, ¿qué matcher usas?"
+  options='["Edit,Write", "Edit|Write", "Edit+Write", "EditWrite"]'
+  correctIndex="1"
+  explanation="La barra vertical significa or en expresiones regulares. Edit|Write dispara con Edit o con Write. Ojo con las mayúsculas: los matchers son case-sensitive."
+/>
+
+<NarratedSection id="comunicacion" heading="Cómo el hook le habla a Claude" sourcePage="318">
+
+Los hooks se comunican con Claude Code de dos formas: **exit codes** y **JSON output**.
+
+Piensa en los exit codes como los colores de un semáforo. **Exit 0 es verde**: todo bien, la acción puede continuar. **Exit 2 es rojo**: alto, bloquea la acción. **Cualquier otro** (1, 3, 127...) es amarillo: hubo un problema pero no es grave, la acción continúa y el error sale en modo verbose.
+
+Con exit 0, Claude Code mira el stdout (lo que el hook imprime). Si encuentra JSON válido, lo procesa. Si encuentra texto plano, lo agrega como contexto para Claude. Con exit 2, Claude Code ignora stdout, lee stderr, y se lo muestra a Claude como error. El efecto del exit 2 depende del evento: en `PreToolUse` bloquea la herramienta; en `UserPromptSubmit` borra el prompt completo; en `Stop` obliga a Claude a seguir trabajando; en `TaskCompleted` impide marcar la tarea como completada.
+
+Los exit codes son simples (sí o no). Pero a veces necesitas más control. Ahí entra el **JSON output**. Tu hook puede imprimir un JSON en stdout con campos como `decision: &quot;block&quot;` y `reason: &quot;No puedes hacer eso porque...&quot;`. Así Claude entiende exactamente por qué se bloqueó.
+
+Para `PreToolUse` hay un formato especial con `hookSpecificOutput`, que incluye `hookEventName: &quot;PreToolUse&quot;`, `permissionDecision` (puede ser `allow`, `deny` o `ask`) y `permissionDecisionReason` con el motivo.
+
+Hay cuatro campos universales que funcionan en todos los eventos. `continue: false` hace que Claude deje de procesar por completo. `stopReason` es el mensaje que ve el usuario cuando continue es false. `suppressOutput: true` oculta el output en modo verbose. `systemMessage` muestra una advertencia al usuario.
+
+¿Qué datos recibe tu hook? Para los de tipo command, los datos llegan por **stdin** en formato JSON. Todos reciben campos básicos: `session_id`, `transcript_path`, `cwd` (directorio actual), `permission_mode` y `hook_event_name`. Cada evento además añade campos propios. Por ejemplo, `PreToolUse` incluye `tool_name` y `tool_input` con los parámetros que Claude quiere usar.
+
+</NarratedSection>
+
+<Quiz
+  id="q-exit-codes"
+  question="Tu hook PreToolUse quiere BLOQUEAR que Claude use una herramienta peligrosa. ¿Con qué exit code sale?"
+  options='["exit 0", "exit 1", "exit 2", "exit 127"]'
+  correctIndex="2"
+  explanation="Exit 2 es el semáforo rojo: bloquea la acción. En PreToolUse, eso impide que la herramienta se ejecute. Claude lee stderr como motivo del bloqueo."
+/>
+
+<NarratedSection id="stop-loop" heading="El evento Stop y el peligro del loop infinito" sourcePage="321">
+
+El evento `Stop` se dispara cuando Claude termina de responder. Es tu oportunidad de decir *"espera, no has acabado, sigue"*. Lo haces devolviendo `decision: &quot;block&quot;` en el JSON output. Claude entonces sigue trabajando en lugar de parar.
+
+Suena bien, pero tiene un **peligro enorme**: si tu hook siempre dice *"sigue"*, Claude nunca para. Y como Claude termina de responder varias veces, tu hook vuelve a disparar, y otra vez dice *"sigue"*. Es un **loop infinito**. Tu terminal se queda colgada trabajando para siempre.
+
+Para evitarlo, Claude Code envía un campo llamado `stop_hook_active` en el JSON input. Si ese campo es `true`, significa que Claude ya intentó parar una vez y tu hook lo obligó a seguir. **Si lo ves en true, sal con exit 0 y déjalo parar.** Si no lo verificas, creas el loop infinito.
+
+La estructura típica de un Stop hook seguro lee stdin con `cat`, extrae el campo con `jq`, y si es `true` hace `exit 0`. Si no, ejecuta su lógica normal. Son tres líneas de protección que te salvan de horas de sesiones colgadas.
+
+El mismo aviso vale para `SubagentStop` (cuando un subagente termina). Mismo campo, misma trampa, misma protección.
+
+Y ojo con otro detalle: `Stop` no soporta matchers. No puedes filtrar por herramienta ni por nada. Se dispara siempre al final de cada respuesta de Claude. Así que cualquier lógica que pongas ahí se ejecuta en cada turno. Hazlo rápido y seguro.
+
+Resumen de oro: **si escribes un Stop hook, lo primero que añades es el check de `stop_hook_active`**. Antes incluso de pensar qué quieres que haga el hook. Primero la protección.
+
+</NarratedSection>
+
+<Quiz
+  id="q-stop-active"
+  question="¿Por qué SIEMPRE hay que verificar el campo stop_hook_active en un hook de tipo Stop?"
+  options='["Para saber si el usuario está conectado", "Para evitar crear un loop infinito donde Claude nunca puede parar", "Para medir cuánto tarda Claude en responder", "Porque el schema de Zod lo exige"]'
+  correctIndex="1"
+  explanation="Si stop_hook_active es true, Claude ya intentó parar y tu hook lo obligó a seguir. Si vuelves a obligarlo, entras en un loop infinito. Verifícalo y haz exit 0 cuando sea true."
+/>
+
+<NarratedSection id="tipos-detalle" heading="Los cuatro tipos por dentro" sourcePage="322">
+
+Ya sabes que hay cuatro tipos: command, HTTP, prompt y agent. Veamos cómo configura cada uno.
+
+**Command hooks**. El más usado. Campos disponibles: `command` (obligatorio, el comando shell), `timeout` (opcional, segundos antes de cancelar, por defecto 600 = 10 minutos), `async` (opcional, si es `true` corre en background sin bloquear a Claude), y `statusMessage` (opcional, texto que aparece en el spinner mientras el hook corre). Los datos llegan por stdin en JSON. Normalmente los lees con `jq`.
+
+**HTTP hooks**. Envían un POST a una URL con los datos del evento como body. Campos: `url` (obligatorio), `headers` (opcional, mapa de cabeceras), y `allowedEnvVars` (opcional, lista de variables permitidas). Los headers soportan variables de entorno con `$VAR`. Las variables que no estén en `allowedEnvVars` se reemplazan por strings vacíos (por seguridad: evita filtrar secretos). Nota importante: los HTTP hooks **solo se configuran editando el JSON**. El menú `/hooks` no los soporta.
+
+**Prompt hooks**. Le preguntan a un modelo. Campos: `prompt` (obligatorio, el texto de la pregunta) y `timeout` (opcional, 30 segundos por defecto). El modelo (Haiku) lee el prompt y responde en JSON con `ok: true` (permite la acción) u `ok: false` con `reason` (la bloquea). Usa `$ARGUMENTS` en el prompt para inyectar los datos del evento. Si no lo incluyes, se añaden al final automáticamente.
+
+**Agent hooks**. El más potente. Lanza un mini-agente con acceso a herramientas Read, Grep y Glob. Puede hacer hasta 50 turnos de herramientas. Campos iguales al prompt hook, con timeout de 60 segundos por defecto. Responde con el mismo formato (`ok: true/false`). Úsalo cuando la verificación necesite leer archivos reales, no solo texto.
+
+**Hooks asíncronos**. Por defecto los hooks bloquean a Claude: él espera a que terminen. Si tu hook tarda 30 segundos, Claude espera 30 segundos. Con `async: true` el hook corre en el fondo. Claude sigue trabajando sin esperar. Limitaciones: solo funciona con `type: command` (prompt y agent no pueden ser async), no pueden bloquear herramientas ni retornar decisiones (la acción ya sucedió), y los resultados llegan en el siguiente turno. Úsalos para tareas largas como correr tests o builds.
+
+</NarratedSection>
+
+<Quiz
+  id="q-async"
+  question="¿Cuál es la principal limitación de un hook con async true?"
+  options='["No funciona en macOS", "No puede bloquear la herramienta porque la acción ya sucedió", "Necesita instalar jq aparte", "Solo corre una vez por sesión"]'
+  correctIndex="1"
+  explanation="Un hook async se ejecuta en el fondo mientras Claude sigue. Eso significa que la herramienta ya se ejecutó. No puedes bloquearla ni cambiarla. Solo ves el resultado en el siguiente turno."
+/>
+
+<NarratedSection id="seguridad" heading="Seguridad y variables especiales" sourcePage="325">
+
+Los command hooks se ejecutan con **todos tus permisos de usuario**. Pueden leer, modificar o borrar cualquier archivo al que tú tengas acceso. Eso los hace útiles, pero también peligrosos. Un error de una línea en un script puede borrar medio proyecto.
+
+**Buenas prácticas de seguridad**. Pon siempre las variables entre comillas: escribe `&quot;$VAR&quot;`, no `$VAR` a pelo. Sin comillas, un path con espacios rompe tu script. Valida los inputs: no confíes ciegamente en el JSON que recibes; verifica paths y valores antes de usarlos. Bloquea el **path traversal**: si un path contiene `..`, podría salirse de tu proyecto y tocar archivos fuera; comprueba antes de actuar. Usa paths absolutos con `&quot;$CLAUDE_PROJECT_DIR&quot;` en lugar de relativos. Evita archivos sensibles: no dejes que hooks lean `.env`, `.git/` o archivos de claves.
+
+**Variables de entorno especiales** que Claude Code te regala. `$CLAUDE_PROJECT_DIR` es la raíz de tu proyecto; úsala siempre entre comillas. `$CLAUDE_ENV_FILE` solo está disponible en `SessionStart`: si escribes `export VAR=valor` en ese archivo, esa variable queda para toda la sesión, como dejar una nota pegada en la nevera. `&#36;{CLAUDE_PLUGIN_ROOT}` apunta al directorio raíz del plugin actual (para scripts empaquetados con un plugin). `$CLAUDE_CODE_REMOTE` vale `true` en entornos web remotos.
+
+El timeout de `SessionEnd` es muy corto por defecto: **1.5 segundos**. Si tu hook de limpieza necesita más, ajústalo lanzando Claude Code con `CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS=5000 claude`.
+
+**El sistema de snapshot**. Claude Code toma una foto de tus hooks al inicio de la sesión y usa esa foto toda la sesión. Si alguien (o algo) modifica los hooks mientras trabajas, Claude Code te avisa: los cambios no aplican hasta que los revises en `/hooks`. Esto previene que código malicioso modifique tus hooks a mitad de sesión. Los hooks que agregas tú desde `/hooks` sí toman efecto al instante.
+
+Para deshabilitar todos los hooks sin borrarlos, abre `/hooks` y usa el toggle al final del menú. O pon `disableAllHooks: true` en tu settings. Ojo: si un admin de tu organización configuró hooks vía managed policy, tu `disableAllHooks` no los afecta.
+
+</NarratedSection>
+
+<Quiz
+  id="q-snapshot"
+  question="¿Qué hace el sistema de snapshot de hooks de Claude Code?"
+  options='["Guarda una copia de tus hooks en la nube", "Toma una foto de los hooks al inicio de la sesión; cambios externos a mitad de sesión no aplican hasta revisarlos en /hooks", "Borra todos los hooks al cerrar la sesión", "Comprime los hooks para que ocupen menos"]'
+  correctIndex="1"
+  explanation="El snapshot evita que código malicioso modifique tus hooks mientras trabajas. Los cambios externos a mitad de sesión no aplican hasta que los revises tú en el menú /hooks."
+/>
+
+<NarratedSection id="debug-ejemplos" heading="Debugging y ejemplos reales" sourcePage="328">
+
+Los hooks pueden fallar en silencio. Aquí tienes las herramientas para encontrar el problema.
+
+**Modo verbose con `Ctrl+O`**. Muestra el output de hooks en el transcript. Es lo primero que activas. **Flag `--debug`**. Ejecuta `claude --debug` para ver todos los detalles: qué hooks coincidieron, exit codes, output. **Prueba manual**. Simula el hook desde la terminal enviándole JSON por stdin y revisando el exit code.
+
+**Errores comunes**. Si tu hook no se dispara: revisa mayúsculas del matcher (`bash` y `Bash` son distintos); comprueba que no uses `PermissionRequest` en modo `-p` no interactivo (ese evento no se dispara ahí, usa `PreToolUse`); verifica en `/hooks` que aparezca bajo el evento correcto.
+
+Si ves errores en el transcript: el script puede no ser ejecutable (corre `chmod +x`); `jq` puede no estar instalado (instálalo); el comando puede no encontrarse (usa paths absolutos). Si `/hooks` muestra *"no hooks configured"*: tu JSON tiene errores (comas finales, comentarios: JSON puro no acepta eso), o el archivo está en la ubicación incorrecta. Si tienes loop infinito en Stop hook: tu script no verifica `stop_hook_active`. Si sale *"JSON validation failed"*: tu `~/.zshrc` o `~/.bashrc` tiene `echo` statements que ensucian stdin del hook; envuélvelos con un if que compruebe si el shell es interactivo para que solo corran ahí.
+
+**Ejemplos prácticos de oro**. Notificación en macOS cuando Claude necesita atención: un hook `Notification` con matcher vacío que llame a `osascript` para mostrar una notificación nativa. Auto-formateo con Prettier: hook `PostToolUse` con matcher `Edit|Write` que extrae el path con `jq` y llama a `npx prettier --write`. Proteger archivos sensibles: script en `.claude/hooks/protect-files.sh` registrado como `PreToolUse` con matcher `Edit|Write` que lee el file_path, compara con patrones protegidos (`.env`, `package-lock.json`, `.git/`), y sale con exit 2 si coincide. Bloquear `rm -rf`: hook `PreToolUse` para `Bash` que detecta el patrón en el comando y devuelve JSON con `permissionDecision: deny`. Correr tests en background: `PostToolUse` con `async: true` y timeout 300.
+
+**Consejo final**. Empieza simple. Tu primer hook debería ser una notificación de escritorio. Es fácil de configurar y ves resultados al instante. Cuando le agarres confianza, pasa a hooks más avanzados editando el JSON directo. Y para depurar, ten siempre `Ctrl+O` a mano.
+
+</NarratedSection>
+
+<TerminalTask
+  id="t-simular-hook"
+  instruction="Simula manualmente la entrada que recibe un command hook de tipo PreToolUse. Envía un JSON de ejemplo por stdin a jq y extrae el nombre de la herramienta. Esto es exactamente lo que haría tu script real."
+  command="echo '{&quot;tool_name&quot;:&quot;Bash&quot;,&quot;tool_input&quot;:{&quot;command&quot;:&quot;ls&quot;}}' | jq -r '.tool_name'"
+  expectedOutcome="Imprime la palabra Bash en una línea. Así es como tu hook leería el nombre de la herramienta que Claude quiere usar."
+  verifyHint="Si dice 'jq: command not found', instala jq con 'brew install jq' en macOS. Si sale null, revisa las comillas del JSON."
+/>
+
+<NarratedSection id="cierre" heading="Lo que ya sabes y qué viene" sourcePage="336">
+
+Acabas de recorrer el sistema de hooks completo. Recapitulemos.
+
+Un **hook** es una acción automática que se dispara en un momento específico del ciclo de Claude Code. Se configura en archivos de settings en JSON con tres niveles: **evento** (cuándo), **matcher** (qué filtra), y **handler** (qué hace).
+
+Hay **cuatro tipos** de handler: `command` (ejecuta terminal), `http` (POST a URL), `prompt` (pregunta a Haiku), y `agent` (mini-agente con Read/Grep/Glob). Los dos primeros son determinísticos. Los dos últimos usan juicio de IA.
+
+Hay **tres exit codes** clave: `0` para éxito, `2` para bloquear, y cualquier otro para errores no bloqueantes. Los hooks también pueden hablar con JSON output, que da más control fino (con campos como `decision`, `continue`, `hookSpecificOutput`).
+
+**Dos reglas que nunca olvides**. Primera: en hooks de tipo `Stop`, verifica siempre `stop_hook_active` para no crear loops infinitos. Segunda: los command hooks corren con todos tus permisos de usuario, así que valida inputs, pon variables entre comillas y bloquea path traversal.
+
+**Para depurar**, usa `Ctrl+O` (verbose) y `claude --debug`. Para probar un hook a mano, envíale un JSON por stdin y mira el exit code con `echo $?`.
+
+Empieza simple. Tu primer hook ideal: una notificación de escritorio cuando Claude necesita atención. Cuando le agarres confianza, pasa a formatear código, proteger archivos sensibles, y bloquear comandos destructivos. Los hooks son una de las herramientas más potentes de Claude Code. Úsalas con cabeza y con comillas.
+
+</NarratedSection>

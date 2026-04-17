@@ -1,0 +1,600 @@
+---
+chapterNumber: 13
+slug: config-settings
+title: Configuración y Settings
+part: claude-code
+estimatedMinutes: 25
+prerequisites:
+  - subagentes-basicos
+  - claude-code-intro
+status: approved
+generatedAt: '2025-01-20T00:00:00Z'
+sourcePagesFrom: 396
+sourcePagesTo: 425
+model: claude-sonnet-4-5
+---
+<NarratedSection id="intro-gancho" heading="Imagina una oficina con alarmas inteligentes" sourcePage="396">
+
+Piensa en una oficina donde cada vez que alguien entra, suena una alarma suave que dice 'bienvenido'. Y cuando alguien sale, otra alarma recuerda apagar la luz. Esas alarmas automáticas son **hooks** en el mundo de Claude Code.
+
+En este capítulo vamos a ver cómo configurar esas 'alarmas', cómo formar equipos de asistentes que trabajan juntos, y cómo hablar con Claude desde tu propio código usando su **API**. Tranquilo: vamos despacio, paso a paso.
+
+Empezaremos por los hooks, seguiremos con los equipos de agentes y terminaremos con tu primera llamada a la API de Claude.
+
+</NarratedSection>
+
+<NarratedSection id="que-son-hooks" heading="Hooks: acciones que se disparan solas" sourcePage="396">
+
+Un **hook** (se pronuncia 'juk', significa 'gancho' en inglés) es una acción automática que se ejecuta en un momento específico. Como el timbre de tu casa: tú no haces sonar el timbre, suena solo cuando alguien lo aprieta.
+
+En Claude Code, los hooks de subagentes se disparan en tres momentos:
+
+- **PreToolUse**: antes de que el subagente use una herramienta.
+- **PostToolUse**: justo después de usar una herramienta.
+- **Stop**: cuando el subagente termina su trabajo.
+
+Esto es útil para validar cosas antes de que pasen, o limpiar después. Por ejemplo, validar que una consulta a la base de datos sea solo de lectura antes de ejecutarla.
+
+</NarratedSection>
+
+<NarratedSection id="hook-en-frontmatter" heading="Un hook dentro del subagente" sourcePage="396">
+
+Los hooks pueden vivir en dos lugares. El primero es el **frontmatter** del subagente. El frontmatter es la zona de configuración que va al principio del archivo, entre líneas de `---`.
+
+Mira este ejemplo de un subagente llamado `db-reader` que solo puede leer la base de datos:
+
+```yaml
+---
+name: db-reader
+description: Execute read-only database queries
+tools: Bash
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "./scripts/validate-readonly-query.sh"
+---
+You are a database analyst with read-only access.
+```
+
+Cada vez que este subagente intenta ejecutar un comando Bash, el script `validate-readonly-query.sh` revisa que sea de solo lectura. Si alguien intenta un `DELETE`, el script bloquea la ejecución. Es una red de seguridad automática.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-hooks-cuando"
+  question="¿En qué momento se dispara un hook de tipo PreToolUse?"
+  options='["Cuando el subagente termina toda la sesión","Antes de que el subagente use una herramienta","Solo cuando el usuario aprueba manualmente","Después de generar una respuesta de texto"]'
+  correctIndex="1"
+  explanation="PreToolUse significa 'antes de usar una herramienta'. Es el momento perfecto para validar o bloquear acciones antes de que ocurran."
+/>
+
+<NarratedSection id="hooks-settings-json" heading="Hooks globales en settings.json" sourcePage="397">
+
+El segundo lugar donde viven los hooks es el archivo **settings.json** del proyecto. Ahí puedes definir hooks que se aplican a todos los subagentes, no solo a uno.
+
+Hay dos eventos globales importantes:
+
+- **SubagentStart**: cuando un subagente inicia.
+- **SubagentStop**: cuando un subagente termina.
+
+Un ejemplo típico: ejecutar un script `setup-db.sh` antes de que arranque cualquier subagente que se llame `db-agent`.
+
+```json
+{
+  "hooks": {
+    "SubagentStart": [
+      {
+        "matcher": "db-agent",
+        "hooks": [
+          { "type": "command", "command": "./scripts/setup-db.sh" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Esto te sirve para preparar el entorno antes de empezar o limpiar al terminar. Como encender el horno antes de cocinar.
+
+</NarratedSection>
+
+<NarratedSection id="mcp-subagentes" heading="Servidores MCP en subagentes" sourcePage="397">
+
+Un **servidor MCP** (Model Context Protocol) es una conexión que le da a Claude acceso a cosas del mundo real: un navegador, una base de datos, GitHub, etc. Lo importante aquí: puedes darle un MCP a un subagente sin que el agente principal lo tenga.
+
+Hay dos formas de asignarlo:
+
+- **Por nombre**: pones solo el nombre del servidor y el subagente comparte la conexión del padre.
+- **Inline**: defines la conexión entera en el frontmatter. Se crea al iniciar el subagente y se destruye al terminar.
+
+```yaml
+---
+name: browser-tester
+description: Tests features in a real browser
+mcpServers:
+  - playwright:
+      type: stdio
+      command: npx
+      args: ["-y", "@playwright/mcp@latest"]
+  - github
+---
+```
+
+Aquí `playwright` es inline (se crea desde cero) y `github` usa la conexión del padre por nombre.
+
+</NarratedSection>
+
+<NarratedSection id="agent-teams" heading="Agent Teams: varios Claudes trabajando juntos" sourcePage="398">
+
+Hasta ahora hablamos de subagentes: un jefe que manda tareas a empleados y recibe reportes. La comunicación solo pasa por el jefe.
+
+Los **agent teams** (equipos de agentes) son distintos. Imagina una oficina donde todos los compañeros hablan entre sí y comparten una misma lista de tareas pegada en la pared. Eso son los agent teams.
+
+Importante: son una función **experimental**. Para activarlos, ejecutas en tu terminal:
+
+```bash
+export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+```
+
+Necesitas Claude Code v2.1.32 o superior. Hay dos modos de verlos:
+
+- **in-process**: todos corren en el mismo terminal. Usas `Shift+Down` para cambiar entre compañeros.
+- **split panes (tmux)**: cada compañero tiene su propio panel (requiere tener `tmux` instalado).
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-teams-vs-subagentes"
+  question="¿Cuál es la diferencia principal entre subagentes y agent teams?"
+  options='["Los subagentes son más rápidos que los teams","En subagentes solo el jefe se comunica con todos; en teams todos se comunican entre sí con una lista compartida","Los agent teams no necesitan permisos","Los subagentes solo funcionan en la nube"]'
+  correctIndex="1"
+  explanation="En subagentes la comunicación pasa solo por el agente principal. En teams, todos se coordinan entre sí y comparten una lista de tareas."
+/>
+
+<NarratedSection id="teams-recomendaciones" heading="Cuántos compañeros usar y qué ojo tener" sourcePage="398">
+
+El tamaño recomendado de un equipo es **3-5 teammates**, con unas **5-6 tareas por teammate**. Tres compañeros enfocados suelen rendir más que cinco dispersos.
+
+Un patrón útil es el **debate científico**: pedirle a cinco teammates que investiguen hipótesis distintas sobre un bug y que debatan entre ellos. Así evitas anclarte en una sola explicación.
+
+Ojo con dos detalles importantes:
+
+- Cuando un subagente corre como teammate, los campos `skills` y `mcpServers` de su frontmatter **no se aplican**.
+- Hay hooks especiales para teams: `TeammateIdle`, `TaskCreated` y `TaskCompleted`. Si tu script devuelve `exit code 2`, puedes enviar feedback, prevenir que se cree una tarea o impedir que se marque como completa.
+
+</NarratedSection>
+
+<NarratedSection id="teams-limitaciones" heading="Limitaciones de los agent teams" sourcePage="400">
+
+Como es experimental, los agent teams tienen varias limitaciones que conviene conocer antes de usarlos:
+
+- No hay reanudación de sesión con teammates in-process.
+- El estado de tareas puede retrasarse.
+- El apagado puede ser lento.
+- Solo un equipo por sesión (no se pueden anidar).
+- El líder es fijo, no se puede cambiar.
+- Los split panes no funcionan en VS Code terminal integrado, Windows Terminal ni Ghostty.
+
+Si tu trabajo es serio y crítico, empieza con subagentes normales. Usa teams cuando necesites paralelismo real y puedas tolerar que algo falle.
+
+</NarratedSection>
+
+<NarratedSection id="deshabilitar-subagentes" heading="Cómo bloquear subagentes que no quieres" sourcePage="400">
+
+A veces quieres impedir que Claude use ciertos subagentes. Por ejemplo, bloquear uno que podría tocar cosas delicadas.
+
+En `settings.json` lo haces con el array `deny` dentro de permisos:
+
+```json
+{
+  "permissions": {
+    "deny": ["Agent(Explore)", "Agent(my-custom-agent)"]
+  }
+}
+```
+
+También lo puedes hacer desde la línea de comandos con `claude --disallowedTools "Agent(Explore)"`.
+
+Y si quieres desactivar **todas** las tareas en segundo plano (background), exporta esta variable:
+
+```bash
+export CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1
+```
+
+Esto apaga `run_in_background`, el auto-backgrounding y hasta el atajo `Ctrl+B`.
+
+</NarratedSection>
+
+<NarratedSection id="errores-comunes" heading="Errores típicos y cómo arreglarlos" sourcePage="401">
+
+Estos son los tropiezos más comunes al usar subagentes:
+
+- **No se encuentra el subagente**: si creaste el archivo después de iniciar la sesión, reinicia Claude Code o usa `/agents` para cargarlo.
+- **Un subagente intenta crear otro subagente**: no se puede. Encadena las delegaciones desde la conversación principal.
+- **Subagente en background falla por permisos**: los subagentes en background auto-deniegan permisos no pre-aprobados. Pre-aprueba o reanuda en foreground.
+- **El contexto principal se llena rápido**: si los resultados consumen mucho, usa agent teams para trabajo grande.
+- **Conflicto de archivos en paralelo**: usa `isolation: worktree` o divide el trabajo por archivos distintos.
+- **Nombres duplicados**: gana el de mayor prioridad (managed settings > CLI > proyecto > usuario > plugin). Usa nombres únicos.
+- **Modelo no es el esperado**: el orden de precedencia es (1) `CLAUDE_CODE_SUBAGENT_MODEL`, (2) parámetro per-invocation, (3) frontmatter, (4) modelo del padre.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-precedencia-modelo"
+  question="Si defines el modelo en el frontmatter del subagente, pero también está la variable CLAUDE_CODE_SUBAGENT_MODEL, ¿cuál gana?"
+  options='["El del frontmatter","El del modelo padre","La variable CLAUDE_CODE_SUBAGENT_MODEL","El último que se cargue"]'
+  correctIndex="2"
+  explanation="La variable de entorno CLAUDE_CODE_SUBAGENT_MODEL tiene la máxima prioridad, por encima del parámetro de invocación, del frontmatter y del modelo del padre."
+/>
+
+<NarratedSection id="config-default-agent" heading="Configurar un agente por defecto en tu proyecto" sourcePage="405">
+
+Si quieres que todas las sesiones de un proyecto arranquen con el mismo subagente, puedes configurarlo en `.claude/settings.json`:
+
+```json
+{
+  "agent": "code-reviewer"
+}
+```
+
+Cada sesión nueva en ese proyecto usa `code-reviewer` automáticamente. Ojo: el flag `--agent` en la línea de comandos siempre tiene prioridad sobre este setting.
+
+También existe `.worktreeinclude`, un archivo en la raíz del proyecto donde listas archivos **gitignored** que deben copiarse a cada nuevo worktree (por ejemplo `.env`, `config/secrets.json`). Solo copia archivos que estén en `.gitignore` y coincidan con los patrones.
+
+</NarratedSection>
+
+<TerminalTask
+  id="task-ver-settings"
+  instruction="Abre una terminal en la raíz de un proyecto tuyo y revisa si existe el archivo de configuración de Claude Code. El comando lista los archivos dentro de `.claude/` si existe, o te dice que no existe. No modifica nada."
+  command="ls -la .claude/ 2>/dev/null || echo 'No hay carpeta .claude todavía'"
+  expectedOutcome="Verás la lista de archivos dentro de .claude/ (como settings.json o agents/), o el mensaje indicando que la carpeta aún no existe."
+  verifyHint="Si existe settings.json, puedes abrirlo con tu editor para ver qué hooks o configuraciones tiene. No edites nada todavía."
+/>
+
+<NarratedSection id="api-claude-intro" heading="La API de Claude: un teléfono directo" sourcePage="410">
+
+Ahora cambiamos de tema. Hasta aquí estuvimos configurando Claude Code. Pero, ¿y si quieres usar Claude desde tu propio programa?
+
+Para eso existe la **API**. API significa *Application Programming Interface* (interfaz de programación de aplicaciones). Una buena analogía: es como un mesero en un restaurante. Tú le dices lo que quieres, él va a la cocina y te trae la respuesta.
+
+La API de Claude se llama **Messages API** y vive en:
+
+```
+https://api.anthropic.com/v1/messages
+```
+
+Tu programa manda una solicitud HTTP tipo `POST` a esa dirección, con un mensaje en formato **JSON**. Claude la procesa y te devuelve otra respuesta en JSON. JSON es un formato de texto que las computadoras leen fácil, algo así como una tarjetita estructurada con campos y valores.
+
+</NarratedSection>
+
+<NarratedSection id="api-key-autenticacion" heading="Tu llave de acceso: la API key" sourcePage="411">
+
+Para hablar con Claude necesitas una **API key**. Es como la llave de tu casa: sin ella no entras. La consigues en la Console de Anthropic: `platform.claude.com/settings/keys`.
+
+Cada solicitud viaja con 3 **headers** obligatorios. Un header es información extra que acompaña la solicitud, como la etiqueta de un paquete de correo:
+
+- `x-api-key`: tu API key.
+- `anthropic-version`: la versión de la API (hoy es `2023-06-01`).
+- `content-type`: siempre `application/json`.
+
+Los SDKs oficiales se encargan de estos headers por ti. Solo necesitas poner tu llave en la variable de entorno `ANTHROPIC_API_KEY` y listo.
+
+</NarratedSection>
+
+<NarratedSection id="primera-llamada-curl" heading="Tu primera llamada con curl" sourcePage="411">
+
+**curl** es una herramienta de terminal para hacer solicitudes HTTP. Perfecta para probar la API rápido, sin instalar nada más.
+
+Este es el ejemplo más básico:
+
+```bash
+curl https://api.anthropic.com/v1/messages \
+  --header "x-api-key: $ANTHROPIC_API_KEY" \
+  --header "anthropic-version: 2023-06-01" \
+  --header "content-type: application/json" \
+  --data '{
+    "model": "claude-opus-4-6",
+    "max_tokens": 1024,
+    "messages": [
+      {"role": "user", "content": "Hola, Claude"}
+    ]
+  }'
+```
+
+Si todo sale bien, Claude te responde con un JSON que incluye su texto en el campo `content`. Fíjate que solo necesitas tres cosas: el modelo, cuántos tokens puede generar y el mensaje.
+
+</NarratedSection>
+
+<TerminalTask
+  id="task-verificar-curl"
+  instruction="Verifica que tienes curl instalado en tu computadora. Este comando solo imprime la versión de curl y no envía ninguna solicitud."
+  command="curl --version"
+  expectedOutcome="Verás algo como 'curl 8.x.x (x86_64-...) libcurl/...' confirmando que curl está disponible."
+  verifyHint="Si no aparece, instala curl desde https://curl.se/download.html según tu sistema operativo."
+/>
+
+<NarratedSection id="parametros-obligatorios" heading="Los 3 parámetros que siempre van" sourcePage="412">
+
+Cuando envías un mensaje a Claude, hay 3 parámetros que **siempre** debes incluir:
+
+- **model**: qué modelo quieres usar. Ejemplo: `"claude-opus-4-6"`, `"claude-sonnet-4-6"`, `"claude-haiku-4-5"`. Cada uno tiene distinta capacidad y precio.
+- **max_tokens**: el máximo de tokens que Claude puede generar. Un **token** es más o menos una palabra o parte de palabra. Si pones 1024, puede escribir hasta unas 750 palabras.
+- **messages**: un array de mensajes. Cada uno tiene un `role` (`"user"` o `"assistant"`) y un `content` (el texto). Los roles deben **alternar**: primero user, luego assistant, luego user…
+
+También hay parámetros opcionales muy útiles: `system` (instrucciones generales), `temperature` (entre 0.0 y 1.0, controla la creatividad), `stream` (para recibir la respuesta palabra por palabra), `stop_sequences` (palabras que detienen la generación).
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-temperature"
+  question="¿Qué valor de temperature usarías si quieres respuestas muy precisas y predecibles?"
+  options='["0.2 (bajo)","0.8 (alto)","1.0 (máximo)","No importa, no afecta"]'
+  correctIndex="0"
+  explanation="Temperature bajo (como 0.2) genera respuestas más precisas y predecibles. Temperature alto (0.8+) aumenta la creatividad y variabilidad."
+/>
+
+<NarratedSection id="respuesta-claude" heading="Qué te devuelve Claude" sourcePage="413">
+
+Cuando Claude responde, recibes un objeto JSON con varios campos. Los principales:
+
+- **id**: identificador único del mensaje (útil para debugging).
+- **content**: array con los bloques de contenido. Pueden ser texto (`text`), llamadas a herramientas (`tool_use`) o pensamiento (`thinking`).
+- **stop_reason**: por qué paró. Valores posibles: `end_turn` (terminó naturalmente), `max_tokens` (alcanzó el límite), `stop_sequence` (encontró una secuencia de parada), `tool_use` (quiere usar una herramienta).
+- **usage**: cuántos tokens usó. Aquí se ve cuánto pagas. Incluye `input_tokens` (lo que enviaste) y `output_tokens` (lo que generó).
+
+Si usaste cache, también verás `cache_creation_input_tokens` y `cache_read_input_tokens`. Ya llegaremos a eso.
+
+</NarratedSection>
+
+<NarratedSection id="sdks-oficiales" heading="SDKs oficiales: el atajo cómodo" sourcePage="414">
+
+Un **SDK** (Software Development Kit) es un juego de herramientas ya armado para tu lenguaje. En vez de preparar solicitudes HTTP a mano, llamas funciones listas.
+
+Anthropic ofrece 7 SDKs oficiales: Python, TypeScript/JavaScript, Java, Go, Ruby, C# y PHP. Todos manejan headers, reintentos, errores y streaming automáticamente.
+
+Así se ve en Python (3 líneas reales):
+
+```python
+from anthropic import Anthropic
+
+client = Anthropic()  # Lee ANTHROPIC_API_KEY del entorno
+message = client.messages.create(
+    model="claude-opus-4-6",
+    max_tokens=1024,
+    messages=[{"role": "user", "content": "Hola, Claude"}],
+)
+print(message.content[0].text)
+```
+
+Y en TypeScript es casi idéntico, con `await client.messages.create({...})`. Todos los SDKs usan la misma variable de entorno y soportan streaming.
+
+</NarratedSection>
+
+<NarratedSection id="streaming" heading="Streaming: ver la respuesta mientras se escribe" sourcePage="415">
+
+Sin streaming, esperas a que Claude termine y recibes todo junto. Con **streaming**, ves cada pedacito mientras lo genera. Mucho más agradable para respuestas largas.
+
+Por debajo usa **Server-Sent Events (SSE)**: una tecnología donde el servidor te manda datos poco a poco por la misma conexión.
+
+Ejemplo en Python:
+
+```python
+with client.messages.stream(
+    max_tokens=1024,
+    messages=[{"role": "user", "content": "Cuentame una historia corta"}],
+    model="claude-opus-4-6",
+) as stream:
+    for text in stream.text_stream:
+        print(text, end="", flush=True)
+```
+
+Durante el streaming recibes una serie de eventos en orden: `message_start`, `content_block_start`, `content_block_delta` (los pedacitos), `content_block_stop`, `message_delta` y `message_stop`. También puede haber `ping` (mantener viva la conexión) o `error`.
+
+</NarratedSection>
+
+<NarratedSection id="tool-use" heading="Tool Use: darle herramientas a Claude" sourcePage="417">
+
+Imagina a Claude como un experto muy inteligente pero encerrado en una habitación. No puede ver el clima ni consultar bases de datos. **Tool use** le da herramientas para hacer esas cosas.
+
+El flujo es como un ping-pong:
+
+1. Tú envías el mensaje y las definiciones de las `tools`.
+2. Claude responde con `stop_reason: "tool_use"` y dice qué herramienta quiere y con qué argumentos.
+3. Tu programa ejecuta la herramienta.
+4. Le devuelves el resultado en un bloque `tool_result` dentro de un mensaje `user`.
+5. Claude lee el resultado y genera su respuesta final.
+
+Cada herramienta tiene 3 partes: `name` (nombre corto), `description` (qué hace, Claude lo usa para decidir si invocarla) y `input_schema` (un JSON Schema que describe los parámetros que acepta). Usar `strict: true` garantiza que los parámetros cumplan el esquema exactamente.
+
+Con `tool_choice` controlas el comportamiento: `auto` (Claude decide), `any` (obligado a usar alguna), `tool` (una específica) o `none` (deshabilitadas).
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-tool-use-flujo"
+  question="En el flujo de tool use, cuando Claude decide usar una herramienta, ¿quién la ejecuta?"
+  options='["Claude la ejecuta solo en sus servidores","Anthropic la ejecuta automáticamente","Tu programa la ejecuta y le devuelve el resultado a Claude","Nadie, es solo una simulación"]'
+  correctIndex="2"
+  explanation="Claude solo decide QUÉ herramienta usar y con qué argumentos. Tu programa es quien la ejecuta y luego le devuelve el resultado en un bloque tool_result."
+/>
+
+<NarratedSection id="herramientas-integradas" heading="Herramientas que ya vienen con Claude" sourcePage="418">
+
+Además de las tuyas, Claude trae varias herramientas integradas listas para usar. Cada una tiene versiones con fecha; usa siempre la más reciente:
+
+- **web_search**: busca en internet (soporta filtros de dominios).
+- **web_fetch**: descarga contenido de una URL.
+- **code_execution**: ejecuta código en un entorno seguro.
+- **text_editor**: lee y edita archivos de texto.
+- **bash_20250124**: ejecuta comandos de terminal.
+- **memory_20250818**: guarda información entre sesiones.
+- **tool_search_tool_bm25** y **tool_search_tool_regex**: buscan herramientas por relevancia o por patrón regex.
+
+Son muy útiles para dar superpoderes a Claude sin que tú tengas que programar la herramienta desde cero.
+
+</NarratedSection>
+
+<NarratedSection id="structured-outputs" heading="Structured Outputs: respuestas con forma exacta" sourcePage="419">
+
+A veces no quieres texto libre, quieres **datos estructurados**. Por ejemplo, extraer nombre, email y plan de un cliente como JSON.
+
+**Structured outputs** garantiza que Claude siempre devuelva JSON válido que cumple tu esquema. Se acabó parsear texto a mano.
+
+El método más fácil en Python es usando **Pydantic**:
+
+```python
+from pydantic import BaseModel
+
+class ContactInfo(BaseModel):
+    name: str
+    email: str
+    plan: str
+
+response = client.messages.parse(
+    model="claude-opus-4-6",
+    max_tokens=1024,
+    messages=[{"role": "user",
+               "content": "Extrae: Juan Perez, juan@correo.com, Enterprise"}],
+    output_format=ContactInfo,
+)
+print(response.parsed_output.name)   # "Juan Perez"
+```
+
+En TypeScript hay algo equivalente con `zodOutputFormat()` y esquemas Zod. También existe el método manual con `output_config` y un JSON Schema directo.
+
+</NarratedSection>
+
+<NarratedSection id="vision-pdfs" heading="Vision y PDFs: Claude ve imágenes y lee documentos" sourcePage="421">
+
+Claude no solo lee texto. También puede ver **imágenes** (JPEG, PNG, GIF, WebP) y leer **PDFs**.
+
+Puedes enviar imágenes de 3 formas: por URL, en base64 o usando un File ID de la Files API. Límites importantes:
+
+- 5 MB por imagen vía API.
+- Hasta 600 imágenes por solicitud (100 para modelos con contexto de 200K).
+- Tamaño máximo: 8000x8000 píxeles; óptimo: 1568 px en una dimensión.
+- Costo en tokens: (ancho × alto) / 750. Una imagen de 1000x1000 cuesta unos 1,334 tokens.
+- Claude no identifica personas por nombre y no genera ni edita imágenes.
+
+Para PDFs: Claude extrae el texto y analiza cada página como imagen. Máximo 100 páginas, 32 MB, sin contraseñas ni encriptación. Cuesta entre 1,500 y 3,000 tokens por página de texto más el costo de imagen. Tip: pon el PDF **antes** del texto en tu mensaje, y si lo analizarás varias veces, usa prompt caching.
+
+</NarratedSection>
+
+<NarratedSection id="prompt-caching" heading="Prompt Caching: paga menos repitiendo menos" sourcePage="422">
+
+Imagina que cada vez que llamas a un restaurante tienes que explicar tu dirección entera. El **prompt caching** es como que el restaurante la guarde: la próxima vez solo dices tu nombre.
+
+Si envías el mismo system prompt o contexto varias veces, Claude lo guarda en cache. Leer del cache cuesta **90% menos** que procesarlo de nuevo.
+
+La forma más fácil es agregar `cache_control` a nivel de toda la solicitud (cache automático). Se aplica al último bloque cacheable.
+
+Sobre el **TTL** (Time To Live, cuánto dura el cache):
+
+- **5 minutos (default)**: escribir cuesta 1.25x el precio base; leer 0.1x.
+- **1 hora**: escribir cuesta 2x; leer 0.1x. Lo indicas con `"cache_control": {"type": "ephemeral", "ttl": "1h"}`.
+
+Leer siempre cuesta 0.1x sin importar el TTL. La diferencia está en cuánto pagas al crear el cache y cuánto dura.
+
+</NarratedSection>
+
+<NarratedSection id="caching-limites" heading="Qué se cachea y mínimos por modelo" sourcePage="424">
+
+Puedes cachear: definiciones de herramientas, system prompts, mensajes de texto (user y assistant), imágenes, documentos y resultados de herramientas.
+
+**No** puedes cachear directamente bloques de `thinking`. Pero si un turno anterior los incluye, ese turno completo sí se cachea.
+
+El orden del cache es: `tools → system → messages`. Si cambias las herramientas, **todo el cache se invalida**.
+
+Tokens mínimos para que algo se cachee:
+
+- Claude Opus 4.6 / 4.5: **4,096 tokens**
+- Claude Sonnet 4.6: **2,048 tokens**
+- Claude Sonnet 4.5 / 4 / 3.7 y Opus 4.1 / 4: **1,024 tokens**
+- Claude Haiku 4.5: **4,096 tokens**
+
+Si tu contenido no llega al mínimo, no se cachea aunque lo pidas.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-cache-ahorro"
+  question="Con prompt caching, ¿cuánto cuesta leer del cache comparado con procesar el contenido desde cero?"
+  options='["Cuesta lo mismo","Cuesta un 90% menos (0.1x el precio base)","Cuesta el doble pero es más rápido","Es totalmente gratis"]'
+  correctIndex="1"
+  explanation="Leer del cache cuesta 0.1x el precio base, es decir, un 90% menos. Por eso es tan útil cuando repites el mismo system prompt o contexto grande."
+/>
+
+<NarratedSection id="batches" heading="Message Batches: 50% de descuento por procesar en lote" sourcePage="424">
+
+Si necesitas procesar muchas solicitudes y no te urge la respuesta inmediata, la **Batches API** es ideal. Como mandar un paquete de cartas en lugar de ir al correo una por una. Sale a la mitad de precio.
+
+La mayoría de batches terminan en menos de 1 hora. Se crean así:
+
+```python
+batch = client.messages.batches.create(
+    requests=[
+        {
+            "custom_id": "solicitud-1",
+            "params": {
+                "model": "claude-opus-4-6",
+                "max_tokens": 1024,
+                "messages": [{"role": "user", "content": "Hola"}]
+            }
+        },
+        {
+            "custom_id": "solicitud-2",
+            "params": {
+                "model": "claude-opus-4-6",
+                "max_tokens": 1024,
+                "messages": [{"role": "user", "content": "Adios"}]
+            }
+        }
+    ]
+)
+```
+
+Cada solicitud lleva un `custom_id` único para identificarla en los resultados. Límites: 100,000 solicitudes o 256 MB por batch (lo que llegue primero), resultados disponibles 29 días, expiran si no terminan en 24 horas, y no son elegibles para Zero Data Retention (ZDR). Los descuentos de caching y batches **se acumulan**.
+
+</NarratedSection>
+
+<NarratedSection id="rate-limits" heading="Rate Limits: el semáforo de velocidad" sourcePage="425">
+
+La API tiene **límites de velocidad** para que funcione bien para todos. Son como un semáforo: no puedes pasar todos a la vez. Hay 3 tipos, medidos por minuto:
+
+- **RPM**: Requests por minuto (cuántas solicitudes).
+- **ITPM**: Input tokens por minuto (cuántos envías).
+- **OTPM**: Output tokens por minuto (cuántos genera).
+
+Tus límites dependen del **tier** (nivel) en que estás, que depende de cuánto has gastado:
+
+- **Tier 1** (depósito $5): 50 RPM, 30K ITPM para Sonnet/Opus.
+- **Tier 2** ($40): 1,000 RPM, 450K ITPM.
+- **Tier 3** ($200): 2,000 RPM, 800K ITPM.
+- **Tier 4** ($400): 4,000 RPM, 2M ITPM.
+
+Los límites son por familia de modelo: el de Opus se comparte entre todas las versiones de Opus, igual con Sonnet.
+
+</NarratedSection>
+
+<NarratedSection id="cache-y-rate-limits" heading="El truco poderoso: cache + rate limits" sourcePage="425">
+
+Aquí viene algo que vale oro: los `cache_read_input_tokens` **no cuentan** para el límite de ITPM en la mayoría de modelos. Solo cuentan los `input_tokens` y `cache_creation_input_tokens`.
+
+¿Qué significa en la práctica? Si tienes un 80% de cache hits, puedes procesar **5 veces más tokens por minuto**. Con un límite de 2M ITPM, podrías manejar 10M tokens por minuto efectivos.
+
+Eso convierte al prompt caching en una herramienta doblemente útil: ahorra dinero **y** estira tus límites de velocidad. Si trabajas con contextos grandes repetidos (como un manual o código base), úsalo sin dudar.
+
+Con esto cierras el panorama de configuración de Claude Code y la API: hooks, teams, settings, parámetros, streaming, tools, structured outputs, vision, caching, batches y rate limits. Ya tienes el mapa completo.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-final-recap"
+  question="¿Cuáles de las siguientes afirmaciones son correctas? (puede haber varias)"
+  options='["Los hooks pueden definirse en el frontmatter del subagente o en settings.json","Los subagentes pueden crear otros subagentes sin límite","La Batches API cobra el 50% del precio normal","Los cache_read_input_tokens no cuentan para ITPM en la mayoría de modelos"]'
+  correctIndex="[0,2,3]"
+  explanation="Correctas: los hooks viven en frontmatter o settings.json, los batches cuestan la mitad, y los tokens de cache leídos no suman al límite ITPM. Incorrecta: los subagentes NO pueden crear otros subagentes; hay que encadenar desde la conversación principal."
+  multiple="true"
+/>

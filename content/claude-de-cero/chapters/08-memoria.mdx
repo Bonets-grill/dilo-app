@@ -1,0 +1,557 @@
+---
+chapterNumber: 8
+slug: memoria
+title: Memoria y Personalización en Claude Code
+part: claude-ai
+estimatedMinutes: 26
+prerequisites:
+  - Saber qué es Claude Code
+  - Familiaridad básica con archivos y carpetas
+  - Nociones de terminal
+status: approved
+generatedAt: '2025-01-20T00:00:00Z'
+sourcePagesFrom: 246
+sourcePagesTo: 275
+model: claude-opus-4-7
+---
+<NarratedSection id="gancho" heading="¿Por qué necesitamos que Claude tenga memoria?" sourcePage="246">
+
+Imagina que cada mañana llega a tu casa un asistente nuevo. No recuerda cómo te gusta el café, dónde están los platos, ni qué reglas tiene la casa. Tendrías que explicárselo todo otra vez. Agotador, ¿verdad?
+
+Eso es exactamente lo que pasaría con Claude Code si no tuviera **memoria**. Cada vez que empezaras a trabajar, tendrías que repetirle: "usa 2 espacios, no tabs", "corre los tests con pnpm", "las APIs van en tal carpeta".
+
+Para evitar eso, Claude Code tiene dos cuadernos donde guarda información: uno que **tú escribes** (se llama CLAUDE.md) y otro que **él escribe solo** (se llama auto memory). En este capítulo vas a ver cómo funcionan ambos.
+
+</NarratedSection>
+
+<NarratedSection id="claude-md-niveles" heading="Los niveles de CLAUDE.md: como capas de una cebolla" sourcePage="246">
+
+**CLAUDE.md** es un archivo de texto donde escribes instrucciones para Claude. Piensa en él como una nota pegada en la nevera que Claude lee antes de trabajar.
+
+Lo interesante es que puede haber **varios CLAUDE.md a la vez**, cada uno con su alcance. Son como capas: la empresa manda sobre todo, tu máquina personaliza, el proyecto concreta, y la carpeta específica afina.
+
+La regla clave: **lo más específico gana sobre lo más general**. Si la empresa dice "usa tabs" pero el proyecto dice "usa espacios", gana el proyecto. Es sentido común: el que está más cerca del trabajo conoce mejor las reglas de ese trabajo.
+
+</NarratedSection>
+
+<NarratedSection id="niveles-detalle" heading="Los cuatro niveles (más uno secreto)" sourcePage="247">
+
+Aquí van los niveles, de más general a más específico:
+
+**Nivel 1 — Managed policy (organización):** lo pone el equipo de IT. Vive en rutas como `/etc/claude-code/CLAUDE.md` en Linux. Es la ley de la empresa. **Nadie puede saltársela**, ni siquiera con exclusiones.
+
+**Nivel 2 — Usuario (personal):** tus preferencias para todos tus proyectos. Vive en `~/.claude/CLAUDE.md`. No se sube a git porque es solo tuyo.
+
+**Nivel 3 — Proyecto (equipo):** las reglas compartidas del proyecto. Vive en `./CLAUDE.md` o `./.claude/CLAUDE.md`. Se comparte con el equipo vía git.
+
+**Nivel 3.5 — Local (personal por proyecto):** `CLAUDE.local.md`. Es para cosas tuyas dentro de un proyecto concreto, como URLs de prueba. Va en `.gitignore` (no se sube a git). Si hay conflicto con `CLAUDE.md`, gana `CLAUDE.local.md` porque se lee después.
+
+**Nivel 4 — Subdirectorio (módulo):** un `CLAUDE.md` dentro de una carpeta, por ejemplo `src/api/CLAUDE.md`. Solo se carga **cuando Claude trabaja en esa carpeta**. Es un manual que se abre solo cuando hace falta.
+
+</NarratedSection>
+
+<Quiz
+  id="q1"
+  question="Si tu empresa dice en su CLAUDE.md &quot;usa tabs&quot; y tu proyecto dice &quot;usa espacios&quot;, ¿qué usará Claude?"
+  options='["Tabs, porque la empresa manda","Espacios, porque el proyecto es más específico","Los mezclará","Te preguntará cada vez"]'
+  correctIndex="1"
+  explanation="La regla de oro es: lo más específico gana sobre lo más general. El proyecto está más cerca del trabajo, así que sus reglas tienen prioridad sobre las de la organización (excepto cosas de seguridad a nivel managed policy)."
+/>
+
+<Quiz
+  id="q2"
+  question="¿Dónde pondrías tus URLs de sandbox personales que no quieres compartir con el equipo?"
+  options='["En CLAUDE.md del proyecto","En CLAUDE.local.md con .gitignore","En el CLAUDE.md de la organización","En ningún lado, hay que memorizarlas"]'
+  correctIndex="1"
+  explanation="CLAUDE.local.md existe exactamente para eso: cosas personales dentro de un proyecto. Se agrega a .gitignore para que no se suba al repo compartido."
+/>
+
+<NarratedSection id="reglas-modulares" heading="Cuando CLAUDE.md se hace muy largo: .claude/rules/" sourcePage="247">
+
+Cuando tu CLAUDE.md crece demasiado, pierde efectividad. Los datos del libro dicen que un archivo con menos de 200 líneas se cumple ~92% de las veces, pero uno largo baja a ~71%. Menos es más.
+
+La solución es dividir las reglas en archivos pequeños dentro de `.claude/rules/`. Imagina pasar de un manual gigante a una carpeta con separadores: uno para testing, otro para seguridad, otro para estilo.
+
+Ejemplo de estructura:
+
+```
+tu-proyecto/
+├── .claude/
+│   ├── CLAUDE.md
+│   └── rules/
+│       ├── code-style.md
+│       ├── testing.md
+│       └── security.md
+```
+
+Hay una diferencia importante con los **skills** (otra carpeta, `.claude/skills/`): las *rules* se cargan automáticamente cada sesión. Los skills solo se cargan cuando Claude los necesita. Las rules ocupan contexto siempre; los skills no.
+
+</NarratedSection>
+
+<NarratedSection id="frontmatter-paths" heading="Reglas que se activan solo con ciertos archivos" sourcePage="248">
+
+A veces no quieres que una regla se cargue siempre. Solo cuando Claude trabaja con archivos específicos. Para eso está el **frontmatter**: un bloque de texto entre `---` al inicio del archivo.
+
+```
+---
+paths:
+  - "src/api/**/*.ts"
+---
+# Reglas para la API
+- Todos los endpoints deben validar su entrada
+- Usar el formato estandar de error
+```
+
+Esta regla solo se activa cuando Claude **lee** un archivo TypeScript dentro de `src/api/`. Si trabajas en otra parte del proyecto, no consume espacio de contexto.
+
+Los patrones se llaman **globs**. Algunos comunes:
+- `**/*.ts` — todos los TypeScript en cualquier carpeta
+- `src/**/*` — todo lo que esté bajo `src/`
+- `*.md` — Markdown solo en la raíz
+
+⚠️ Ojo: las reglas con `paths` se activan al **leer** archivos, no al escribirlos (es un issue conocido).
+
+</NarratedSection>
+
+<NarratedSection id="imports" heading="Importar otros archivos con @" sourcePage="250">
+
+Tu CLAUDE.md puede hacer referencia a otros archivos con la sintaxis `@ruta/al/archivo`. Es como poner un enlace que se expande automáticamente al cargarse.
+
+```
+See @README for project overview and @package.json for available npm commands.
+
+# Flujo de git
+- @docs/git-instructions.md
+
+# Preferencias personales
+- @~/.claude/my-project-instructions.md
+```
+
+Reglas importantes de los imports:
+- Profundidad máxima de **5 niveles** (A importa B, B importa C... hasta 5 saltos).
+- La primera vez con imports externos, Claude te pide permiso con un diálogo.
+- ⚠️ **Si rechazas ese diálogo, los imports quedan deshabilitados para siempre en ese proyecto.** No hay forma fácil de reactivarlos.
+
+Las rutas relativas se resuelven desde donde está el archivo que importa, no desde tu carpeta actual.
+
+</NarratedSection>
+
+<NarratedSection id="agents-md" heading="¿Y si ya tengo un AGENTS.md?" sourcePage="250">
+
+Algunos equipos usan `AGENTS.md` para otros asistentes como Copilot o Cursor. **Claude Code no lee AGENTS.md** directamente. Solo lee CLAUDE.md.
+
+Pero puedes hacer que Claude también lo siga: crea un CLAUDE.md que lo importe.
+
+```
+@AGENTS.md
+
+## Instrucciones especificas de Claude Code
+- Usar plan mode para cambios bajo src/billing/
+- Ejecutar tests antes de cada commit
+```
+
+Claude cargará primero el contenido de AGENTS.md y luego agregará tus instrucciones específicas. Así reutilizas lo que ya tenías sin duplicar.
+
+</NarratedSection>
+
+<Quiz
+  id="q3"
+  question="¿Cuál es la diferencia principal entre rules (.claude/rules/) y skills (.claude/skills/)?"
+  options='["Las rules son más nuevas que los skills","Las rules se cargan automáticamente en contexto; los skills solo cuando se invocan o son relevantes","Los skills solo funcionan en macOS","No hay diferencia, son lo mismo"]'
+  correctIndex="1"
+  explanation="Las rules ocupan contexto desde el inicio de la sesión (o cuando se abren archivos con paths coincidentes). Los skills ahorran contexto porque se cargan bajo demanda."
+/>
+
+<NarratedSection id="auto-memory" heading="Auto memory: el cuaderno que Claude escribe solo" sourcePage="252">
+
+Hasta ahora hablamos de lo que **tú** escribes. Ahora viene la otra mitad: **auto memory**, el cuaderno donde Claude escribe por su cuenta.
+
+Piénsalo así: imagina un chef nuevo en tu cocina. El primer día no sabe dónde está nada. Pero va anotando: "el azúcar está en el cajón de arriba", "al dueño le gusta sin sal". La próxima vez ya no pregunta. Eso es auto memory.
+
+¿Qué tipo de cosas guarda Claude?
+- Comandos de build que descubrió.
+- Trucos de debugging que funcionaron.
+- Decisiones de arquitectura.
+- Tus preferencias de estilo.
+- Flujos de trabajo que detectó.
+
+Cuando veas en pantalla **"Writing memory"** o **"Recalled memory"**, Claude está escribiendo o leyendo de este cuaderno.
+
+También puedes pedirle directamente: `"siempre usa pnpm, no npm"` o `"recuerda que los tests de API requieren Redis local"`. Si quieres que lo guarde en CLAUDE.md en vez de auto memory, sé explícito: `"add this to CLAUDE.md"`.
+
+</NarratedSection>
+
+<NarratedSection id="auto-memory-ubicacion" heading="¿Dónde vive la auto memory?" sourcePage="253">
+
+Cada proyecto tiene su carpeta de memoria en:
+
+```
+~/.claude/projects/<proyecto>/memory/
+├── MEMORY.md          # Indice, se carga al inicio
+├── debugging.md       # Notas de debugging
+├── api-conventions.md # Convenciones de API
+```
+
+Dos detalles importantes:
+
+1. Solo las **primeras 200 líneas o 25KB** (lo que llegue primero) de `MEMORY.md` se cargan al inicio. Lo demás se lee bajo demanda.
+2. Auto memory es **local a tu máquina**. No se sincroniza entre computadoras ni entornos cloud.
+
+Y después de muchas sesiones (unas 10), la memoria puede acumular ~30% de información duplicada u obsoleta. La solución es editar los archivos a mano. Son markdown plano. Usa `/memory` para abrir la carpeta y limpia lo que ya no aplica.
+
+</NarratedSection>
+
+<Quiz
+  id="q4"
+  question="Le dices a Claude: &quot;siempre usa pnpm en vez de npm&quot;. ¿Dónde lo guardará por defecto?"
+  options='["En CLAUDE.md del proyecto","En auto memory","En la carpeta de la organización","En tu .zshrc"]'
+  correctIndex="1"
+  explanation="Por defecto Claude lo guarda en auto memory. Si quieres que lo ponga en CLAUDE.md tienes que ser explícito: &quot;add this to CLAUDE.md&quot;."
+/>
+
+<NarratedSection id="comando-memory" heading="El comando /memory: tu panel de control" sourcePage="254">
+
+`/memory` es el comando estrella para ver qué está pasando con la memoria. Al ejecutarlo, te muestra:
+
+- Todos los **CLAUDE.md** y **CLAUDE.local.md** cargados en la sesión actual.
+- Todas las **reglas** de `.claude/rules/` activas.
+- Un interruptor para activar/desactivar auto memory.
+- Un enlace para abrir la carpeta de auto memory en tu editor.
+
+Es la forma más rápida de responder preguntas como: "¿por qué Claude no está siguiendo esta instrucción?" o "¿qué ha aprendido sobre mi proyecto?".
+
+Por cierto, ¿sabías que CLAUDE.md **sobrevive al comando `/compact`**? Aunque compactes la conversación, Claude re-lee el archivo desde disco. Si una instrucción desapareció después de compactar, es porque solo la diste en el chat, no en el archivo. Solución: ponla en CLAUDE.md para que persista.
+
+</NarratedSection>
+
+<TerminalTask
+  id="task-memory"
+  instruction="Abre Claude Code en un proyecto cualquiera y ejecuta el comando /memory. Observa qué archivos CLAUDE.md aparecen listados y qué reglas están activas. Este comando no modifica nada: solo te muestra el estado actual del sistema de memoria."
+  command="/memory"
+  expectedOutcome="Ves una lista con los archivos CLAUDE.md cargados, las reglas activas de .claude/rules/, y un acceso a la carpeta de auto memory. Puedes seleccionar cualquier archivo para abrirlo en tu editor."
+  verifyHint="Si no aparece ningún archivo, es porque aún no has creado ningún CLAUDE.md en ese proyecto. Puedes ejecutar /init para que Claude te genere uno automáticamente."
+/>
+
+<NarratedSection id="init" heading="Crear tu primer CLAUDE.md con /init" sourcePage="256">
+
+Si nunca has hecho un CLAUDE.md, la forma más fácil es usar el comando `/init`. Claude analiza el código del proyecto y genera un archivo con los comandos de build, convenciones y estructura que descubre. Después tú lo editas para agregar lo que falte.
+
+Un buen CLAUDE.md es **corto y directo**. Este ejemplo, para una app web, cabe en menos de 20 líneas:
+
+```
+# Mi App Web
+
+## Comandos
+- `pnpm dev` para desarrollo local
+- `pnpm test` para tests
+- `pnpm build` para producción
+
+## Estandares
+- TypeScript estricto, sin 'any'
+- Componentes React funcionales
+- 2 espacios de indentacion
+
+## Arquitectura
+- Pages en src/pages/
+- Componentes en src/components/
+- API en src/api/
+```
+
+Dos trucos medibles del libro:
+- **Usa imperativos** ("Usa X") en vez de descriptivos ("El proyecto usa X"). 25% más precisión.
+- **Mantén el archivo bajo 200 líneas**. Sube del 71% al 92% de cumplimiento.
+
+</NarratedSection>
+
+<TerminalTask
+  id="task-init"
+  instruction="En un proyecto de prueba, ejecuta /init dentro de Claude Code. Esto hará que Claude analice tu proyecto y proponga un CLAUDE.md inicial. Revisa lo que genera antes de aceptar."
+  command="/init"
+  expectedOutcome="Claude genera un CLAUDE.md con los comandos, convenciones y estructura que detectó en tu proyecto. Puedes editarlo después para agregar información que no detectó automáticamente."
+  verifyHint="Después de ejecutarlo, abre el archivo CLAUDE.md que aparece en la raíz del proyecto. Verifica que los comandos listados funcionan de verdad en tu proyecto."
+/>
+
+<NarratedSection id="problemas-comunes" heading="Problemas comunes y cómo resolverlos" sourcePage="255">
+
+Estos son los tropiezos típicos con el sistema de memoria:
+
+**1. Claude no sigue las instrucciones.** Suele ser por tres causas: las instrucciones son vagas ("formatea bien" no dice nada, "usa 2 espacios" sí), el archivo no se cargó (verifica con `/memory`), o hay reglas contradictorias.
+
+**2. CLAUDE.md demasiado grande.** Si pasa de 200 líneas, divide el contenido en archivos dentro de `.claude/rules/` y usa imports `@path` para documentos extensos.
+
+**3. En un monorepo, se cargan CLAUDE.md de otros equipos.** Claude sube por el árbol de directorios. Puedes excluir archivos irrelevantes con `claudeMdExcludes` en `.claude/settings.local.json`:
+
+```json
+{
+  "claudeMdExcludes": [
+    "**/other-team/CLAUDE.md",
+    "**/legacy-app/.claude/rules/**"
+  ]
+}
+```
+
+⚠️ Recuerda: el CLAUDE.md de managed policy **nunca** puede ser excluido.
+
+**4. Auto memory obsoleta.** Abre `/memory`, revisa los archivos, borra lo que ya no sirve. Son archivos de texto plano.
+
+</NarratedSection>
+
+<Quiz
+  id="q5"
+  question="Tu CLAUDE.md tiene 400 líneas y notas que Claude a veces ignora instrucciones. ¿Cuál es la mejor solución según el capítulo?"
+  options='["Escribir las instrucciones en mayúsculas","Dividir el contenido en archivos en .claude/rules/ y usar imports @path","Repetir cada instrucción dos veces","Cambiar de modelo de IA"]'
+  correctIndex="1"
+  explanation="Los datos del libro muestran que archivos de más de 200 líneas bajan el cumplimiento del 92% al 71%. La solución recomendada es dividir en .claude/rules/ e importar documentos largos con @path."
+/>
+
+<NarratedSection id="permisos-intro" heading="Segunda parte: ¿qué puede hacer Claude Code?" sourcePage="262">
+
+Cambiemos de tema. Ya sabes cómo decirle a Claude **qué hacer**. Ahora vamos a ver cómo controlar **qué se le permite hacer**.
+
+Claude Code puede leer archivos, editarlos y ejecutar comandos en tu terminal. Eso es mucho poder. Los **permisos** son las llaves de tu casa: tú decides qué puertas se abren.
+
+Por defecto, hay tres niveles de acceso:
+
+1. **Solo lectura (sin permiso):** leer archivos y buscar texto. Nunca cambia nada, así que Claude lo hace libremente.
+2. **Edición de archivos (pide permiso):** si dices "sí, no preguntes de nuevo", ese permiso dura **hasta cerrar la sesión**.
+3. **Comandos Bash (pide permiso):** si dices "sí, no preguntes de nuevo", ese permiso es **permanente** para ese proyecto y comando.
+
+Fíjate: los permisos de edición se reinician cada sesión; los de Bash no.
+
+</NarratedSection>
+
+<NarratedSection id="deny-ask-allow" heading="El orden: deny, ask, allow" sourcePage="262">
+
+Cuando Claude quiere usar una herramienta, el sistema revisa las reglas en este orden:
+
+1. **Deny (denegar):** si hay una regla que dice "no", se bloquea. Punto. Aunque otra regla diga "sí".
+2. **Ask (preguntar):** si hay una regla que dice "pregunta", Claude te pide permiso.
+3. **Allow (permitir):** si hay una regla que dice "sí", Claude lo hace sin preguntar.
+
+Es como un guardia de seguridad: primero revisa la lista de prohibidos, luego la de confirmaciones, y solo al final deja pasar sin preguntas.
+
+**Regla de oro: deny siempre gana.** Si algo está denegado, nada puede desbloquearlo.
+
+Además, hay **rutas protegidas** donde las escrituras nunca se auto-aprueban, ni siquiera en auto mode o bypassPermissions. Incluyen `.git`, `.vscode`, `.claude` (con algunas excepciones), `.bashrc`, `.zshrc`, `.mcp.json`, `.claude.json`, entre otras. Son archivos críticos que siempre requieren tu permiso explícito.
+
+</NarratedSection>
+
+<NarratedSection id="modos-permisos" heading="Los 6 modos de permisos" sourcePage="263">
+
+Claude Code tiene seis **modos** que son como perfiles de seguridad. Puedes cambiar entre ellos con `Shift+Tab` en modo interactivo.
+
+**1. default:** el modo normal. Pregunta antes de editar o ejecutar.
+
+**2. acceptEdits:** edita archivos sin preguntar, pero sigue pidiendo permiso para comandos Bash. Bueno cuando confías en las ediciones pero quieres vigilar los comandos.
+
+**3. plan:** solo lectura. No puede modificar nada ni ejecutar. Ideal para revisar un proyecto nuevo sin riesgo.
+
+**4. auto:** no te pregunta nada, pero un **clasificador de IA separado** (corriendo en Sonnet 4.6) evalúa cada acción y bloquea lo peligroso. Requiere plan Team/Enterprise/API y API de Anthropic. Es research preview: tiene un ~0.4% de falsos negativos (acciones peligrosas que se cuelan).
+
+**5. dontAsk:** nunca pregunta. Si una herramienta no está pre-aprobada, se bloquea en silencio. Para automatización.
+
+**6. bypassPermissions:** ⚠️ **PELIGROSO.** Hace todo sin preguntar. Solo úsalo dentro de containers o máquinas virtuales aisladas. Nunca en tu máquina personal.
+
+</NarratedSection>
+
+<Quiz
+  id="q6"
+  question="Tienes una regla allow para Bash(npm *) y una regla deny para Bash(npm publish *). Claude quiere ejecutar npm publish. ¿Qué pasa?"
+  options='["Se ejecuta, porque hay un allow que coincide","Se bloquea, porque deny siempre gana sobre allow","Te pregunta","Depende del modo"]'
+  correctIndex="1"
+  explanation="La regla de oro: deny siempre gana. El sistema revisa primero deny, luego ask, luego allow. Si algo está denegado, nada lo desbloquea."
+/>
+
+<Quiz
+  id="q7"
+  question="¿Cuál modo es más apropiado para revisar un proyecto nuevo que acabas de clonar sin riesgo de cambiarlo?"
+  options='["bypassPermissions","acceptEdits","plan","dontAsk"]'
+  correctIndex="2"
+  explanation="El modo plan permite solo lectura. Claude puede mirar y analizar, pero no modificar ni ejecutar. Es como ver una casa sin tener las llaves."
+/>
+
+<NarratedSection id="reglas-bash" heading="Reglas para comandos Bash" sourcePage="267">
+
+Las reglas se escriben en `settings.json` bajo `permissions.allow`, `permissions.ask` o `permissions.deny`. Para Bash usamos **wildcards** (el símbolo `*`):
+
+```
+"Bash(npm run build)"     # comando exacto
+"Bash(npm run *)"         # cualquier 'npm run ...'
+"Bash(npm *)"             # cualquier comando npm
+"Bash"                    # TODOS los comandos Bash
+```
+
+⚠️ **Cuidado con los espacios:** `Bash(ls *)` coincide con `ls -la` pero NO con `lsof`. En cambio `Bash(ls*)` (sin espacio) coincide con ambos. El espacio importa.
+
+Otra protección importante: Claude reconoce operadores de shell como `&&`. Si tienes `Bash(safe-cmd *)`, eso **no** da permiso para `safe-cmd && comando-peligroso`. El sistema lo detecta.
+
+</NarratedSection>
+
+<NarratedSection id="reglas-archivos" heading="Reglas para archivos (Read y Edit)" sourcePage="268">
+
+Para archivos, los patrones son parecidos a `.gitignore`. Hay cuatro formas de escribir rutas:
+
+- `./archivo` o `archivo` — relativo al directorio actual.
+- `/ruta` — relativo a la raíz del proyecto.
+- `~/ruta` — relativo a tu home.
+- `//ruta` — ruta absoluta del sistema (doble barra).
+
+Ejemplo realista:
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(git commit *)"
+    ],
+    "deny": [
+      "Bash(git push *)",
+      "Bash(curl *)",
+      "Read(./.env)",
+      "Read(./secrets/**)"
+    ]
+  }
+}
+```
+
+⚠️ **Caveat gigante:** las reglas deny de Read y Edit solo aplican a las herramientas built-in. **No aplican a subprocesos Bash.** Si bloqueas `Read(./.env)`, Claude no puede leerlo con la herramienta Read, pero `cat .env` en Bash **sí funciona**. Para protección real a nivel del sistema operativo, necesitas el sandbox (siguiente sección).
+
+</NarratedSection>
+
+<NarratedSection id="flags-cli" heading="Flags de línea de comandos" sourcePage="270">
+
+También puedes controlar permisos al lanzar Claude Code desde terminal. Los más útiles:
+
+- `--allowedTools` auto-aprueba herramientas para esa sesión.
+- `--disallowedTools` las bloquea del todo (se quitan del contexto).
+- `--tools` decide qué herramientas **existen** en la caja. Diferente de `--allowedTools`, que decide cuáles se pueden agarrar sin preguntar.
+- `--add-dir` agrega directorios extra al espacio de trabajo.
+- `--enable-auto-mode` activa el modo auto.
+- `--allow-dangerously-skip-permissions` agrega bypass al ciclo de Shift+Tab sin activarlo todavía.
+
+Ejemplo:
+
+```
+claude --allowedTools "Bash(npm run test *)" "Bash(npm run lint)" "Read"
+```
+
+**Tip del libro:** prefiere `--disallowedTools` sobre `--allowedTools` para restricciones. Es más confiable y funciona en todos los modos, incluyendo bypassPermissions.
+
+</NarratedSection>
+
+<TerminalTask
+  id="task-disallow"
+  instruction="Lanza Claude Code bloqueando los comandos rm para esa sesión. Esto es una buena práctica defensiva: evita que Claude pueda borrar archivos con rm ni siquiera pidiéndote permiso, porque la herramienta queda fuera del contexto."
+  command="claude --disallowedTools &quot;Bash(rm *)&quot;"
+  expectedOutcome="Claude arranca normalmente, pero cualquier intento de ejecutar un comando que empiece con rm queda bloqueado. Claude ni siquiera intentará proponerlo porque la restricción está activa."
+  verifyHint="Dentro de la sesión, pregúntale a Claude que intente borrar un archivo de prueba. Debería indicarte que no puede usar rm."
+/>
+
+<NarratedSection id="sandbox" heading="El sandbox: la caja de arena" sourcePage="272">
+
+Un **sandbox** es, literalmente, una caja de arena para niños. Dentro juegan libres; afuera, la arena no se sale. El sandbox de Claude Code hace lo mismo con los comandos: crea un entorno aislado donde las restricciones se imponen **a nivel del sistema operativo**. Si un comando intenta salirse, el sistema operativo lo bloquea.
+
+En la práctica, el sandbox reduce los prompts de permisos en un **84%**. Claude trabaja más rápido porque no necesita preguntarte tanto.
+
+Para activarlo, dos formas:
+
+```
+/sandbox               # desde modo interactivo
+```
+
+O en `settings.json`:
+
+```json
+{ "sandbox": { "enabled": true } }
+```
+
+Dentro del sandbox:
+- Claude puede leer **casi todo** tu computador.
+- Claude puede escribir **solo en el directorio actual y subdirectorios**.
+- No puede modificar archivos fuera del proyecto.
+
+A diferencia de las reglas de permisos, **estas restricciones sí aplican a todos los subprocesos**: npm, kubectl, terraform, lo que sea.
+
+</NarratedSection>
+
+<NarratedSection id="sandbox-config" heading="Configurar el sandbox" sourcePage="273">
+
+Puedes afinar qué puede leer y escribir:
+
+```json
+{
+  "sandbox": {
+    "filesystem": {
+      "allowWrite": ["//tmp/build", "~/.kube"],
+      "denyWrite": ["//etc", "//usr/local/bin"],
+      "denyRead": ["~/.aws/credentials"]
+    }
+  }
+}
+```
+
+Y también el acceso a **red**. El sandbox usa un proxy que filtra conexiones. Solo los dominios aprobados funcionan:
+
+```json
+{
+  "sandbox": {
+    "network": {
+      "allowedDomains": ["github.com", "*.npmjs.org"]
+    }
+  }
+}
+```
+
+Esto protege contra tres riesgos reales: enviar tus datos a servidores desconocidos, descargar scripts maliciosos y llamar a APIs no autorizadas.
+
+Opción útil: `autoAllowBashIfSandboxed: true` hace que los comandos dentro del sandbox se ejecuten sin pedir permiso. Es seguro porque el sandbox ya limita lo que pueden hacer. Si un comando necesita salirse del sandbox, cae al flujo normal y te pregunta.
+
+</NarratedSection>
+
+<NarratedSection id="plataformas" heading="Plataformas del sandbox" sourcePage="275">
+
+El sandbox usa tecnología diferente según tu sistema operativo:
+
+- **macOS:** usa **Seatbelt**, tecnología nativa de Apple. No instalas nada extra.
+- **Linux:** usa **bubblewrap**. Lo instalas con:
+
+  ```
+  sudo apt-get install bubblewrap socat   # Ubuntu/Debian
+  sudo dnf install bubblewrap socat       # Fedora
+  ```
+- **WSL2:** igual que Linux.
+- **WSL1:** no soportado. Hay que actualizar a WSL2.
+- **Windows nativo:** planeado pero aún no disponible.
+
+Una opción extra: `sandbox.failIfUnavailable: true`. Con eso, Claude Code **falla** en vez de continuar sin sandbox si no puede iniciarse. Útil para entornos de producción donde el sandbox es obligatorio.
+
+</NarratedSection>
+
+<Quiz
+  id="q8"
+  question="Bloqueas Read(./.env) en tus permisos. ¿Claude puede leer el archivo .env con el comando `cat .env` en Bash?"
+  options='["No, el deny de Read también bloquea Bash","Sí, porque las reglas deny de Read/Edit no aplican a subprocesos Bash; para eso necesitas el sandbox","Solo en macOS","Solo si estás en modo plan"]'
+  correctIndex="1"
+  explanation="Es un caveat crítico del libro: las reglas deny de Read/Edit solo cubren las herramientas built-in de Claude. Los subprocesos Bash las ignoran. Para protección real a nivel de sistema operativo necesitas el sandbox, que sí aplica a todos los subprocesos."
+/>
+
+<Quiz
+  id="q9"
+  question="¿Cuándo es apropiado usar el modo bypassPermissions (--dangerously-skip-permissions)?"
+  options='["Cuando tengas prisa en tu máquina personal","Solo dentro de containers o máquinas virtuales aisladas","Para proyectos de producción","Nunca, está prohibido"]'
+  correctIndex="1"
+  explanation="El libro es muy claro: bypassPermissions solo se debe usar dentro de containers o VMs aisladas. Es darle las llaves de toda la casa a Claude, así que la 'casa' debe ser desechable."
+/>
+
+<NarratedSection id="cierre" heading="Cierre y resumen" sourcePage="260">
+
+Resumamos lo grande:
+
+**Memoria** tiene dos caras. La que tú escribes (`CLAUDE.md` en sus varios niveles: organización, usuario, proyecto, local y subdirectorio) y la que Claude escribe solo (`auto memory`). La clave para que funcione bien: mantener CLAUDE.md bajo 200 líneas, usar imperativos, dividir en `.claude/rules/` si crece, y revisar la auto memory con `/memory` de vez en cuando para limpiar lo obsoleto.
+
+**Permisos** tienen tres capas. Las **reglas** (`allow`, `ask`, `deny` con la regla de oro: deny siempre gana). Los **modos** (desde `plan` que es solo lectura hasta `bypassPermissions` que quita todas las barreras). Y el **sandbox**, que impone restricciones de verdad a nivel del sistema operativo y reduce los prompts en un 84%.
+
+Con estos dos sistemas en las manos, tienes control sobre **qué sabe Claude** y sobre **qué puede hacer**. Ya no es un asistente genérico que olvida todo: es uno que recuerda tus reglas y respeta tus límites.
+
+</NarratedSection>

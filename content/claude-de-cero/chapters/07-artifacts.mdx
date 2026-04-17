@@ -1,0 +1,209 @@
+---
+chapterNumber: 7
+slug: artifacts
+title: 'Artifacts: Crea Cosas Reales con Claude'
+part: claude-ai
+estimatedMinutes: 15
+prerequisites:
+  - Saber usar el chat de Claude
+  - Tener una cuenta activa (Free basta para empezar)
+status: approved
+generatedAt: '2025-01-20T00:00:00Z'
+sourcePagesFrom: 101
+sourcePagesTo: 116
+model: claude-opus-4-7
+---
+<NarratedSection id="hook" heading="Cuando el chat se queda pequeño" sourcePage="101">
+
+Imagina que llamas por teléfono a un amigo muy hábil y le pides ayuda con un proyecto. Él te explica por voz, claro. Pero si el proyecto es grande — digamos, una página web entera — necesita algo más: enviarte un documento mientras siguen hablando.
+
+Eso mismo hace Claude con los **Artifacts** (se pronuncia 'ár-ti-facts', significa 'creaciones' en inglés). Son ventanas especiales que aparecen al lado del chat cuando la respuesta es demasiado grande para caber en el mensaje.
+
+En este capítulo vas a conocer qué son, cuándo aparecen y los 7 tipos que existen. Empecemos por la idea central.
+
+</NarratedSection>
+
+<NarratedSection id="que-son" heading="Qué es exactamente un Artifact" sourcePage="102">
+
+Un **artifact** es una mini-ventana dentro de Claude donde se crea contenido real: una página web funcionando, un diagrama, una app interactiva o un documento con formato.
+
+La analogía oficial del libro: el chat es una llamada telefónica. El artifact es el documento que tu interlocutor te manda por correo mientras hablan. Puedes verlo, editarlo y guardarlo sin 'colgar' la conversación.
+
+Claude no crea un artifact para cualquier respuesta. Solo cuando se cumplen tres cosas al mismo tiempo: el contenido es **grande** (más de unas 15 líneas), es **autocontenido** (funciona solo, sin el chat) y es **reutilizable** (algo que querrás copiar, descargar o editar).
+
+Si pides una línea corta de código, aparece en el chat. Si pides una función completa, va al artifact.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-cuando-aparece"
+  question="¿Cuál de estas peticiones es más probable que Claude conteste con un Artifact?"
+  options='["&apos;¿Cuánto es 5 + 5?&apos;","&apos;Escríbeme una landing page completa con hero, features y footer&apos;","&apos;Recuérdame qué es HTML en una frase&apos;"]'
+  correctIndex="1"
+  explanation="Una landing page completa cumple las tres condiciones: es grande, autocontenida y reutilizable. Las otras son respuestas cortas que caben perfectamente en el chat."
+/>
+
+<NarratedSection id="panel" heading="El panel: Preview, Code y versiones" sourcePage="103">
+
+Cada artifact tiene dos vistas, como las dos caras de una moneda:
+
+- **Preview**: el resultado final. Si es una web, ves la web funcionando.
+- **Code**: el código fuente que Claude escribió por detrás.
+
+Cambias entre ambas con un botón arriba del artifact. Los documentos de texto plano no tienen vista de código porque… no tienen código.
+
+Cada vez que pides un cambio, se crea una **versión nueva**, como el historial de Google Docs. Usa las flechitas para moverte entre versiones y volver atrás si algo no te gustó.
+
+Si en una conversación hay varios artifacts, un icono deslizador te deja elegir cuál está 'activo', es decir, cuál modificará Claude cuando pidas cambios.
+
+</NarratedSection>
+
+<NarratedSection id="tipos-1-3" heading="Los 7 tipos de Artifacts (parte 1)" sourcePage="104">
+
+Claude puede crear 7 tipos de artifacts. Veamos los tres primeros:
+
+**1. Documentos** (Markdown o texto plano). El más simple. Tutoriales, notas, artículos con títulos y listas. Ejemplo de prompt: *'Escribe un tutorial sobre cómo usar Git para principiantes'*.
+
+**2. Fragmentos de código**. En cualquier lenguaje: Python, JavaScript, Java, C++, Go, Rust... El código aparece con **resaltado de sintaxis** (las palabras clave se colorean para leerse mejor). Puedes copiarlo o descargarlo como archivo.
+
+**3. Páginas HTML**. Páginas web completas con HTML, CSS y JavaScript en un solo archivo. La página se **renderiza** (se dibuja y funciona) dentro del artifact. Regla importante: si necesitas una biblioteca externa como jQuery, solo puedes cargarla desde `https://cdnjs.cloudflare.com` y siempre con una versión específica (por ejemplo `3.7.1`), nunca `latest`.
+
+</NarratedSection>
+
+<NarratedSection id="tipos-4-7" heading="Los 7 tipos de Artifacts (parte 2)" sourcePage="106">
+
+**4. Imágenes SVG**. SVG significa *Scalable Vector Graphics*: imágenes hechas con matemáticas en lugar de píxeles. Se ven nítidas a cualquier tamaño. Píxeles son como crayones (se ven borrosos al ampliar); vectores son como regla y compás (siempre nítidos). Útil para iconos, logos y diagramas técnicos.
+
+**5. Diagramas Mermaid**. **Mermaid** es un lenguaje donde describes un diagrama escribiendo texto ('una caja Inicio, una flecha a otra caja Proceso') y el artifact lo dibuja. Soporta diagramas de flujo, secuencia, clases, estado, Gantt, pastel y entidad-relación.
+
+**6. Componentes React**. El tipo más versátil: aplicaciones funcionales reales donde puedes hacer clic, filtrar y ver gráficos animados. Claude puede usar 8 bibliotecas pre-instaladas: **React**, **Tailwind CSS**, **Recharts**, **shadcn/ui**, **Lucide React**, **Lodash**, **D3** y **Three.js**. Ninguna otra.
+
+**7. Archivos descargables**. Claude genera `.docx` (Word), `.pptx` (PowerPoint), `.xlsx` (Excel) o `.pdf` listos para descargar.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-tipos"
+  question="Quieres un dashboard interactivo donde se pueda hacer clic en filtros y ver gráficos animados. ¿Qué tipo de artifact pedirías?"
+  options='["Documento Markdown","Imagen SVG","Componente React","Diagrama Mermaid"]'
+  correctIndex="2"
+  explanation="React es el tipo más versátil y el único que permite interactividad real con gráficos y filtros. SVG y Mermaid son estáticos, y Markdown es solo texto."
+/>
+
+<Quiz
+  id="quiz-cdn"
+  question="En un artifact HTML, ¿desde qué dominio puedes cargar bibliotecas externas como jQuery?"
+  options='["Desde cualquier CDN que quieras","Solo desde cdnjs.cloudflare.com, y con versión específica","Desde GitHub directamente"]'
+  correctIndex="1"
+  explanation="Por seguridad, los artifacts HTML solo permiten cdnjs.cloudflare.com, y siempre con una versión fija (ej: 3.7.1), nunca 'latest'."
+/>
+
+<NarratedSection id="iterar" heading="Editar: iterar hasta que quede perfecto" sourcePage="107">
+
+Crear el artifact es solo el primer paso. Lo bueno viene al **iterar**: pedir cambios hasta que quede como quieres.
+
+La forma normal es escribir en el chat: *'Cambia los colores a azul oscuro'*, *'Agrega un botón de contacto'*, *'Haz la tabla responsive para móviles'*. Cada cambio crea una versión nueva.
+
+Pero hay un truco más rápido: la **edición selectiva**. En lugar de pedir que Claude reescriba todo, haces esto:
+
+1. **Resalta** (selecciona con el cursor) la parte exacta que quieres cambiar dentro del artifact.
+2. Escribe en el chat qué quieres modificar.
+3. Claude solo toca esa parte y deja el resto intacto.
+
+Y cuando algo falla (sobre todo en código), aparece un botón 'Try fixing with Claude'. Al pulsarlo, Claude recibe los detalles del error y propone una solución. No siempre acierta a la primera, pero ahorra tiempo.
+
+</NarratedSection>
+
+<NarratedSection id="publicar" heading="Publicar, compartir y embeber" sourcePage="109">
+
+Un artifact útil para ti puede ser útil para otros. Hay tres formas de compartirlo:
+
+**Publicar** (planes Free, Pro y Max): genera un enlace público. Cualquiera con el link puede verlo, sin cuenta de Claude. Pasos: abres el artifact → `Publish` → copias el enlace.
+
+⚠️ Cuidado: si lo **despublicas**, no puedes volver a publicar ese mismo artifact nunca. También se borran permanentemente sus datos. Y las versiones nuevas no se publican solas: hay que publicar cada una.
+
+**Compartir en equipos** (Team y Enterprise): en vez de publicarse al mundo, el artifact se comparte solo dentro de tu organización con `Share → Share & copy link`.
+
+**Embeber** (insertar) el artifact en tu sitio web, como haces con un video de YouTube: publicas → `Get embed code` → escribes qué dominios tienen permiso (ej: `midominio.com, blog.midominio.com`) → copias el `<iframe>` → lo pegas en tu HTML.
+
+Y si ves un artifact público que te gusta, puedes hacer **Remix**: `Customize` te abre una conversación nueva con ese contenido de base, y pides los cambios que quieras. Tu versión es independiente; no afecta al original. Es como 'forkear' un repositorio en GitHub.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-despublicar"
+  question="Acabas de publicar un artifact y te arrepientes. Si pulsas 'Unpublish', ¿qué pasa?"
+  options='["Puedes volver a publicarlo cuando quieras; es reversible","Se oculta, pero sus datos se conservan por si cambias de idea","Se elimina permanentemente el enlace y los datos asociados; no puedes re-publicar ese mismo artifact"]'
+  correctIndex="2"
+  explanation="Despublicar es permanente: borra los datos y ya no puedes volver a publicar ese artifact. Tendrías que crear uno nuevo. Por eso el libro lo marca como advertencia fuerte."
+/>
+
+<NarratedSection id="avanzado" heading="Funciones avanzadas: IA, datos persistentes y MCP" sourcePage="110">
+
+Con plan Pro o superior se abren tres superpoderes:
+
+**Artifacts con IA (AI-Powered)**: puedes crear un artifact que usa la inteligencia de Claude dentro de sí mismo. Por ejemplo, un chatbot que corrige tu inglés. Lo más interesante: tú no pagas por lo que otros usan. Cada usuario consume **sus propios límites** de suscripción al usar tu artifact. Como prestar una receta: tú la escribes, cada quien pone sus ingredientes. (Disponible en todos los planes.)
+
+**Almacenamiento persistente**: normalmente los datos dentro de un artifact desaparecen al cerrar la página. Con almacenamiento persistente se quedan. Dos tipos:
+- **Personal**: cada usuario guarda sus datos privados (ej: un diario).
+- **Compartido**: todos ven y modifican lo mismo (ej: un tablero de tareas de equipo).
+
+Límites: 20 MB por artifact, solo texto (nada de imágenes ni binarios), y los dos tipos de almacenamiento están separados.
+
+**Integración MCP** (*Model Context Protocol*): permite que un artifact se conecte con servicios externos como Google Calendar, Gmail, Slack o Asana. Ejemplo: un artifact que lee tu calendario y te arma un resumen visual de la semana. Cada usuario debe autenticar los servidores MCP por su cuenta, incluso en artifacts compartidos.
+
+</NarratedSection>
+
+<NarratedSection id="limites" heading="Lo que los Artifacts NO pueden hacer" sourcePage="111">
+
+Conocer los límites te ahorra frustraciones:
+
+- **Solo frontend**: el código corre en tu navegador. No hay servidor ni base de datos detrás.
+- **Un solo archivo**: todo el código debe estar junto. Nada de múltiples archivos importándose.
+- **Sin localStorage**: los artifacts React no pueden usar `localStorage` ni `sessionStorage`. Usa `useState` de React o el almacenamiento persistente.
+- **Bibliotecas limitadas**: en React solo las 8 pre-instaladas; en HTML solo desde `cdnjs.cloudflare.com`.
+- **Sin multimedia pesada**: no hay soporte para audio, video ni fotos. Solo texto y SVG.
+- **Rendimiento**: con datasets muy grandes el artifact puede ir lento o fallar.
+- **No es producción**: son para prototipos y demos. Para una app real hay que migrar el código a infraestructura profesional (por ejemplo, usando Claude Code o un IDE).
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-limites"
+  question="Tu artifact React necesita guardar la lista de tareas del usuario entre visitas. ¿Qué opción funciona?"
+  options='["Usar localStorage del navegador","Conectarse a una base de datos externa por SQL","Usar almacenamiento persistente (personal) o useState si solo durante la sesión"]'
+  correctIndex="2"
+  explanation="Los artifacts React no pueden usar localStorage ni conectarse a bases de datos (son solo frontend). La opción oficial para guardar datos entre visitas es el almacenamiento persistente de Claude."
+/>
+
+<TerminalTask
+  id="task-landing"
+  instruction="Vamos a practicar creando tu primer artifact. Abre Claude (claude.ai) en tu navegador, inicia una conversación nueva y envía este prompt bien específico para obtener una landing page. Recuerda el consejo del libro: cuanto más detallado el prompt, mejor el resultado."
+  command="Crea una landing page HTML moderna para una app de productividad llamada 'FocusFlow'. Incluye: hero section con degradado azul y blanco, 3 features con iconos, una tabla de precios con 3 planes, y un footer con enlaces. Usa solo HTML, CSS y JavaScript en un único archivo."
+  expectedOutcome="Claude abre un artifact a la derecha del chat con la landing page renderizada. Puedes alternar entre 'Preview' (ves la página funcionando) y 'Code' (ves el HTML)."
+  verifyHint="Si ves el panel lateral con la página dibujada y un botón para cambiar a vista Code, el artifact se creó correctamente. Prueba ahora pedir: 'Haz el botón principal más grande y cámbialo a color naranja' para ver cómo se crea una nueva versión."
+/>
+
+<TerminalTask
+  id="task-edicion-selectiva"
+  instruction="Sobre el mismo artifact anterior, practica la edición selectiva. En lugar de describir con palabras qué parte quieres tocar, selecciona la sección del footer directamente en la vista Preview del artifact (arrastra con el cursor para resaltarla) y luego escribe el siguiente mensaje en el chat."
+  command="Agrega aquí tres iconos de redes sociales (Twitter, LinkedIn, GitHub) usando emojis y un texto de copyright."
+  expectedOutcome="Claude solo modifica el footer. El resto de la landing queda igual. En el historial de versiones verás una nueva versión con el cambio acotado."
+  verifyHint="Si el hero, las features y los precios siguen intactos y solo cambió el footer, la edición selectiva funcionó. Es más rápida y precisa que reescribir todo."
+/>
+
+<NarratedSection id="cierre" heading="Resumen y siguiente paso" sourcePage="116">
+
+Repasemos lo esencial:
+
+- Un **artifact** es una ventana al lado del chat donde Claude crea contenido grande, autocontenido y reutilizable.
+- Hay **7 tipos**: documentos, código, HTML, SVG, Mermaid, React y archivos descargables.
+- Cada cambio crea una **versión nueva**; puedes volver atrás cuando quieras.
+- Usa **edición selectiva** para cambios puntuales y **iteración en pasos pequeños** para resultados mejores.
+- Puedes **publicar** (enlace público), **compartir** (en equipos), **embeber** en tu web o hacer **remix** del trabajo de otros.
+- Funciones avanzadas: **IA integrada**, **almacenamiento persistente** y **MCP** para conectar con servicios externos.
+- Recuerda los límites: solo frontend, un solo archivo, sin multimedia pesada, y son para **prototipos**, no producción.
+
+Buenas prácticas que merece la pena grabarse: sé específico en el prompt, itera en pasos pequeños, siempre fija versiones de CDN, y piénsalo dos veces antes de despublicar. En el próximo capítulo daremos el salto de los prototipos a las herramientas de desarrollo reales.
+
+</NarratedSection>

@@ -1,0 +1,273 @@
+---
+chapterNumber: 20
+slug: agentes
+title: Agentes y Subagentes
+part: claude-code
+estimatedMinutes: 26
+prerequisites: []
+status: approved
+generatedAt: '2026-04-17T02:00:00.000Z'
+sourcePagesFrom: 385
+sourcePagesTo: 408
+model: hand-written-by-claude
+---
+
+<NarratedSection id="que-son-subagentes" heading="Qué es un subagente" sourcePage="386">
+
+Imagina que tienes un asistente personal muy listo. Es bueno, pero una sola persona no puede hacer todo al mismo tiempo. Lo que sí puede hacer es llamar a otros ayudantes más especializados: uno que solo lee código, otro que ejecuta tests, otro que revisa la seguridad.
+
+Eso son los **subagentes**. Un subagente es un asistente de IA dedicado a un tipo de tarea. Piensa en una empresa: el jefe (Claude, el **agente principal**) no hace todo él solo. Delega el trabajo a empleados especializados (los subagentes).
+
+Cada subagente tiene tres cosas propias:
+
+- **Su propio prompt**: las instrucciones de cómo debe comportarse.
+- **Sus propias herramientas**: a lo mejor solo puede leer archivos, o a lo mejor también puede editarlos.
+- **Su propia ventana de contexto**: su memoria es independiente de la del agente principal.
+
+Cuando Claude encuentra una tarea que encaja con la descripción de un subagente, le pasa el trabajo. El subagente se pone a trabajar por su cuenta y, al terminar, devuelve solo el resultado final. Todo el trabajo intermedio (los archivos que leyó, las pruebas que hizo) se queda dentro del subagente.
+
+Esto tiene dos ventajas claras. **Primero**, el contexto principal no se llena de detalles que tú no necesitas ver. **Segundo**, puedes restringir lo que cada subagente puede hacer, como darle a un empleado acceso solo a ciertos archivos de la oficina.
+
+Una regla importante: los subagentes **no pueden crear otros subagentes**. No hay cadenas infinitas de delegación. Solo el agente principal (Claude en tu conversación) puede crear subagentes. Si necesitas delegar en cascada, encadena las llamadas desde la conversación principal.
+
+</NarratedSection>
+
+<Quiz
+  id="q-que-son"
+  question="¿Cuál de estas cosas NO tiene su propio subagente?"
+  options='["Un prompt propio", "Una ventana de contexto propia", "La capacidad de crear otros subagentes", "Su propia lista de herramientas permitidas"]'
+  correctIndex="2"
+  explanation="Los subagentes NO pueden crear otros subagentes. Solo el agente principal puede. Evita cadenas infinitas de delegación."
+/>
+
+<NarratedSection id="cuando-usar" heading="Cuándo usar un subagente y cuándo no" sourcePage="387">
+
+No todo necesita un subagente. A veces es mejor seguir hablando con Claude en la conversación principal. Aquí tienes una guía sencilla.
+
+**Usa la conversación principal cuando**: necesitas ida y vuelta frecuente con Claude, el cambio es rápido y simple, o la latencia importa (los subagentes añaden un poco de tiempo extra al arrancar).
+
+**Usa subagentes cuando**: la tarea genera mucho output (logs largos, resultados de tests), necesitas restringir herramientas (por ejemplo, solo lectura), el trabajo es autocontenido y solo importa el resultado final, o quieres ejecutar varias tareas en paralelo.
+
+Piensa en delegar como delegas en la vida real. Si le mandas a alguien al supermercado, quieres que vuelva con la bolsa y el ticket, no con un informe minuto a minuto de cada pasillo que recorrió. Así trabaja un subagente: se va, hace el encargo y te trae el resumen.
+
+También existe el comando `/btw` para preguntas rápidas. Es como tocarle el hombro a Claude sin interrumpir su flujo. Ve todo el contexto pero no tiene herramientas, y la respuesta se descarta después. Útil para una duda suelta.
+
+Claude Code ya trae varios subagentes listos para usar. No necesitas configurar nada. Los usa automáticamente cuando la situación encaja.
+
+- **Explore**: es el explorador del equipo. Busca y analiza código sin modificar nada. Usa el modelo Haiku, que es rápido y barato. Tiene tres niveles de profundidad: `quick`, `medium` y `very thorough`. Es de solo lectura.
+- **Plan**: es el arquitecto. Investiga el codebase para recopilar contexto antes de presentarte un plan de acción. Se activa cuando estás en **plan mode**. También es de solo lectura.
+- **general-purpose**: es el todoterreno. Tiene acceso a todas las herramientas: leer, escribir y ejecutar comandos. Claude lo usa cuando la tarea requiere tanto explorar como modificar código.
+
+Además hay algunos más especializados como **Bash** (ejecuta comandos de terminal en un contexto separado), **statusline-setup** (configura la línea de estado) y **Claude Code Guide** (responde preguntas sobre las propias funciones de Claude Code).
+
+</NarratedSection>
+
+<Quiz
+  id="q-builtin"
+  question="¿Qué subagente integrado usarías si quieres que Claude solo explore el código sin modificar nada?"
+  options='["general-purpose", "Explore", "Bash", "statusline-setup"]'
+  correctIndex="1"
+  explanation="Explore es el subagente de solo lectura. Busca, analiza y no toca archivos. Usa Haiku para ser rápido y barato."
+/>
+
+<NarratedSection id="crear-propios" heading="Cómo crear tus propios subagentes" sourcePage="388">
+
+Los subagentes integrados están bien, pero lo interesante es crear los tuyos. Es como contratar empleados especializados para tu proyecto concreto.
+
+Hay tres formas de hacerlo.
+
+**1) Con el comando `/agents` (la más fácil)**. Escribe `/agents` dentro de la conversación y aparece un menú interactivo. Ahí puedes ver todos los subagentes disponibles, crear uno nuevo paso a paso, elegir si es solo para este proyecto o para todos tus proyectos, seleccionar herramientas, modelo y color, y dejar que Claude te ayude a generar la configuración. El subagente queda disponible de inmediato. No hace falta reiniciar.
+
+**2) Creando un archivo Markdown a mano**. Un subagente es un archivo `.md` con dos partes: el **frontmatter** (un bloque de YAML con la configuración) y las **instrucciones** debajo (el prompt que recibe el subagente).
+
+El frontmatter lleva campos como `name`, `description`, `tools` y `model`. Debajo escribes el prompt. Por ejemplo, un revisor de código solo-lectura llevaría `tools: Read, Glob, Grep` y un prompt que diga "You are a code reviewer. Analyze the code and provide specific, actionable feedback".
+
+**3) Pasando un JSON al lanzar Claude Code con `--agents`**. Útil para pruebas rápidas o scripts de automatización. El subagente vive solo durante esa sesión y desaparece al cerrar.
+
+La **ubicación** del archivo decide quién puede usarlo. Hay cinco niveles de prioridad, de mayor a menor:
+
+1. **Managed settings**: subagentes organizacionales, desplegados por administradores de empresa. Máxima prioridad.
+2. **Flag `--agents`**: solo existe durante esa sesión.
+3. **`.claude/agents/`**: subagentes del proyecto. Se pueden commitear para compartirlos con el equipo.
+4. **`~/.claude/agents/`**: subagentes personales. Disponibles en todos tus proyectos.
+5. **Plugins**: vienen con plugins instalados.
+
+Si dos subagentes tienen el mismo nombre, gana el de mayor prioridad. Puedes verificar qué subagentes hay con `/agents` o con `claude agents` desde la terminal. Ojo: los directorios añadidos con `--add-dir` **no** se escanean en busca de subagentes.
+
+</NarratedSection>
+
+<Quiz
+  id="q-ubicacion"
+  question="Si guardas un subagente en .claude/agents/ dentro de un proyecto, ¿qué ocurre?"
+  options='["Solo existe durante esta sesión de Claude", "Está disponible solo en ese proyecto y se puede commitear para el equipo", "Está disponible en todos tus proyectos personales", "Tiene máxima prioridad sobre cualquier otro subagente"]'
+  correctIndex="1"
+  explanation="La carpeta .claude/agents/ es para subagentes del proyecto. Se commitean con git y el equipo los comparte. Para algo global usarías ~/.claude/agents/."
+/>
+
+<TerminalTask
+  id="t-listar-agents"
+  instruction="Desde la terminal, dentro de cualquier proyecto, lista los subagentes disponibles para confirmar qué tienes cargado. Esto te muestra los built-in y cualquiera que hayas creado tú."
+  command="claude agents"
+  expectedOutcome="Se imprime una lista de subagentes disponibles con su nombre, descripción, scope (user, project, built-in) y modelo."
+  verifyHint="Si no ves nada propio es normal: empezarás con los integrados (Explore, Plan, general-purpose). Los tuyos aparecerán cuando crees archivos en .claude/agents/."
+/>
+
+<NarratedSection id="frontmatter" heading="El frontmatter, campo a campo" sourcePage="390">
+
+El frontmatter es la tarjeta de identidad de tu subagente. Estos son los campos más importantes.
+
+**Obligatorios**:
+
+- `name`: identificador único. Solo letras minúsculas y guiones. Ejemplo: `code-reviewer`.
+- `description`: cuándo Claude debe usar este subagente. Claude lee esta descripción para decidir si delegar. Truco: añade la frase "use proactively" si quieres que Claude lo use sin que se lo pidas.
+
+**Herramientas y permisos**:
+
+- `tools`: lista de herramientas permitidas. Si lo omites, hereda todas. Ejemplos: `Read`, `Glob`, `Grep`, `Bash`, `Write`, `Edit`, `Agent`.
+- `disallowedTools`: lo opuesto. Herramientas que quieres prohibir. Útil cuando quieres heredar casi todo pero excluir unas pocas.
+- `permissionMode`: controla los permisos. Opciones: `default`, `acceptEdits`, `auto`, `dontAsk`, `bypassPermissions`, `plan`.
+
+**Cuidado** con `bypassPermissions`. Si el agente padre lo usa, los subagentes lo heredan y no puedes quitárselo. Lo mismo pasa con `auto`: si el padre está en auto mode, el subagente lo hereda y su `permissionMode` del frontmatter se ignora.
+
+**Modelo y límites**:
+
+- `model`: qué modelo usar. Acepta alias (`sonnet`, `opus`, `haiku`) o IDs completos.
+- `maxTurns`: límite de turnos antes de detenerse. Evita que un subagente trabaje de más.
+- `background`: ponlo en `true` para que siempre corra en segundo plano.
+
+El modelo que realmente usa un subagente se resuelve en este orden de prioridad (de mayor a menor): (1) variable de entorno `CLAUDE_CODE_SUBAGENT_MODEL`, (2) parámetro per-invocation, (3) `model` del frontmatter, (4) modelo del padre.
+
+**Campos avanzados**:
+
+- `isolation: worktree`: le da al subagente una copia aislada del repositorio.
+- `memory`: memoria persistente entre conversaciones. Opciones: `user`, `project`, `local`.
+- `skills`: skills que se cargan en el contexto. Los subagentes **no** heredan skills del padre; hay que listarlos explícitamente.
+- `mcpServers`: servidores MCP disponibles.
+- `hooks`: hooks del ciclo de vida. Soporta `PreToolUse`, `PostToolUse` y `Stop`.
+- `effort`: nivel de esfuerzo (`low`, `medium`, `high`, `max`). `max` solo para Opus 4.6.
+- `color`: color de visualización (`red`, `blue`, `green`, `yellow`, `purple`, `orange`, `pink`, `cyan`).
+- `initialPrompt`: prompt que se envía automáticamente como primer turno cuando el agente corre como agente principal de sesión.
+
+</NarratedSection>
+
+<Quiz
+  id="q-modelo"
+  question="Has puesto model: sonnet en el frontmatter, pero tienes exportada la variable CLAUDE_CODE_SUBAGENT_MODEL=haiku. ¿Qué modelo usa realmente el subagente?"
+  options='["sonnet, porque el frontmatter manda", "haiku, porque la variable de entorno tiene más prioridad", "El modelo del padre", "Da error y no arranca"]'
+  correctIndex="1"
+  explanation="La variable CLAUDE_CODE_SUBAGENT_MODEL gana a todo lo demás. Está diseñada para controlar costos forzando Haiku en todos los subagentes."
+/>
+
+<NarratedSection id="invocar" heading="Cuatro formas de invocar un subagente" sourcePage="392">
+
+Una vez que tienes subagentes definidos, puedes activarlos de cuatro maneras distintas.
+
+**1) Invocación automática**. Claude lee la `description` de cada subagente y decide cuándo usarlo él solo. Si le pides "revisa este código" y tienes un subagente cuya descripción dice "Reviews code for quality", Claude lo invocará sin que se lo pidas. Por eso la descripción importa tanto. Una descripción vaga significa que Claude no sabrá cuándo usarlo.
+
+**2) Invocación explícita por nombre**. Puedes pedirle a Claude que use un subagente concreto con texto: *"Use the code-reviewer subagent to check the auth module"*. También puedes encadenar: *"Use the code-reviewer to find problems, then use the optimizer to fix them"*. O lanzar varios en paralelo: *"Research the authentication, database, and API modules in parallel using separate subagents"*.
+
+**3) Invocación con @-mention**. Escribe `@` en tu mensaje y aparece un menú con todos los subagentes disponibles. Seleccionas uno y Claude **garantiza** que ese subagente se ejecute. No es una sugerencia, es una instrucción directa. Es más fiable que mencionarlo por nombre en texto libre porque no hay ambigüedad.
+
+**4) Sesión completa como subagente con `--agent`**. Con este flag, toda la sesión adopta el system prompt, las herramientas y el modelo del subagente. Es como si Claude **fuera** ese subagente durante toda la sesión. El system prompt del subagente reemplaza el de Claude Code. Los archivos `CLAUDE.md` y la memoria del proyecto se siguen cargando normalmente.
+
+Para subagentes de plugins se usa la sintaxis con dos puntos: nombre del plugin, luego nombre del agente.
+
+También puedes hacer que un proyecto arranque siempre con un subagente específico. Añade la clave &quot;agent&quot; con el nombre del subagente a `.claude/settings.json`. El flag `--agent` en la línea de comandos siempre tiene prioridad sobre este setting.
+
+**Reanudar un subagente**. Cada invocación arranca desde cero por defecto. Pero puedes pedirle a Claude: *"Continue that code review and now analyze the authorization logic"*. Claude usa el parámetro `resume` con el ID del agente. El subagente reanudado conserva toda su memoria y contexto de la sesión anterior.
+
+</NarratedSection>
+
+<Quiz
+  id="q-invocar"
+  question="¿Cuál es la forma más fiable de garantizar que Claude delegue una tarea a un subagente concreto sin que pueda ignorarlo?"
+  options='["Describirlo en texto libre esperando que Claude lo detecte", "Usar @-mention para seleccionarlo del menú", "Rezar para que Claude adivine", "Renombrar el subagente con mayúsculas"]'
+  correctIndex="1"
+  explanation="@-mention es una instrucción directa: Claude garantiza que ese subagente se ejecute. No tiene que adivinar si quieres delegarle."
+/>
+
+<TerminalTask
+  id="t-agent-flag"
+  instruction="Lanza Claude Code adoptando la identidad de un subagente durante toda la sesión. Este comando hace que Claude use el prompt, herramientas y modelo del subagente integrado Explore (solo lectura) para una sesión entera."
+  command="claude --agent Explore"
+  expectedOutcome="Arranca Claude Code con la identidad de Explore. La sesión entera queda en modo solo lectura y usa el modelo Haiku."
+  verifyHint="Si el subagente no existe, verás un error listando los disponibles. Prueba con cualquier otro built-in o con uno tuyo creado en .claude/agents/."
+/>
+
+<NarratedSection id="worktrees-memoria" heading="Worktrees y memoria persistente" sourcePage="394">
+
+Cuando varios subagentes trabajan a la vez, pueden pisarse los archivos. Piensa en un documento de Word: dos personas editándolo a la vez chocan. La solución de Git es el **worktree**: un directorio separado con sus propios archivos y su propia rama, pero que comparte el mismo historial del repo. Es como tener dos escritorios con copias del mismo proyecto.
+
+Para que un subagente trabaje en su propio worktree, pon `isolation: worktree` en el frontmatter. El subagente recibe su propia copia del repo. Si no hace cambios, el worktree se limpia automáticamente. Si los hace, Claude te pregunta si quieres mantenerlos o borrarlos.
+
+Desde la línea de comandos también puedes lanzar Claude directamente en un worktree con `--worktree` (o `-w`) seguido del nombre. Los worktrees se crean en `.claude/worktrees/` y la rama se llama con el prefijo `worktree-`. Se recomienda añadir `.claude/worktrees/` a tu `.gitignore`.
+
+**Copiar archivos gitignored a worktrees**. Cuando se crea un worktree, los archivos que están en `.gitignore` (por ejemplo `.env`) no se copian. Pero a veces los necesitas para que el proyecto arranque. Crea un archivo `.worktreeinclude` en la raíz del proyecto con la misma sintaxis que `.gitignore` y lista ahí los archivos gitignored que quieres copiar. Solo se copian archivos que coincidan con un patrón **Y** que estén gitignored.
+
+**Memoria persistente**. Normalmente un subagente empieza cada vez con una hoja en blanco. La memoria persistente cambia eso: le das un cuaderno de notas que conserva entre conversaciones. Se activa con el campo `memory` en el frontmatter y tiene tres alcances:
+
+- `user`: se guarda en `~/.claude/agent-memory/`. Disponible en todos tus proyectos.
+- `project`: se guarda en `.claude/agent-memory/`. Específico del proyecto. Se puede commitear.
+- `local`: se guarda en `.claude/agent-memory-local/`. No se commitea.
+
+Cuando la memoria está habilitada, el subagente recibe instrucciones automáticas para leer y escribir en su directorio, y también incluye las primeras 200 líneas de `MEMORY.md` en su contexto. Con el tiempo, el subagente va aprendiendo patrones de tu codebase. Sus revisiones se vuelven más precisas conforme acumula contexto.
+
+</NarratedSection>
+
+<Quiz
+  id="q-worktrees"
+  question="Pones isolation: worktree en un subagente. ¿Qué problema soluciona principalmente?"
+  options='["Que Claude responda más rápido", "Que varios subagentes no se pisen editando los mismos archivos", "Que el subagente gaste menos tokens", "Que el subagente herede skills del padre"]'
+  correctIndex="1"
+  explanation="Worktree le da al subagente su propia copia del repositorio. Así puedes correr varios subagentes en paralelo sin conflictos de archivos."
+/>
+
+<NarratedSection id="agent-teams" heading="Agent teams (experimental) y errores comunes" sourcePage="398">
+
+Los subagentes trabajan **dentro** de una sola sesión. Los **agent teams** son algo diferente: coordinan **varias sesiones** de Claude Code como un equipo real.
+
+La diferencia es así. Con subagentes, el jefe le da tareas a empleados y recibe reportes. La comunicación es solo con el jefe. Con agent teams, todos los miembros se comunican entre sí y tienen una lista de tareas compartida.
+
+Son **experimentales**. Para activarlos hay que exportar la variable `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` y tener Claude Code v2.1.32 o superior. Hay dos modos de visualización: `in-process` (todos en el mismo terminal, ciclas con `Shift+Down`) o `split panes` con tmux (cada teammate en su propio panel).
+
+Un patrón útil es la **revisión paralela**: lanzas un equipo para revisar una PR con tres reviewers especializados (seguridad, rendimiento, cobertura de tests). Otro patrón es el **debate científico**: varios investigadores independientes que intentan refutar las teorías de los demás. Esto evita el sesgo de anclarse en una sola explicación.
+
+**Tamaño recomendado**: empieza con 3-5 teammates. Asigna 5-6 tareas por teammate. Tres teammates enfocados suelen rendir mejor que cinco dispersos.
+
+**Ojo con estas limitaciones**: no hay reanudación de sesión con teammates in-process, el estado de tareas puede retrasarse, el apagado puede ser lento, solo un equipo por sesión, no se pueden anidar equipos, el líder es fijo, y los split panes no funcionan en VS Code terminal integrado, Windows Terminal ni Ghostty.
+
+**Errores comunes con subagentes normales**:
+
+- **El subagente no aparece**: si creaste el archivo después de iniciar la sesión, reinicia o usa `/agents` para cargarlo.
+- **Subagente en background falla por permisos**: auto-deniegan permisos no pre-aprobados. Reanúdalo en foreground con `resume` o pre-aprueba antes de lanzar.
+- **El contexto principal se llena rápido**: si usas muchos subagentes, sus resultados consumen contexto. Los agent teams ayudan cuando el trabajo excede la ventana.
+- **Conflictos de archivos en paralelo**: usa `isolation: worktree` o divide el trabajo para que cada subagente toque archivos distintos.
+- **Nombre duplicado**: gana el de mayor prioridad (managed > CLI > proyecto > usuario > plugin). Usa nombres únicos.
+
+**Nota histórica**: el `Agent tool` antes se llamaba `Task tool` (renombrado en v2.1.63). Las referencias a `Task(...)` siguen funcionando como alias. Las transcripciones de subagentes se guardan en `~/.claude/projects/` y se limpian automáticamente tras 30 días.
+
+</NarratedSection>
+
+<Quiz
+  id="q-teams"
+  question="¿Cuál es la diferencia principal entre subagentes y agent teams?"
+  options='["Los agent teams son gratis", "Los subagentes viven dentro de una sesión; los agent teams coordinan varias sesiones con tareas compartidas", "Los subagentes solo usan Haiku", "Los agent teams no pueden fallar"]'
+  correctIndex="1"
+  explanation="Subagentes = empleados dentro de una sesión, reportan al jefe. Agent teams = equipo de sesiones que se comunican entre sí con lista de tareas compartida. Los teams son experimentales."
+/>
+
+<NarratedSection id="cierre" heading="Lo que te llevas" sourcePage="407">
+
+Los **subagentes** son asistentes especializados que Claude usa para delegar tareas. Cada uno tiene su propio contexto, sus propias herramientas y sus propios permisos. Los creas con archivos Markdown en `.claude/agents/` (proyecto) o `~/.claude/agents/` (personales), o al vuelo con `/agents`.
+
+La descripción del subagente es la pieza clave: Claude la lee para decidir cuándo delegar. Descripción clara igual a delegación acertada. Para garantizar que se use uno concreto, invócalo con `@-mention`.
+
+Para trabajar en paralelo sin conflictos, usa `isolation: worktree`. Para que el subagente aprenda con el tiempo, activa `memory`. Para controlar costos, exporta `CLAUDE_CODE_SUBAGENT_MODEL=haiku`.
+
+Y recuerda las dos advertencias grandes: los subagentes **no** pueden crear otros subagentes, y `bypassPermissions` en el padre se hereda sin posibilidad de restringirlo. Úsalo con cabeza.
+
+Para proyectos grandes que superan la ventana de contexto, los **agent teams** (experimentales) coordinan varias sesiones como un equipo completo, con lista de tareas compartida y hooks propios.
+
+En el próximo capítulo seguimos explorando funciones avanzadas de Claude Code.
+
+</NarratedSection>

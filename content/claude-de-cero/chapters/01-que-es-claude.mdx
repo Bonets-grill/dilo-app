@@ -1,0 +1,109 @@
+---
+chapterNumber: 1
+slug: que-es-claude
+title: Qué es Claude
+part: fundamentos
+estimatedMinutes: 12
+prerequisites: []
+status: approved
+generatedAt: '2026-04-16T00:00:00.000Z'
+sourcePagesFrom: 14
+sourcePagesTo: 40
+model: hand-written-fixture-kids
+---
+
+<NarratedSection id="intro" heading="Imagina un ayudante que sabe mucho" sourcePage="14">
+
+Imagina que tienes un amigo muy listo. Un amigo que ha leído millones de libros, que sabe de matemáticas, de historia, de programación y de cocina. Un amigo al que puedes preguntarle cualquier cosa y te responde paso a paso, sin prisa y sin enfadarse.
+
+Eso es Claude. No es una persona de verdad, pero se comporta como ese amigo. Es un **asistente de inteligencia artificial**. "Inteligencia artificial" suena difícil, pero significa algo simple: es un programa de ordenador que aprendió a entender lo que le escribes y a responderte con palabras que tienen sentido.
+
+A Claude lo creó una empresa llamada **Anthropic**. Anthropic es como la fábrica donde nació Claude. Los que trabajan allí decidieron, desde el primer día, que su ayudante tenía que ser **seguro** (que no haga daño) y **honesto** (que diga cuándo no sabe algo en vez de inventárselo).
+
+</NarratedSection>
+
+<Quiz
+  id="q-intro"
+  question="¿Qué es Claude?"
+  options='["Un buscador como Google", "Un asistente de inteligencia artificial creado por Anthropic", "Un videojuego", "Una red social"]'
+  correctIndex="1"
+  explanation="Claude es un asistente de IA — un programa con el que puedes hablar. Lo hace la empresa Anthropic, que se enfoca en que sea seguro y honesto."
+/>
+
+<NarratedSection id="como-hablas" heading="Cómo se habla con Claude" sourcePage="17">
+
+Hablar con Claude es como mandar un mensaje de WhatsApp, pero a un ayudante que te responde de forma muy completa. Tú escribes una pregunta o una petición — eso se llama **prompt**. Claude la lee y te contesta.
+
+Mira un ejemplo. Si le escribes *"explícame qué es la fotosíntesis como si tuviera diez años"*, Claude te lo cuenta con palabras sencillas. Si le dices *"revisa este correo que voy a mandar y dime si suena bien"*, Claude lo lee y te sugiere cambios. Si le pasas un archivo, lo estudia y te lo resume.
+
+La clave es simple: **cuanto mejor le expliques qué quieres, mejor te va a ayudar**. No hay que usar palabras raras ni frases formales. Háblale como le hablarías a un profesor paciente: con claridad.
+
+</NarratedSection>
+
+<Quiz
+  id="q-prompt"
+  question="¿Cómo se llama la pregunta o petición que tú le escribes a Claude?"
+  options='["Tarjeta", "Prompt", "Archivo", "Enlace"]'
+  correctIndex="1"
+  explanation="Se llama prompt (se pronuncia 'promt'). Es la palabra técnica para el mensaje que le mandas a un asistente de IA."
+/>
+
+<NarratedSection id="tres-lugares" heading="Los tres sitios donde vive Claude" sourcePage="25">
+
+Claude vive en tres sitios distintos, según lo que quieras hacer. Es como un mismo actor que aparece en tres películas diferentes.
+
+**Sitio 1 — Claude.ai.** Es una página web. Abres el navegador, vas a `claude.ai`, y empiezas a escribirle. Esto lo usa casi todo el mundo. Es como un chat. Vamos a verlo a fondo en la Parte 2 del curso.
+
+**Sitio 2 — Claude Code.** Es un programa que se abre en la terminal. La terminal es esa ventana negra con texto blanco que usan los que programan. Claude Code sirve para trabajar con código y con tus propios archivos. Lo veremos en la Parte 3.
+
+**Sitio 3 — La API de Claude.** Esto es para los que quieren construir sus propias aplicaciones usando Claude por debajo. Pagas por el uso y tú montas tu chat, tu app o tu robot. Parte 4 del curso.
+
+Lo bueno: los tres sitios usan el **mismo cerebro** (los mismos modelos por dentro: Opus, Sonnet y Haiku). Cambia la forma en que te conectas con Claude, no lo que Claude sabe.
+
+</NarratedSection>
+
+<Quiz
+  id="q-sitios"
+  question="Si quieres que Claude te ayude a arreglar el código de tu propio ordenador, ¿qué versión usarías?"
+  options='["Claude.ai (la web)", "Claude Code (la terminal)", "La API", "Ninguna de las anteriores"]'
+  correctIndex="1"
+  explanation="Claude Code vive en la terminal y puede ver y editar tus archivos. Claude.ai en la web no puede tocar tu ordenador."
+/>
+
+<TerminalTask
+  id="t-abrir-claude"
+  instruction="Abre tu navegador y entra en claude.ai. Si nunca has estado ahí, crea una cuenta gratis con tu email. Es el primer paso para usar Claude."
+  command="open https://claude.ai"
+  expectedOutcome="Se abre la página de Claude.ai. Si es la primera vez, te pedirá que te registres."
+  verifyHint="El plan gratis te da acceso suficiente para hacer este curso entero. No necesitas pagar todavía."
+/>
+
+<NarratedSection id="por-que-importa" heading="Por qué Claude es distinto a otros asistentes" sourcePage="32">
+
+Seguro has oído hablar de **ChatGPT** o de **Gemini**. Son asistentes parecidos a Claude: también hablan, también responden. Entonces, ¿qué tiene Claude de diferente?
+
+Dos cosas importantes. **Primera**: Claude está entrenado con un método especial que Anthropic llama *Constitutional AI*. No te preocupes por el nombre raro. Lo que significa en la práctica es esto: cuando Claude no sabe algo, lo dice. Cuando le pides algo peligroso o dañino, se niega con educación. Cuando tiene dudas, pregunta en vez de inventar.
+
+**Segunda**: Claude maneja conversaciones muy largas sin perderse. Puedes mantener un chat de páginas enteras y Claude se acuerda de todo lo que hablaste antes.
+
+Esto no significa que Claude sea "el mejor" para todo el mundo. Significa que juega distinto. Tú vas a usar Claude en este curso, así que vamos a sacarle todo el jugo. Al final sabrás exactamente cuándo pedirle algo a Claude y, lo que es igual de importante, **cuándo no pedírselo**.
+
+</NarratedSection>
+
+<Quiz
+  id="q-diferencia"
+  question="Si Claude no sabe la respuesta a algo, ¿qué es lo que hace gracias a cómo está entrenado?"
+  options='["Se inventa una respuesta que suene bien", "Reconoce que no lo sabe", "Se apaga automáticamente", "Te manda a Google"]'
+  correctIndex="1"
+  explanation="Claude está entrenado para admitir cuándo no sabe algo. Es mejor que diga 'no lo sé' a que se invente una respuesta falsa que parezca correcta."
+/>
+
+<NarratedSection id="cierre" heading="Lo que viene ahora" sourcePage="38">
+
+Acabas de conocer a Claude. Ya sabes tres cosas: **qué es** (un asistente de IA de Anthropic), **cómo hablas con él** (escribiéndole prompts) y **dónde vive** (web, terminal y API).
+
+En el próximo capítulo vamos a dar tus primeros pasos dentro de Claude.ai. Vas a escribir tu primer prompt y ver cómo responde. Sin prisa. Paso a paso.
+
+Antes de pasar al siguiente capítulo, asegúrate de haber hecho la tarea del terminal de arriba: abrir claude.ai y crear tu cuenta. Esa cuenta la vas a usar durante todo el curso.
+
+</NarratedSection>

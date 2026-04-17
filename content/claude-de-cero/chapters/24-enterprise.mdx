@@ -1,0 +1,120 @@
+---
+chapterNumber: 24
+slug: enterprise
+title: 'Enterprise y Equipos: la línea de tiempo del ecosistema Claude'
+part: avanzado
+estimatedMinutes: 10
+prerequisites:
+  - fundamentos
+  - claude-code
+status: approved
+generatedAt: '2025-01-20T10:00:00Z'
+sourcePagesFrom: 653
+sourcePagesTo: 656
+model: claude-opus-4-7
+---
+<NarratedSection id="hook" heading="¿Por qué mirar hacia atrás?" sourcePage="653">
+
+Imagina que abres el álbum de fotos de tu familia. Ves cómo cambió todo en pocos años: bebés que ya caminan, casas nuevas, viajes. Las herramientas de inteligencia artificial tienen su propio álbum, y el de Claude cambió muchísimo en muy poco tiempo.
+
+En este capítulo vamos a recorrer esa línea de tiempo. No para memorizar fechas, sino para entender **cómo evoluciona** un producto que usan empresas y equipos enteros. Saber de dónde viene algo te ayuda a decidir cómo usarlo hoy.
+
+</NarratedSection>
+
+<NarratedSection id="2024-fundamentos" heading="2024: los cimientos" sourcePage="653">
+
+Todo empezó en **junio de 2024** con **Claude Sonnet 3.5**. Ese fue el primer modelo de lo que el libro llama 'la era moderna de Claude'. Un modelo es el cerebro de la IA: la parte que lee y escribe.
+
+En octubre llegó una actualización curiosa: **Computer Use**. Significa que Claude aprendió a usar una computadora como tú: mover el cursor, hacer clic, leer la pantalla. En noviembre apareció **Haiku 3.5**, una versión más rápida y barata. Piensa en Haiku como una bici ligera y en Opus como un camión: cada uno sirve para algo distinto.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-modelos"
+  question="Según el texto, ¿qué diferencia principal hay entre Haiku y los otros modelos?"
+  options='["Haiku solo habla inglés","Haiku es más rápido y barato","Haiku no puede escribir código","Haiku es el más potente de todos"]'
+  correctIndex="1"
+  explanation="El texto describe Haiku 3.5 como un 'modelo rápido y barato'. Es la opción ligera cuando no necesitas toda la potencia de Opus."
+/>
+
+<NarratedSection id="2025-expansion" heading="2025: el año de la expansión" sourcePage="653">
+
+En **febrero de 2025** apareció **Sonnet 3.7 con Extended Thinking**. Esa frase suena técnica, pero la idea es simple: Claude aprendió a 'pensar en voz alta' antes de responder. Como cuando tú razonas un problema de mates en un papel en vez de contestar a lo loco.
+
+En mayo llegó un salto grande: **Opus 4 y Sonnet 4**, más la **Files API** (para subir archivos) y el **MCP Connector** (una forma de conectar Claude con otras herramientas). En septiembre todo se unificó bajo una sola dirección web: **claude.com**. Y en noviembre llegó **Opus 4.5** junto con la llegada de Claude a **Microsoft Foundry**, la plataforma de IA de Microsoft.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-thinking"
+  question="¿Qué significa 'Extended Thinking' en palabras sencillas?"
+  options='["Que Claude responde más rápido","Que Claude puede pensar en voz alta antes de responder","Que Claude tiene más memoria para archivos","Que Claude traduce a más idiomas"]'
+  correctIndex="1"
+  explanation="El texto lo explica así: Claude 'aprendió a pensar en voz alta'. Es razonar el problema paso a paso antes de dar la respuesta final."
+/>
+
+<NarratedSection id="2026-consolidacion" heading="Q1 2026: consolidación y empresa" sourcePage="653">
+
+En **enero de 2026** llegaron dos cosas importantes para empresas: los **HIPAA Enterprise plans** (planes que cumplen con una ley de salud de EE.UU. para datos médicos) y **Anthropic Labs**, una división de laboratorio experimental.
+
+En **febrero** apareció **Opus 4.6 con Adaptive Thinking** (pensamiento que se adapta solo al problema), **Fast Mode**, **Automatic Caching** (guardar respuestas para no repetir trabajo) y algo muy interesante para equipos: **Agent Teams en Claude Code** y **Worktrees**. Un worktree es como tener varias copias de un mismo proyecto abiertas a la vez, cada una en su propia carpeta, para que varios agentes trabajen sin pisarse.
+
+</NarratedSection>
+
+<NarratedSection id="abril-2026" heading="Abril 2026: lo más reciente" sourcePage="654">
+
+Las primeras semanas de abril trajeron cuatro versiones seguidas de Claude Code. La **2.1.89** añadió los **named subagents con @** (puedes llamar a un subagente con arroba, como mencionas a alguien en WhatsApp) y el hook **PermissionDenied**.
+
+La **2.1.91** subió la **persistencia de resultados de herramientas MCP hasta 500K tokens**. Un token es un trocito de texto; 500K tokens son muchísimas páginas de memoria. La **2.1.92** trajo un **wizard interactivo para Bedrock** (un asistente paso a paso para configurar Bedrock, la plataforma de IA de Amazon) y dejó el **Write tool un 60% más rápido**.
+
+Ojo con dos retiros próximos: el **19 de abril** se retira **Claude Haiku 3**, y el **30 de abril** acaba la beta de 1M para Sonnet 4.5 y Sonnet 4. Si tu empresa los usa, toca migrar.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-mcp"
+  question="La versión 2.1.91 permite que los resultados de herramientas MCP duren hasta 500K tokens. ¿Qué significa eso en la práctica?"
+  options='["Que Claude responde 500 veces más rápido","Que Claude puede recordar muchísimo más contexto de lo que hicieron sus herramientas","Que puedes usar Claude 500.000 veces al mes","Que MCP solo funciona con textos cortos"]'
+  correctIndex="1"
+  explanation="Los tokens son la 'memoria de trabajo' de Claude. 500K tokens es una capacidad enorme para recordar lo que devolvieron las herramientas externas sin olvidarlo a mitad de conversación."
+/>
+
+<NarratedSection id="noticias-anthropic" heading="Noticias de la empresa detrás de Claude" sourcePage="654">
+
+Claude lo hace **Anthropic**, la empresa dueña del modelo. En el Q1 de 2026 pasaron cosas grandes: una **Serie G de 30.000 millones de dólares** (ronda de inversión) a una valuación de 380.000 millones, la **adquisición de Vercept** para avanzar en Computer Use, y un **MOU con el gobierno australiano** (un acuerdo de cooperación en seguridad de IA).
+
+También abrieron oficinas en **Sydney** y **Bengaluru**, crearon el **Anthropic Institute** para investigar seguridad, y confirmaron algo importante: **Claude nunca tendrá anuncios**. Ah, y un detalle curioso del 17 de febrero: **Claude ayudó a navegar al rover Perseverance de la NASA en Marte**. Sí, en serio.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-ads"
+  question="¿Qué prometió Anthropic sobre la publicidad en Claude?"
+  options='["Que habrá anuncios solo en la versión gratis","Que Claude nunca tendrá publicidad","Que los anuncios llegarán en 2027","Que solo habrá anuncios de Anthropic"]'
+  correctIndex="1"
+  explanation="El 4 de febrero Anthropic confirmó que 'Claude nunca tendrá anuncios'. Es una decisión de producto para mantener la confianza de los usuarios."
+/>
+
+<NarratedSection id="ritmo-versiones" heading="El ritmo de Claude Code" sourcePage="655">
+
+Aquí viene un dato que impresiona: **Claude Code se actualizó más de 50 veces** entre enero y principios de abril de 2026. Eso son más de tres versiones por semana.
+
+No tienes que memorizar cada número de versión. Lo importante es entender la idea: Claude Code es una herramienta viva. Cambia constantemente. Por eso conviene revisar las **release notes** (notas de lanzamiento) cada cierto tiempo, sobre todo si trabajas en equipo y dependes de funciones concretas como hooks, worktrees o subagentes.
+
+</NarratedSection>
+
+<TerminalTask
+  id="task-release-notes"
+  instruction="Abre Claude Code en tu terminal y consulta las notas de lanzamiento de la versión actual con el comando interactivo que introdujo la 2.1.92. Esto te mostrará qué cambió recientemente en la herramienta que usas."
+  command="claude /release-notes"
+  expectedOutcome="Claude Code muestra una vista interactiva con las notas de la versión instalada y cambios recientes."
+  verifyHint="Si el comando no existe, probablemente tu versión de Claude Code es anterior a la 2.1.92. Actualiza antes de volver a intentarlo."
+/>
+
+<NarratedSection id="cierre" heading="Qué llevarte de este recorrido" sourcePage="656">
+
+Tres ideas para recordar. Primero: el ecosistema Claude se mueve **muy rápido**; lo que hoy es beta mañana es GA (general availability, disponible para todos) y pasado mañana se retira.
+
+Segundo: si trabajas en una empresa, presta atención a fechas de **retiro de modelos**. Si tu equipo depende de Haiku 3 o Sonnet 3.7, tienes que planear la migración con tiempo. Tercero: las funciones de equipo (**Agent Teams**, **worktrees**, **managed-settings.d/**, **Agent Skills**) son las que convierten a Claude en algo útil para grupos, no solo para una persona. En el próximo capítulo veremos a dónde parece ir todo esto.
+
+</NarratedSection>

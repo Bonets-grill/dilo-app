@@ -1,0 +1,334 @@
+---
+chapterNumber: 3
+slug: modelos-de-claude
+title: 'Los Modelos de Claude: Interfaz, Herramientas y Proyectos'
+part: fundamentos
+estimatedMinutes: 28
+prerequisites:
+  - introduccion-a-claude
+  - prompting-basico
+status: approved
+generatedAt: '2025-01-20T00:00:00Z'
+sourcePagesFrom: 66
+sourcePagesTo: 95
+model: claude-opus-4-7
+---
+<NarratedSection id="gancho-inicial" heading="Una casa con muchas habitaciones" sourcePage="71">
+
+Imagina que Claude vive en una casa grande en internet. Esa casa se llama **claude.ai**. Cuando entras, ves algo muy sencillo: un cuadro para escribir y una lista de conversaciones antiguas a la izquierda.
+
+Pero detrás de esa simplicidad hay muchas herramientas escondidas. Motores distintos para elegir, un panel donde Claude te construye cosas, carpetas inteligentes para organizar tu trabajo, e incluso una versión que vive en tu teléfono o en Chrome.
+
+En este capítulo vamos a abrir puertas una por una. Al terminar vas a saber dónde vive cada botón y para qué sirve.
+
+</NarratedSection>
+
+<NarratedSection id="vista-general" heading="Tu primera impresión: un escritorio minimalista" sourcePage="71">
+
+Piensa en claude.ai como un escritorio de trabajo. A la izquierda, un **archivador** con tus conversaciones. En el centro, una hoja en blanco para escribir.
+
+Esta interfaz es **minimalista**. Minimalista quiere decir que solo muestra lo necesario, sin distracciones. Fondo blanco (o negro si prefieres), detalles en color morado.
+
+Cada mensaje lleva una etiqueta: **You** (tú) o **Claude**. Así siempre sabes quién dijo qué. Si prefieres fondo oscuro, lo cambias en Settings > Appearance > Color mode. Incluso hay una fuente llamada Dyslexic Friendly, más fácil de leer para personas con dislexia.
+
+</NarratedSection>
+
+<NarratedSection id="barra-lateral" heading="La barra lateral: tu archivador" sourcePage="71">
+
+La barra lateral es el índice de un cuaderno. Aparece a la izquierda y tiene cuatro partes:
+
+1. **Nuevo chat**: abre una conversación limpia.
+2. **Buscador**: busca texto dentro de tus chats pasados.
+3. **Lista de chats**: conversaciones recientes, ordenadas por fecha.
+4. **Proyectos**: carpetas inteligentes (las veremos más adelante).
+
+En la esquina inferior izquierda aparecen tus iniciales. Haz clic ahí para abrir **Settings** (ajustes), cambiar el idioma o cerrar sesión. Si la barra te estorba, un botón arriba la esconde y la trae de vuelta.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-barra-lateral"
+  question="¿Para qué sirve la barra lateral en claude.ai?"
+  options='["Para escribir mensajes a Claude.","Para organizar y acceder a tus conversaciones, búsqueda y proyectos.","Para cambiar el modelo de IA activo.","Para ejecutar código Python."]'
+  correctIndex="1"
+  explanation="La barra lateral funciona como un archivador: tiene el botón de nuevo chat, el buscador, la lista de chats recientes y los proyectos."
+/>
+
+<NarratedSection id="area-chat" heading="El área de chat: tu ventana de mensajería" sourcePage="72">
+
+El centro de la pantalla es como una ventana de WhatsApp, pero con un asistente de IA del otro lado. Escribes abajo, lees arriba.
+
+Debajo del campo de texto ves el nombre del **modelo** activo (por ejemplo, 'Sonnet 4.6'). Un modelo es el motor que procesa tus mensajes. Más adelante te explico las diferencias.
+
+Para enviar un mensaje: presiona Enter o haz clic en el botón de enviar. En la esquina inferior izquierda del campo de texto hay un botón **+** para adjuntar archivos. Y si escribes una **barra `/`**, aparece un menú con comandos rápidos.
+
+</NarratedSection>
+
+<NarratedSection id="adjuntar-archivos" heading="Adjuntar archivos: como un email con adjuntos" sourcePage="72">
+
+Cuando haces clic en **+**, puedes subir archivos. Claude los lee y responde preguntas sobre ellos.
+
+**Formatos que acepta:**
+- Documentos: PDF, DOCX, CSV, TXT, HTML, JSON, XLSX.
+- Imágenes: JPEG, PNG, GIF, WebP.
+
+**Límites a recordar:**
+- Máximo **30 MB por archivo**.
+- Hasta **20 archivos por conversación**.
+- Imágenes de hasta 8000 x 8000 píxeles.
+- PDFs de menos de 100 páginas: Claude analiza texto **e** imágenes. Más de 100 páginas: solo texto.
+
+También puedes **arrastrar y soltar** archivos al chat, o **pegar imágenes** con Ctrl+V (Cmd+V en Mac). Rápido y sin vueltas.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-pdf-limites"
+  question="Si subes un PDF de 150 páginas, ¿qué hará Claude con él?"
+  options='["Analizará tanto el texto como las imágenes del PDF.","Analizará solo el texto; ignorará las imágenes.","Lo rechazará porque supera el límite de páginas.","Lo convertirá automáticamente a Word."]'
+  correctIndex="1"
+  explanation="Según el texto, en PDFs de menos de 100 páginas Claude analiza texto e imágenes. Con más de 100 páginas solo procesa texto."
+/>
+
+<NarratedSection id="selector-modelo" heading="El selector de modelo: elige tu motor" sourcePage="73">
+
+Los **modelos** son como motores de un auto. Todos te llevan al destino, pero unos son más potentes y otros más rápidos.
+
+En marzo de 2026 los modelos disponibles son:
+- **Opus 4.6**: el más potente. Para tareas complejas. Soporta hasta 1 millón de tokens de contexto y 128K tokens de respuesta.
+- **Sonnet 4.6**: el equilibrado. Buena calidad y velocidad razonable. Es el modelo por defecto.
+- **Haiku 4.5**: el más rápido. Ideal para preguntas sencillas.
+
+Un **token** es aproximadamente una palabra corta o un trozo de palabra. Mientras más tokens de contexto, más información puede 'leer' Claude de una sola vez.
+
+Ojo: si estás en el **plan gratuito**, solo puedes usar Sonnet 4.6 y no puedes cambiar de modelo. Para el selector necesitas un plan de pago (Pro, Max, Team o Enterprise).
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-modelo-elegir"
+  question="Necesitas analizar un documento muy largo y complejo. ¿Qué modelo te conviene más, según el texto?"
+  options='["Haiku 4.5, porque es el más rápido.","Sonnet 4.6, porque es el único disponible.","Opus 4.6, porque es el más potente y tiene el contexto más grande.","Da lo mismo, todos funcionan igual."]'
+  correctIndex="2"
+  explanation="Opus 4.6 es el modelo más potente, pensado para tareas complejas, con contexto de hasta 1 millón de tokens. Es el recomendado cuando el trabajo es pesado."
+/>
+
+<NarratedSection id="artefactos" heading="Artefactos: el panel donde Claude crea cosas" sourcePage="73">
+
+Los **artefactos** son una de las funciones más útiles de Claude.ai. Imagina que le pides una calculadora, una página web o un diagrama. En vez de responder con un muro de texto, Claude abre un panel al lado del chat y **construye la cosa ahí**.
+
+Claude genera artefactos automáticamente cuando el contenido lo amerita. Por ejemplo, si le pides código de más de 15 líneas, lo pone en ese panel separado.
+
+**Tipos de artefactos:**
+- Documentos en Markdown o texto plano.
+- Fragmentos de código.
+- Páginas web HTML completas.
+- Imágenes SVG y diagramas con Mermaid.
+- **Componentes React interactivos** (mini-apps que funcionan en tu navegador).
+
+Con un artefacto puedes copiarlo, descargarlo, ver el código fuente, y navegar entre **versiones** si pides cambios. Si un artefacto interactivo falla, aparece un botón **'Try fixing with Claude'** que le envía los detalles del error para que lo arregle.
+
+</NarratedSection>
+
+<NarratedSection id="artefactos-compartir" heading="Publicar y compartir artefactos" sourcePage="74">
+
+Puedes **publicar** un artefacto para que cualquiera lo vea con un enlace. Haces clic en **Publish** dentro del panel del artefacto y se genera un enlace público.
+
+Otros usuarios de Claude pueden hacer **Remix**: crear su propia copia para modificarla. Es parecido a hacer un 'fork' en GitHub — si no sabes qué es, piensa en fotocopiar una receta para cambiarle los ingredientes sin alterar la original.
+
+Hay un catálogo comunitario en claude.ai/catalog/artifacts donde puedes explorar artefactos que otros han publicado. En los planes de pago, los artefactos se guardan de forma persistente (hasta 20 MB cada uno) y puedes decidir si son privados o compartidos con tu equipo.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-artefactos"
+  question="¿Cuándo genera Claude un artefacto en vez de responder solo con texto en el chat?"
+  options='["Siempre que haces una pregunta.","Solo cuando se lo pides explícitamente con la palabra &apos;artefacto&apos;.","Cuando el contenido lo amerita, por ejemplo con código largo (más de ~15 líneas), páginas web o componentes interactivos.","Nunca, los artefactos se crean a mano desde Settings."]'
+  correctIndex="2"
+  explanation="Claude decide automáticamente crear un artefacto cuando el contenido lo justifica: código largo, páginas HTML, diagramas o componentes React interactivos."
+/>
+
+<NarratedSection id="proyectos-intro" heading="Proyectos: carpetas inteligentes" sourcePage="88">
+
+Ahora imagina un escritorio con papeles sueltos: encuentras lo que buscas después de media hora. Un **proyecto** en Claude.ai es una carpeta inteligente que ordena ese caos. Tiene tres cosas que una carpeta normal no tiene:
+
+1. **Instrucciones personalizadas**: le dices a Claude cómo comportarse dentro del proyecto.
+2. **Base de conocimiento**: subes documentos que Claude usa como referencia en cada chat.
+3. **Historial de conversaciones**: todos los chats del proyecto quedan agrupados.
+
+Es como tener un asistente distinto para cada área de tu vida: uno para el trabajo, otro para estudiar, otro para tu blog. Cada uno ya sabe qué necesitas.
+
+Desde febrero de 2026, los proyectos están disponibles para **todos**, incluido el plan gratuito. La única diferencia: el plan Free permite hasta **5 proyectos**, los planes de pago son ilimitados.
+
+</NarratedSection>
+
+<NarratedSection id="crear-proyecto" heading="Cómo crear tu primer proyecto" sourcePage="88">
+
+Crear un proyecto se siente como crear una carpeta en tu computadora:
+
+1. Ve a **claude.ai/projects**.
+2. Haz clic en **+ New Project**.
+3. Escribe un nombre. Ejemplo: *Blog de Recetas*.
+4. Agrega una descripción breve.
+5. Si tienes plan Team o Enterprise, elige visibilidad pública o privada.
+
+**Dato que sorprende a muchos:** Claude **no puede ver** el nombre ni la descripción del proyecto. Son solo para ti, para que te organices. Si quieres que Claude sepa de qué trata, tienes que ponerlo en las **instrucciones**.
+
+</NarratedSection>
+
+<NarratedSection id="instrucciones-proyecto" heading="Instrucciones del proyecto: la receta secreta" sourcePage="89">
+
+Las instrucciones del proyecto son como una receta que le das a un chef antes de cocinar. Le dices qué quieres: tono, estilo, qué hacer, qué evitar.
+
+Claude sigue esas instrucciones en **todas las conversaciones** del proyecto. No tienes que repetirte cada vez que abres un chat nuevo.
+
+**Claves para escribir buenas instrucciones:**
+- **Sé específico.** En vez de 'sé útil', escribe: *'Mantén un tono profesional pero conversacional, como un colega explicando algo durante el almuerzo.'*
+- **Di qué NO hacer.** Ejemplo: *'No abras tus respuestas con Great question!'*
+- **Da contexto sobre ti.** Ejemplo: *'Estás asistiendo a un fundador técnico pero no diseñador.'*
+- **Itera.** Tus primeras instrucciones rara vez serán perfectas. Ajusta según veas las respuestas.
+
+Para configurarlas: entra al proyecto, haz clic en **Set project instructions**, escribe, y guarda.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-nombre-proyecto"
+  question="Tienes un proyecto llamado 'Blog de Recetas' con una descripción clara, pero no pones nada en las instrucciones. ¿Sabrá Claude que estás trabajando en un blog de cocina?"
+  options='["Sí, porque lee el nombre y la descripción automáticamente.","Sí, pero solo en el plan de pago.","No, porque Claude no puede ver ni el nombre ni la descripción del proyecto.","Solo si subes un PDF con el título del proyecto."]'
+  correctIndex="2"
+  explanation="El nombre y la descripción del proyecto son solo para tu organización. Claude no los lee. Si quieres que sepa el contexto, tienes que ponerlo en las instrucciones."
+/>
+
+<NarratedSection id="base-conocimiento" heading="Base de conocimiento: la biblioteca del proyecto" sourcePage="90">
+
+La **base de conocimiento** (en inglés, *knowledge base*) es donde vive la información de referencia de tu proyecto. Subes documentos que Claude usa en todos los chats.
+
+Ejemplo claro: si preguntas sobre las políticas de tu empresa sin darle documentos, Claude va a inventar. Pero si subes el manual de políticas a la base de conocimiento, responde con información real.
+
+Para subir archivos: entra al proyecto y busca el botón **+** a la derecha. Formatos aceptados: PDF, DOCX, CSV, TXT, HTML, ODT, RTF, EPUB, JSON, XLSX, imágenes y audio (MP3, WAV). Hasta 30 MB por archivo.
+
+**Consejos prácticos:**
+- Usa nombres descriptivos: `informe-ventas-q1-2026.pdf` es mejor que `documento-final-v3.pdf`.
+- PDFs de menos de 100 páginas: análisis completo (texto + imágenes).
+- PDFs de más de 1,000 páginas: solo texto.
+- Para imágenes, usa al menos 1000x1000 píxeles.
+
+</NarratedSection>
+
+<NarratedSection id="rag-explicacion" heading="RAG: el bibliotecario rápido de Claude" sourcePage="91">
+
+Aquí va un concepto técnico, pero es fácil de entender con una imagen.
+
+Claude tiene una **ventana de contexto**. Piensa en ella como su mesa de trabajo: solo puede tener cierta cantidad de papeles encima al mismo tiempo.
+- Plan Pro y Max: unos **200,000 tokens** (≈ 500 páginas).
+- Plan Enterprise: hasta 500,000 tokens con ciertos modelos.
+
+¿Qué pasa si subes más documentos de los que caben? Ahí entra **RAG**, que significa *Retrieval Augmented Generation*. Suena complejo, pero es simple: en vez de tener todos los libros abiertos sobre la mesa, Claude tiene un **bibliotecario rápido**. Cuando le preguntas algo, el bibliotecario corre a buscar solo los libros relevantes y se los trae.
+
+RAG se activa **automáticamente** cuando el contenido se acerca al límite, y expande la capacidad hasta **10 veces** (500 páginas → hasta 5,000). Verás un indicador visual cuando esté activo. Disponible en planes de pago (Pro, Max, Team, Enterprise). No requiere configuración.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-rag"
+  question="¿Qué hace RAG cuando un proyecto tiene demasiados documentos para la ventana de contexto?"
+  options='["Borra los documentos más antiguos automáticamente.","Rechaza los archivos nuevos hasta que liberes espacio.","Busca solo los fragmentos relevantes para tu pregunta, como un bibliotecario rápido.","Cambia el modelo a Haiku para ahorrar memoria."]'
+  correctIndex="2"
+  explanation="RAG (Retrieval Augmented Generation) recupera solo la información relevante para cada pregunta, permitiendo trabajar con muchos más documentos de los que cabrían en la ventana de contexto de una sola vez."
+/>
+
+<NarratedSection id="memoria-chat-separados" heading="Lo que Claude recuerda (y lo que no)" sourcePage="93">
+
+Este punto confunde a mucha gente, así que vale la pena dejarlo claro.
+
+**Dentro de un proyecto, Claude no comparte información entre chats.** Si en el Chat A le dices que tu empresa se llama 'TechBol', en el Chat B no lo va a saber. A menos que esa información esté en la **base de conocimiento** del proyecto.
+
+Piensa en cada chat como una reunión separada. Claude llega a cada reunión con los documentos del proyecto y las instrucciones, pero sin notas de reuniones anteriores.
+
+**¿La solución?** Si hay información que necesitas en todos los chats, ponla en la base de conocimiento.
+
+Aparte está la **memoria** general de Claude (Settings > Capabilities > Memory): un cuaderno de notas donde Claude anota cosas sobre ti (tu rol, tus proyectos, tu estilo). Se actualiza cada 24 horas. Puedes **pausar** (mantiene lo que aprendió, deja de aprender más) o **resetear** (borra todo, **irreversible**). Pausar es más seguro.
+
+</NarratedSection>
+
+<NarratedSection id="herramientas-especiales" heading="Herramientas extra: estilos, Extended Thinking y Research" sourcePage="75">
+
+En **Search and tools** (esquina inferior izquierda del chat) encuentras tres herramientas muy útiles:
+
+**Estilos de respuesta.** Cambian cómo se comunica Claude:
+- *Normal*: balanceado.
+- *Concise*: corto y directo.
+- *Formal*: profesional.
+- *Explanatory*: educativo, con explicaciones detalladas.
+
+También puedes crear estilos personalizados subiendo muestras de tu escritura.
+
+**Extended Thinking** (pensamiento extendido). Hace que Claude piense 'en voz alta': razona paso a paso antes de responder. Ideal para matemáticas, lógica o código complejo. Tarda más pero es más preciso. Se activa con un toggle en Search and tools.
+
+**Research** (investigación). Convierte a Claude en un detective: busca en internet de forma autónoma, consulta múltiples fuentes y te da una respuesta **con citas verificables**. Solo en planes de pago. Consume límites más rápido que el chat normal, úsala cuando de verdad necesites info actualizada.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-extended-research"
+  question="¿Cuál es la diferencia principal entre Extended Thinking y Research?"
+  options='["Extended Thinking usa internet; Research no.","Extended Thinking hace razonar a Claude paso a paso con lo que ya sabe; Research sale a buscar información actualizada en internet.","Son lo mismo con nombres distintos.","Extended Thinking es solo para el plan gratuito; Research es de pago."]'
+  correctIndex="1"
+  explanation="Extended Thinking hace que Claude piense en voz alta usando su conocimiento interno. Research, en cambio, lo convierte en investigador: busca en internet y entrega respuestas con citas verificables."
+/>
+
+<NarratedSection id="plataformas" heading="Claude está en todas partes" sourcePage="81">
+
+Claude no vive solo en el navegador. Está en varias plataformas, todas sincronizadas con la misma cuenta:
+
+- **Web (claude.ai)**: la versión completa con todas las funciones principales.
+- **Desktop Mac**: todo lo de la web + **Quick Entry** (doble toque en Option para ver Claude flotando sobre cualquier app), captura de pantalla, dictación, Cowork y extensiones.
+- **Desktop Windows**: similar a Mac pero sin Quick Entry.
+- **iOS**: widgets, integración con Siri, Shortcuts, Reminders, Apple Health (beta).
+- **Android**: similar a iOS pero sin Reminders ni Apple Health completo.
+- **Extensión de Chrome** (beta, solo planes de pago): Claude en un panel lateral. Puede leer páginas, trabajar con múltiples pestañas, grabar workflows repetibles y programar tareas.
+
+El **modo de voz** (hands-free o push-to-talk) también existe en web y móvil, pero de momento solo funciona en inglés y está en beta.
+
+</NarratedSection>
+
+<NarratedSection id="chat-incognito" heading="Chat incógnito: conversaciones privadas" sourcePage="77">
+
+Si no quieres que una conversación quede guardada, usa el **modo incógnito**. Haz clic en el **icono de fantasma** al crear un chat nuevo.
+
+Esa conversación:
+- No aparece en tu historial.
+- No se indexa para la búsqueda.
+- No se incluye en la memoria de Claude.
+
+Disponible en todos los planes, incluido el gratuito.
+
+**Ojo importante:** los chats incógnito **no son completamente privados**. Anthropic los retiene al menos **30 días** por seguridad. No te aparecen a ti, pero existen. Si necesitas confidencialidad absoluta, no es la herramienta adecuada.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-incognito"
+  question="Sobre el chat incógnito, ¿cuál de estas afirmaciones es correcta según el texto?"
+  options='["Se borra al instante, no queda rastro en ningún lado.","No aparece en tu historial ni se usa para memoria, pero Anthropic lo retiene al menos 30 días por seguridad.","Solo está disponible en plan Enterprise.","Desactiva toda la cuenta durante esa sesión."]'
+  correctIndex="1"
+  explanation="El chat incógnito no se guarda en tu historial, no se indexa y no alimenta la memoria, pero Anthropic lo retiene al menos 30 días por motivos de seguridad."
+/>
+
+<TerminalTask
+  id="task-crear-proyecto"
+  instruction="Practica creando tu primer proyecto en Claude.ai. Abre claude.ai en tu navegador e inicia sesión. En la barra lateral, haz clic en **Projects**, luego en **+ New Project**. Ponle como nombre 'Mi Primer Proyecto' y como descripción 'Practicando la lección 3'. Dentro del proyecto, haz clic en **Set project instructions** y escribe una instrucción específica, por ejemplo: *'Responde siempre en español, con tono cercano, y usa ejemplos cotidianos antes de explicar conceptos técnicos.'* Guarda las instrucciones y abre un chat nuevo dentro del proyecto. Escríbele: 'Explícame qué es una API'."
+  expectedOutcome="Claude responde en español, con tono cercano y comienza con un ejemplo cotidiano antes de entrar en la explicación técnica, siguiendo las instrucciones del proyecto que configuraste."
+  verifyHint="Si Claude responde en inglés o sin ejemplo cotidiano, revisa que hayas guardado las instrucciones con 'Save instructions' y abre un chat nuevo (los cambios no aplican a chats ya abiertos)."
+/>
+
+<NarratedSection id="cierre" heading="Recapitulando" sourcePage="86">
+
+Ya conoces la casa de Claude. Sabes que claude.ai tiene una interfaz limpia con barra lateral y chat, que puedes elegir entre **Opus** (potente), **Sonnet** (equilibrado) y **Haiku** (rápido), y que los **artefactos** son paneles donde Claude construye código, diagramas y mini-apps.
+
+También aprendiste que los **proyectos** son carpetas inteligentes con instrucciones y base de conocimiento, que **RAG** es un bibliotecario que permite trabajar con miles de páginas, y que cada chat dentro de un proyecto es una reunión separada — si quieres info compartida, ponla en la base de conocimiento.
+
+Y por último: Claude vive en web, escritorio, móvil y Chrome, todo sincronizado. En el siguiente capítulo vamos a meternos de lleno en cómo **hablarle bien** a Claude para obtener mejores respuestas.
+
+</NarratedSection>

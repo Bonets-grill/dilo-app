@@ -1,0 +1,368 @@
+---
+chapterNumber: 4
+slug: prompting-basico
+title: 'Prompting Básico: Proyectos, Artifacts, Memoria y Archivos'
+part: fundamentos
+estimatedMinutes: 41
+prerequisites:
+  - introduccion-a-claude
+  - primeros-pasos
+status: approved
+generatedAt: '2025-01-21T10:00:00Z'
+sourcePagesFrom: 96
+sourcePagesTo: 140
+model: claude-opus-4-7
+---
+<NarratedSection id="gancho-inicial" heading="Imagina que tu asistente tiene memoria" sourcePage="96">
+
+Imagina que cada vez que hablas con un amigo, él olvida todo lo que le contaste antes. Frustrante, ¿verdad?
+
+En este capítulo vas a ver cuatro herramientas que convierten a Claude en un asistente que te conoce: **Proyectos** (carpetas con contexto), **Artifacts** (ventanas donde crea cosas reales), **Memoria** (notas que toma sobre ti) y **Archivos** (documentos que puede leer).
+
+Piensa en Claude como un colega al que le entregas papeles, le cuentas de tu trabajo, y poco a poco aprende cómo ayudarte mejor. Vamos paso a paso.
+
+</NarratedSection>
+
+<NarratedSection id="proyectos-que-son" heading="Proyectos: carpetas inteligentes para tus chats" sourcePage="97">
+
+Un **Proyecto** en Claude.ai es un espacio de trabajo. Combina tres cosas en un solo lugar: instrucciones personalizadas, una base de conocimiento (los archivos que subes) y todas las conversaciones relacionadas.
+
+Por ejemplo: si tienes un blog de cocina, puedes crear un proyecto llamado 'Mi Blog de Cocina'. Subes tu guía de estilo y tu perfil de audiencia. Escribes instrucciones como 'Escribe en tono casual, párrafos de máximo 3 líneas, incluye emojis'. Cada vez que abres un chat dentro del proyecto, Claude ya sabe tu estilo. No tienes que repetir el contexto.
+
+Los proyectos están disponibles para todos los usuarios. El plan gratuito permite hasta 5 proyectos.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-proyecto-nombre"
+  question="Pones a tu proyecto el nombre 'Asistente Legal'. ¿Claude 've' ese nombre y lo usa como contexto?"
+  options='["Sí, Claude lee el nombre del proyecto automáticamente","No, Claude ignora el nombre. Si quieres que lo sepa, escríbelo en las instrucciones","Solo lo ve si activas una opción especial"]'
+  correctIndex="1"
+  explanation="El nombre y la descripción del proyecto NO los ve Claude. Si quieres que sepa el propósito, escríbelo dentro de las instrucciones del proyecto."
+/>
+
+<NarratedSection id="errores-comunes-proyectos" heading="Errores comunes (y sus soluciones)" sourcePage="97">
+
+Cuando empieces a usar proyectos, te vas a topar con algunas dudas típicas. Aquí las más frecuentes:
+
+• **'Claude no recuerda lo que le dije en otro chat del mismo proyecto'**. Es normal. El contexto no se comparte entre chats. Si la información es importante, agrégala a la base de conocimiento.
+
+• **'No puedo subir un XLSX'**. Necesitas activar *code execution and file creation* en Settings. Solución rápida: convierte el Excel a CSV.
+
+• **'Las imágenes dentro de mi Word no se analizan'**. En documentos que no son PDF, Claude solo extrae texto. Sube las imágenes como archivos separados (JPEG, PNG).
+
+• **'No me aparece la opción de compartir'**. Compartir proyectos solo existe en planes Team y Enterprise.
+
+</NarratedSection>
+
+<NarratedSection id="artifacts-que-son" heading="Artifacts: ventanas donde Claude construye cosas" sourcePage="102">
+
+Cuando le pides algo a Claude, normalmente te responde con texto en el chat. Pero a veces la respuesta es algo más grande: un código de 50 líneas, una página web completa, un diagrama detallado.
+
+Para eso están los **Artifacts**. Un artifact es una ventana especial que aparece al lado del chat. Como un mini-editor dentro de Claude.
+
+La analogía: el chat es una conversación por teléfono. Los artifacts son como si, durante la llamada, la otra persona te enviara un documento por correo. Puedes verlo, editarlo y guardarlo sin colgar el teléfono.
+
+</NarratedSection>
+
+<NarratedSection id="cuando-aparece-artifact" heading="¿Cuándo aparece un Artifact?" sourcePage="102">
+
+Claude no crea un artifact para cualquier cosa. Solo aparece cuando se cumplen tres condiciones:
+
+1. Es **contenido grande** (más de 15 líneas de código o texto sustancial).
+2. Es **autocontenido** (funciona por sí solo, sin el chat alrededor).
+3. Es **reutilizable** (algo que querrás copiar, descargar o editar después).
+
+Si pides una línea corta de código, va directo al chat. Si pides una función completa, aparece en un artifact. Los artifacts están disponibles en todos los planes: Free, Pro, Max, Team y Enterprise.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-artifact-cuando"
+  question="Le pides a Claude: 'Dame una línea de Python para imprimir Hola Mundo'. ¿Esperarías que aparezca un Artifact?"
+  options='["Sí, cualquier código genera un Artifact","No, es muy corto. Solo aparece con contenido grande (~15+ líneas) y reutilizable","Solo si estás en plan Pro"]'
+  correctIndex="1"
+  explanation="Los Artifacts aparecen con contenido grande, autocontenido y reutilizable. Una línea corta va directo al chat."
+/>
+
+<NarratedSection id="siete-tipos-artifacts" heading="Los 7 tipos de Artifacts" sourcePage="103">
+
+Claude puede crear siete tipos de contenido en Artifacts. Los menciono rápido para que los tengas en tu caja de herramientas mental:
+
+1. **Documentos** (Markdown o texto plano): tutoriales, artículos, notas.
+2. **Fragmentos de código**: Python, JavaScript, Java, Go, Rust, lo que pidas.
+3. **Páginas HTML**: páginas web completas con HTML, CSS y JavaScript en un solo archivo.
+4. **Imágenes SVG**: gráficos hechos con matemáticas que no se pixelan al ampliar.
+5. **Diagramas Mermaid**: diagramas de flujo, secuencia, Gantt, pie, etc., escritos como texto.
+6. **Componentes React**: aplicaciones interactivas completas (dashboards, formularios, juegos).
+7. **Archivos descargables**: .docx, .pptx, .xlsx y .pdf listos para guardar.
+
+Cada tipo tiene dos vistas: **Preview** (el resultado visual) y **Code** (el código fuente). Puedes alternar entre ambas con un botón.
+
+</NarratedSection>
+
+<NarratedSection id="restricciones-html-react" heading="Reglas importantes para HTML y React" sourcePage="106">
+
+Los artifacts HTML y React tienen restricciones por seguridad. Si no las conoces, te vas a frustrar.
+
+**En HTML**: si necesitas librerías externas (como Chart.js o jQuery), solo puedes cargarlas desde `https://cdnjs.cloudflare.com`. Ningún otro dominio funciona. Y siempre usa versiones específicas (como `3.7.1`), nunca `latest`.
+
+**En React**: solo puedes usar 8 bibliotecas pre-instaladas: React, Tailwind CSS, Recharts (gráficos), shadcn/ui (componentes), Lucide (iconos), Lodash, D3 y Three.js. No puedes instalar otras.
+
+Además, los Artifacts son **solo frontend**: ejecutan código en el navegador. No hay servidor, no hay base de datos, no hay `localStorage`. Para guardar estado usa `useState` de React o el almacenamiento persistente (solo Pro+).
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-cdn-artifacts"
+  question="En un artifact HTML, ¿desde qué dominio puedes cargar librerías externas?"
+  options='["Desde cualquier CDN público","Solo desde cdnjs.cloudflare.com, y siempre con versión específica (no &apos;latest&apos;)","Solo desde npmjs.com"]'
+  correctIndex="1"
+  explanation="Por seguridad, los artifacts HTML solo permiten cargar desde cdnjs.cloudflare.com, y siempre con versión específica (como 3.7.1) en lugar de 'latest'."
+/>
+
+<NarratedSection id="editar-artifacts" heading="Iterar: el verdadero poder de los Artifacts" sourcePage="107">
+
+Crear un artifact es solo el primer paso. Lo bueno viene al **iterar**: pedir cambios hasta que quede como quieres.
+
+Escribe en el chat lo que quieras cambiar. Ejemplos: 'Cambia los colores a azul oscuro', 'Agrega un botón de contacto en el footer', 'Haz que la tabla sea responsive'. Cada cambio crea una nueva versión. Si no te gusta, vuelves a la anterior con las flechas.
+
+Existe también la **edición selectiva**: resaltas una parte específica del artifact (como un solo botón) y le dices a Claude qué cambiar. Solo toca esa parte, deja el resto intacto. Es más rápido que pedir una reescritura completa.
+
+Y si algo falla (sobre todo en código), aparece el botón **Try fixing with Claude**. Al hacer clic, Claude recibe el error y te propone una solución.
+
+</NarratedSection>
+
+<NarratedSection id="publicar-compartir" heading="Publicar, compartir y hacer Remix" sourcePage="108">
+
+Un artifact puede quedar solo para ti, o abrirse al mundo.
+
+**Publicar** le da un enlace público. Cualquiera con el enlace puede verlo, sin necesitar cuenta de Claude. Disponible en Free, Pro y Max. Haz clic en *Publish* y copia el enlace.
+
+**Compartir** (solo Team y Enterprise) es parecido, pero solo miembros autenticados de tu organización acceden. Útil para trabajo interno.
+
+**Remix**: si ves un artifact publicado que te gusta, haz clic en *Customize*. Se abre una nueva conversación con ese artifact como punto de partida. Haces tus cambios y creas tu propia versión. El original no se modifica. Es como hacer fork de un repositorio en GitHub.
+
+⚠️ Cuidado: **despublicar es permanente**. No puedes volver a publicar el mismo artifact. Y al publicar, los adjuntos de la conversación original también quedan accesibles. No publiques artifacts creados con información confidencial.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-despublicar"
+  question="Despublicas por error un artifact importante. ¿Puedes volver a publicarlo con el mismo enlace?"
+  options='["Sí, basta con hacer clic en Publish otra vez","No, despublicar es permanente. Tendrás que crear un artifact nuevo","Sí, pero solo dentro de las primeras 24 horas"]'
+  correctIndex="1"
+  explanation="Despublicar es permanente: no puedes volver a publicar el mismo artifact y se borran sus datos de almacenamiento. Piénsalo bien antes de despublicar."
+/>
+
+<NarratedSection id="memoria-que-es" heading="La memoria de Claude: un cuaderno inteligente" sourcePage="118">
+
+La **memoria** de Claude es como un cuaderno de notas. Cada vez que hablas con él, toma apuntes sobre lo importante. Luego usa esos apuntes para ayudarte mejor en futuras conversaciones.
+
+Pero hay un detalle clave: Claude no revisa sus notas al azar. Empieza cada chat 'en blanco' y solo consulta su memoria cuando la necesita. Es como un asistente que tiene un archivo con tus datos, pero solo lo abre cuando es relevante. Y te muestra cuándo lo hace.
+
+Esto es diferente a ChatGPT, que carga toda tu información al inicio de cada chat. Claude es más selectivo.
+
+La memoria se organiza en un **resumen sintetizado** con tres categorías: **Rol y trabajo**, **Proyectos actuales** y **Contenido personal** (tus preferencias). Este resumen se actualiza cada 24 horas. Si le dices algo hoy, puede tardar hasta mañana en 'recordarlo'.
+
+</NarratedSection>
+
+<NarratedSection id="perfil-preferencias" heading="Preferencias de perfil: tu tarjeta de presentación" sourcePage="120">
+
+Las **preferencias de perfil** le dicen a Claude quién eres, qué haces y cómo quieres que te trate. Se aplican a todas tus conversaciones automáticamente.
+
+Para configurarlas: clic en tu icono de iniciales (esquina inferior izquierda) → *Settings* → sección *Profile*.
+
+Un buen perfil no es largo. Unos pocos párrafos específicos funcionan mejor que páginas vagas. Incluye:
+
+• Tu **nivel de experiencia** (principiante o experto).
+• Tu **uso principal** (programar, escribir, investigar).
+• **Preferencias de formato** (listas, párrafos cortos, código con tipos).
+• **Lo que NO quieres** (nada de '¡Excelente pregunta!', sin introducciones largas).
+• Tu **contexto profesional** (ocupación, tecnologías, industria).
+
+Sé específico. 'Respóndeme bien' no sirve. 'Responde en español, usa bullet points, incluye tipos TypeScript en todo código' sí sirve.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-perfil-mejor"
+  question="¿Cuál de estas instrucciones de perfil es más efectiva?"
+  options='["&apos;Respóndeme de forma clara y útil&apos;","&apos;Usa 2 espacios de indentación, bullet points, y no empieces con Excelente pregunta&apos;","&apos;Sé inteligente&apos;"]'
+  correctIndex="1"
+  explanation="Las instrucciones específicas y concretas funcionan mucho mejor que las vagas. Dile exactamente qué quieres y qué no quieres."
+/>
+
+<NarratedSection id="jerarquia-personalizacion" heading="Cómo se apilan las capas de personalización" sourcePage="121">
+
+Claude aplica la personalización en un orden específico. Entender ese orden te ayuda a saber qué tiene prioridad cuando hay reglas que parecen chocar:
+
+1. **Preferencias de perfil** (primero): reglas universales que aplican a todo.
+2. **Instrucciones de proyecto**: contexto específico de la tarea, solo dentro del proyecto.
+3. **Estilos de respuesta**: ajustan el formato de comunicación.
+4. **Memoria** (último): contexto aprendido de chats previos.
+
+Trabajan juntas. Si tu perfil dice 'responde en español' y las instrucciones del proyecto dicen 'usa terminología médica', Claude hace ambas. Si hay conflicto directo, las capas superiores (perfil) ganan sobre las inferiores (memoria).
+
+</NarratedSection>
+
+<NarratedSection id="estilos-respuesta" heading="Estilos de respuesta: cambia cómo habla Claude" sourcePage="122">
+
+Los **estilos de respuesta** controlan *cómo* Claude se comunica, no *qué* sabe. Vienen cuatro estilos predefinidos:
+
+• **Normal**: equilibrado, por defecto.
+• **Concise**: respuestas cortas y directas.
+• **Formal**: claras y pulidas, para documentos profesionales.
+• **Explanatory**: educativas, explica cada concepto como un profesor.
+
+Cambias de estilo desde *Search and tools* → *Use style*. Puedes cambiarlo incluso a mitad de conversación.
+
+También puedes **crear tu propio estilo**. Dos formas: subir muestras de tu escritura (un PDF o TXT con ejemplos) para que Claude imite tu voz, o describir con palabras cómo quieres que responda.
+
+</NarratedSection>
+
+<NarratedSection id="gestionar-memoria" heading="Ver, editar, pausar y borrar la memoria" sourcePage="123">
+
+Tienes control total sobre lo que Claude recuerda.
+
+**Ver y editar**: *Settings* → *Capabilities* → *View and edit memory*. Lees todo el resumen. Si algo está mal, clic en el lápiz y lo cambias.
+
+**Pedirle directamente**: puedes escribir 'Recuerda que nuestro proyecto usa PostgreSQL 16 con pgvector' y lo anota. O al revés: 'Olvida que trabajo en la empresa X, ya no trabajo ahí'.
+
+**Pausar**: *Settings* → *Capabilities* → desactiva la memoria. Claude deja de escribir nuevas notas, pero no borra las existentes.
+
+**Borrar (irreversible)**: *Settings* → *Capabilities* → *Reset memory*. Una vez borrada, no hay vuelta atrás.
+
+⚠️ Para un **reset completo** necesitas DOS pasos: borrar las memorias existentes Y desactivar el toggle *Generate memory from chat history*. Si solo borras, Claude seguirá creando nuevas.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-reset-memoria"
+  question="Quieres empezar totalmente de cero y que Claude NO genere más memorias. ¿Qué haces?"
+  options='["Clic en Reset memory y listo","Dos pasos: Reset memory + desactivar &apos;Generate memory from chat history&apos;","Cambiar de cuenta"]'
+  correctIndex="1"
+  explanation="Solo borrar no detiene la generación futura. Necesitas ambos pasos: borrar las memorias existentes Y desactivar el toggle que permite crear nuevas."
+/>
+
+<NarratedSection id="modo-incognito" heading="Modo incógnito: chats que no dejan huella" sourcePage="124">
+
+El **modo incógnito** es para conversaciones privadas. Son chats temporales que no se guardan en el historial ni se incluyen en la memoria.
+
+Activas el modo con el icono de fantasma (esquina superior derecha) o con `Ctrl+Shift+I`.
+
+Cosas importantes:
+
+• Solo funciona **fuera de proyectos**.
+• Una vez que cierras el chat, no puedes reabrirlo.
+• Claude NO carga su memoria sintetizada durante un chat incógnito.
+• Sin embargo, tus **preferencias de perfil y estilos SÍ siguen activos**. Incógnito desactiva la memoria aprendida, no tu configuración manual.
+
+Nota para empresas: en cuentas Enterprise, los chats incógnito se retienen al menos 30 días por seguridad. El usuario no los ve, pero la organización sí puede acceder.
+
+</NarratedSection>
+
+<NarratedSection id="archivos-subir" heading="Subir archivos: entrega documentos a Claude" sourcePage="138">
+
+Claude puede leer tus documentos. En vez de copiar y pegar texto, subes el archivo directamente. Clic en el icono de clip, seleccionas y listo.
+
+Tipos aceptados:
+
+• **Texto**: PDF, DOCX, TXT, MD, CSV, HTML, JSON, ODT, RTF, EPUB.
+• **Hojas de cálculo**: XLSX (requiere activar *Code execution* en Settings).
+• **Imágenes**: JPEG, PNG, GIF, WEBP.
+
+NO acepta: video, audio, PowerPoint (PPTX), archivos binarios. Si tienes un PPTX, conviértelo a PDF primero.
+
+**Límites**:
+• 30 MB máximo por archivo.
+• 20 archivos por conversación.
+• Imágenes: hasta 8000x8000 px (para mejores resultados, usa al menos 1000x1000).
+
+⚠️ Importante: en archivos que NO son PDF (como Word o ODT), Claude solo extrae el texto. Las imágenes embebidas dentro del documento no se analizan. Si quieres que Claude vea gráficas o imágenes dentro de un documento, conviértelo a PDF.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-word-imagenes"
+  question="Subes un Word (.docx) con gráficas de ventas embebidas. Le pides a Claude que analice las gráficas. ¿Funcionará?"
+  options='["Sí, Claude analiza todo el contenido del Word","No. En archivos que no son PDF, Claude solo extrae el texto. Convierte a PDF primero","Solo si el plan es Pro o superior"]'
+  correctIndex="1"
+  explanation="Solo los PDFs permiten análisis visual completo. En Word, ODT o RTF, Claude extrae únicamente el texto. Para analizar gráficas embebidas, convierte a PDF."
+/>
+
+<NarratedSection id="pdfs-como-procesa" heading="Cómo procesa Claude los PDFs" sourcePage="140">
+
+No todos los PDFs se tratan igual. Depende del tamaño:
+
+• **Menos de 100 páginas**: Claude lee texto Y analiza elementos visuales (gráficos, tablas, imágenes). Análisis completo.
+• **De 100 a 1000 páginas**: el análisis visual se reduce. Se enfoca en el texto.
+• **Más de 1000 páginas**: solo extracción de texto. Sin análisis visual.
+
+Es como pedirle a alguien que revise un libro. Si son pocas páginas, lo lee con calma y mira las fotos. Si son miles, solo escanea el texto rápidamente.
+
+**Tip**: cuando cites páginas, usa los números del visor de PDF, no los impresos en el documento. A veces son diferentes.
+
+</NarratedSection>
+
+<NarratedSection id="claude-crea-archivos" heading="Claude también CREA archivos" sourcePage="140">
+
+No solo lee archivos: también puede generarlos para que los descargues.
+
+Tipos que Claude puede crear:
+
+• **.xlsx** — hojas de Excel
+• **.pptx** — presentaciones PowerPoint
+• **.docx** — documentos Word
+• **.pdf** — PDFs
+• **.png** — imágenes y gráficas
+• Scripts de Python
+
+**Requisito**: activar *Code execution and file creation* en Settings. Disponible en todos los planes (Free, Pro, Max, Team, Enterprise). Límite: 30 MB por archivo creado.
+
+Ejemplo de prompt: 'Crea una hoja de Excel con un resumen de ventas por trimestre basado en estos datos'. Claude genera el .xlsx listo para descargar o guardar en Google Drive.
+
+</NarratedSection>
+
+<TerminalTask
+  id="task-crear-proyecto"
+  instruction="Entra a claude.ai/projects y crea tu primer proyecto. Pon un nombre claro (ej. 'Mis Estudios'), una descripción breve, y en la sección de **instrucciones** escribe 3 líneas diciendo cómo quieres que Claude te responda (idioma, formato, tono). Recuerda: el nombre y la descripción NO los lee Claude, así que lo importante va en las instrucciones."
+  expectedOutcome="Tienes un proyecto creado con instrucciones propias. Al abrir un chat dentro del proyecto, Claude respeta ese tono y formato sin que tengas que repetirlo."
+  verifyHint="Abre un chat en el proyecto y pregunta algo simple. Verifica que responda con el formato que pediste en las instrucciones."
+/>
+
+<TerminalTask
+  id="task-artifact-html"
+  instruction="En un chat nuevo de Claude.ai, pide un Artifact HTML con este prompt: 'Crea una landing page simple para una cafetería, con hero, 3 features y footer. Usa colores café y crema'. Cuando aparezca el artifact, pide una iteración: 'Cambia los colores a verde bosque y beige'. Observa cómo se crea una nueva versión y puedes navegar entre las dos."
+  expectedOutcome="Tienes dos versiones del mismo artifact. Puedes alternar entre Preview (la página renderizada) y Code (el HTML), y moverte entre versiones con las flechas."
+  verifyHint="En la parte superior del artifact verás un contador de versiones y botones de Preview/Code."
+/>
+
+<TerminalTask
+  id="task-perfil-memoria"
+  instruction="Ve a Settings → Profile y escribe un perfil breve (máximo 6 líneas) con: tu idioma, tu nivel de experiencia, tu formato preferido y UNA cosa que NO quieras (ejemplo: 'no empieces con Excelente pregunta'). Guarda. Luego abre un chat nuevo y pregunta cualquier cosa. Verifica que Claude respeta tu formato."
+  expectedOutcome="Tu configuración se aplica automáticamente a todos los chats nuevos, sin que tengas que repetirla."
+  verifyHint="Si pediste bullet points y no hay introducciones largas, tu perfil está funcionando."
+/>
+
+<Quiz
+  id="quiz-final-integrador"
+  question="Selecciona TODAS las afirmaciones correctas sobre Proyectos, Artifacts, Memoria y Archivos:"
+  options='["El contexto se comparte automáticamente entre todos los chats del mismo proyecto","Los Artifacts tienen dos vistas: Preview (resultado) y Code (código fuente)","La memoria de Claude se actualiza cada 24 horas, no en tiempo real","Claude puede analizar imágenes embebidas dentro de un archivo .docx","Claude puede crear archivos .xlsx, .pptx, .docx y .pdf descargables"]'
+  correctIndex="[1,2,4]"
+  explanation="Correctas: Artifacts tiene Preview y Code; la memoria se actualiza cada 24h; Claude crea archivos descargables. Incorrectas: el contexto NO se comparte entre chats de un proyecto (por eso conviene usar la base de conocimiento); y en .docx Claude solo extrae texto, no analiza imágenes embebidas (convierte a PDF para eso)."
+  multiple="true"
+/>
+
+<NarratedSection id="cierre" heading="Lo que te llevas" sourcePage="140">
+
+Ya tienes las cuatro herramientas básicas del prompting en Claude.ai:
+
+• **Proyectos**: carpetas con contexto compartido (instrucciones + archivos + chats relacionados).
+• **Artifacts**: ventanas donde Claude construye cosas reales (páginas web, código, diagramas, archivos descargables).
+• **Memoria y personalización**: un resumen que se actualiza cada 24h, más capas de perfil, proyecto, estilo y modo incógnito.
+• **Archivos**: puedes subir PDFs, Word, CSV, imágenes… y Claude también los crea.
+
+En el próximo capítulo vamos a combinar todo esto con técnicas concretas de prompting: cómo pedir las cosas para obtener mejores respuestas.
+
+</NarratedSection>

@@ -1,0 +1,493 @@
+---
+chapterNumber: 11
+slug: empezar-claude-code
+title: 'Empezar con Claude Code: hooks seguros y MCP'
+part: claude-code
+estimatedMinutes: 23
+prerequisites:
+  - Haber instalado Claude Code
+  - Conocer la terminal básica
+  - Saber qué es un archivo JSON
+status: approved
+generatedAt: '2025-01-20T10:00:00Z'
+sourcePagesFrom: 326
+sourcePagesTo: 355
+model: claude-opus-4-7
+---
+<NarratedSection id="intro-gancho" heading="Imagina un ayudante que nunca duerme" sourcePage="326">
+
+Piensa en esto: tienes un asistente que escribe código contigo. Mientras trabaja, tú quieres que pasen cosas automáticas. Por ejemplo: que te avise con un sonido cuando termine, que formatee el código sin que se lo pidas, o que bloquee comandos peligrosos antes de ejecutarlos.
+
+Eso es justo lo que vamos a ver en este capítulo. Dos superpoderes de **Claude Code**: los **hooks** (acciones automáticas) y los **MCP servers** (conexiones con el mundo exterior).
+
+No te asustes si los nombres suenan raros. Los explicaremos con calma, como armar legos: una pieza a la vez.
+
+</NarratedSection>
+
+<NarratedSection id="que-son-hooks-seguridad" heading="Hooks: acciones automáticas (y sus riesgos)" sourcePage="326">
+
+Un **hook** (se pronuncia 'juk') es como un interruptor que se activa solo. Cuando pasa algo en Claude Code (por ejemplo, antes de ejecutar un comando), el hook dispara un script tuyo.
+
+Pero ojo: los hooks corren con **todos tus permisos**. Pueden leer, cambiar o borrar cualquier archivo que tú puedas tocar. Son potentes, pero si te equivocas, pueden hacer daño.
+
+Por eso hay cinco reglas de oro para escribirlos con cuidado.
+
+</NarratedSection>
+
+<NarratedSection id="reglas-seguridad-hooks" heading="Las cinco reglas de oro" sourcePage="326">
+
+1. **Pon las variables entre comillas**: escribe `"$VAR"`, no `$VAR`. Sin comillas, un path con espacios rompe el script.
+
+2. **No confíes ciegamente en el JSON** que recibe el hook. Verifica lo que llega.
+
+3. **Cuidado con `..` en los paths**. Eso se llama *path traversal* y puede salirse de tu carpeta de proyecto.
+
+4. **Usa paths absolutos**, con la variable `$CLAUDE_PROJECT_DIR`, nunca rutas relativas.
+
+5. **Evita leer archivos sensibles** como `.env`, `.git/` o archivos con claves.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-seguridad-hooks"
+  question="¿Por qué es importante poner las variables entre comillas en un hook de shell?"
+  options='["Porque si no, Claude Code no las reconoce","Porque un path con espacios puede romper el script","Porque las comillas hacen que el hook sea más rápido","Porque es obligatorio en JSON"]'
+  correctIndex="1"
+  explanation="Sin comillas, una ruta como /Users/Mi Carpeta/archivo se parte en dos argumentos por el espacio. Con comillas, queda como un solo valor y el script funciona bien."
+/>
+
+<NarratedSection id="snapshot-deshabilitar" heading="La foto del inicio y el botón de apagado" sourcePage="326">
+
+Cuando abres una sesión de Claude Code, el sistema toma una **foto** (snapshot) de tus hooks. Esa foto se usa toda la sesión. Si alguien modifica los hooks a mitad de camino, Claude te avisa y no aplica los cambios hasta que los revises en el menú `/hooks`.
+
+Esto evita ataques: nadie puede cambiar tus hooks sin que tú lo veas.
+
+¿Y si quieres apagar todos los hooks de golpe? Dos opciones: abre `/hooks` y usa el toggle al final del menú, o agrega `"disableAllHooks": true` en tu archivo de settings.
+
+</NarratedSection>
+
+<NarratedSection id="debugging-hooks" heading="Cuando un hook no funciona: cómo detectar el problema" sourcePage="327">
+
+Los hooks pueden fallar sin decir nada. Por eso necesitas herramientas para espiar qué pasa.
+
+La primera: **modo verbose**. Presiona `Ctrl+O` dentro de Claude Code y verás el output de los hooks en el transcript.
+
+La segunda: la **flag `--debug`**. Abre Claude así: `claude --debug`. Te muestra qué hooks se activaron, sus códigos de salida y su output completo.
+
+La tercera: **probar el hook a mano** desde la terminal, simulando el JSON que recibiría.
+
+</NarratedSection>
+
+<TerminalTask
+  id="task-probar-hook-manual"
+  instruction="Los hooks reciben un JSON por la entrada estándar (stdin). Antes de registrar uno real, es sano probarlo en frío. Este comando simula que Claude Code te envía un JSON pidiéndote ejecutar `ls`. Úsalo con un script de prueba llamado `./mi-hook.sh` que ya tengas (no lo ejecutes si no existe). Después imprimes `$?` para ver el código de salida."
+  command="echo '{&quot;tool_name&quot;:&quot;Bash&quot;,&quot;tool_input&quot;:{&quot;command&quot;:&quot;ls&quot;}}' | ./mi-hook.sh; echo $?"
+  expectedOutcome="Verás en pantalla lo que imprime tu script y después un número: 0 si todo fue bien, 2 si el hook bloqueó la acción, u otro número si hubo error no bloqueante."
+  verifyHint="Si ves 'command not found', tu script no existe o no es ejecutable. Usa chmod +x ./mi-hook.sh para darle permisos."
+/>
+
+<NarratedSection id="errores-comunes" heading="Errores típicos y cómo resolverlos" sourcePage="328">
+
+**"Mi hook no se dispara"**: el matcher es *case-sensitive*. `"bash"` no es lo mismo que `"Bash"`. Además, `PermissionRequest` no funciona en modo `-p` (no interactivo). Usa `PreToolUse` en su lugar.
+
+**"Error en el transcript"**: probablemente el script no es ejecutable (`chmod +x`), o falta `jq` instalado, o el comando no se encuentra (usa paths absolutos).
+
+**"no hooks configured"**: tu JSON tiene errores. JSON puro no acepta comentarios ni comas al final.
+
+**"Loop infinito con Stop hook"**: olvidaste verificar `stop_hook_active`. Sin esa verificación, Claude nunca puede parar.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-matcher"
+  question="Tu hook con matcher `&quot;bash&quot;` no se dispara nunca cuando Claude ejecuta comandos. ¿Cuál es la causa más probable?"
+  options='["El JSON tiene un error de sintaxis","El matcher es case-sensitive y debe ser `\"Bash\"` con B mayúscula","Los hooks no funcionan con Bash","Falta instalar jq"]'
+  correctIndex="1"
+  explanation="Los matchers distinguen mayúsculas y minúsculas. La herramienta se llama `Bash` con B mayúscula, así que `&quot;bash&quot;` nunca coincide."
+/>
+
+<NarratedSection id="ejemplo-notificacion-macos" heading="Tu primer hook: una notificación en macOS" sourcePage="329">
+
+Vamos con un ejemplo fácil y útil. Cada vez que Claude necesite tu atención, queremos que aparezca una notificación de macOS.
+
+Agrega esto a `~/.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "osascript -e 'display notification \"Claude Code necesita tu atención\" with title \"Claude Code\"'"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+El matcher vacío (`""`) significa que se dispara para todas las notificaciones. Es el hook perfecto para empezar: fácil y ves resultados al instante.
+
+</NarratedSection>
+
+<NarratedSection id="ejemplo-prettier" heading="Auto-formatear código con Prettier" sourcePage="330">
+
+Otro ejemplo clásico: que Claude formatee tu código solo, sin que se lo pidas.
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path' | xargs npx prettier --write"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+El matcher `Edit|Write` significa "cuando use Edit o Write". Después de cada edición, `jq` saca el path del archivo y se lo pasa a Prettier. Magia automática.
+
+</NarratedSection>
+
+<NarratedSection id="ejemplo-proteger-archivos" heading="Proteger archivos sensibles" sourcePage="331">
+
+Ahora uno más serio: impedir que Claude toque archivos delicados como `.env` o `.git/`.
+
+Guardas este script como `.claude/hooks/protect-files.sh` (y le das permisos con `chmod +x`):
+
+```bash
+#!/bin/bash
+INPUT=$(cat)
+FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+PROTECTED_PATTERNS=(".env" "package-lock.json" ".git/")
+for pattern in "${PROTECTED_PATTERNS[@]}"; do
+  if [[ "$FILE_PATH" == *"$pattern"* ]]; then
+    echo "Bloqueado: $FILE_PATH coincide con '$pattern'" >&2
+    exit 2
+  fi
+done
+exit 0
+```
+
+El truco está en el `exit 2`: ese código de salida le dice a Claude Code que **bloquee la acción**. Regístralo como hook `PreToolUse` con matcher `Edit|Write`.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-exit-codes"
+  question="En los hooks de Claude Code, ¿qué significa terminar con `exit 2`?"
+  options='["Éxito normal","Error no bloqueante (se loggea pero no detiene nada)","Bloquear la acción que Claude quería hacer","Reiniciar la sesión"]'
+  correctIndex="2"
+  explanation="`exit 0` es éxito, `exit 2` bloquea la acción, y cualquier otro código es un error no bloqueante. Por eso el script de protección usa `exit 2` cuando detecta un archivo protegido."
+/>
+
+<NarratedSection id="resumen-hooks" heading="Resumen de hooks" sourcePage="336">
+
+Los hooks son acciones automáticas disparadas en momentos específicos de Claude Code. Se configuran en archivos settings JSON con tres niveles: **evento**, **matcher** y **handler**.
+
+Hay cuatro tipos de handlers: `command`, `http`, `prompt` y `agent`. Y tres códigos de salida clave: `0` para éxito, `2` para bloquear, cualquier otro para errores no bloqueantes.
+
+Para depurar, recuerda `Ctrl+O` y `--debug`. Y siempre, siempre: **prueba tus scripts a mano antes de registrarlos**.
+
+</NarratedSection>
+
+<NarratedSection id="que-es-mcp" heading="MCP: el puerto USB-C de la IA" sourcePage="338">
+
+Cambiamos de tema. Piensa en tu teléfono: con un solo puerto USB-C conectas cargador, audífonos, memoria USB, pantalla. No necesitas un puerto distinto para cada cosa.
+
+**MCP** (se lee 'eme-ce-pe', significa *Model Context Protocol*) funciona igual, pero para la IA. Es un **estándar abierto** que permite conectar Claude Code con sistemas externos: GitHub, Slack, Notion, bases de datos, cientos más.
+
+Sin MCP, cada integración necesitaría un conector propio. Con MCP, todos hablan el mismo idioma.
+
+</NarratedSection>
+
+<NarratedSection id="arquitectura-mcp" heading="Los tres personajes: host, client, server" sourcePage="338">
+
+MCP tiene tres piezas. Imagina un restaurante:
+
+- **MCP Host**: el restaurante completo. Aquí es Claude Code. Coordina todo.
+- **MCP Client**: el mesero. Claude Code crea un mesero dedicado para cada servicio externo.
+- **MCP Server**: la cocina. El programa externo que hace el trabajo real: consultar GitHub, leer archivos, buscar en Slack.
+
+Si tienes 3 servidores MCP configurados, Claude Code crea 3 meseros. Cada uno habla solo con su cocina.
+
+</NarratedSection>
+
+<NarratedSection id="tools-resources-prompts" heading="Qué ofrece un servidor MCP" sourcePage="338">
+
+Un servidor MCP puede darte tres tipos de cosas:
+
+1. **Tools** (herramientas): acciones que Claude ejecuta. Ejemplo: "crear un issue en GitHub", "enviar mensaje en Slack". Claude decide cuándo usarlas.
+
+2. **Resources** (recursos): datos de solo lectura. Por ejemplo, el contenido de un issue. Se referencian con `@servidor:recurso`.
+
+3. **Prompts**: plantillas de instrucciones. Aparecen como comandos del estilo `/mcp__github__pr_review`.
+
+Y para hablar entre cliente y servidor hay dos canales (**transportes**): `stdio` (local, como si fuera una app en tu computadora) y `http` (remoto, por internet). Existía un tercero llamado `SSE`, pero está **deprecado** (obsoleto).
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-mcp-arquitectura"
+  question="En la analogía del restaurante para MCP, ¿qué papel hace Claude Code?"
+  options='["El mesero (MCP Client)","La cocina (MCP Server)","El restaurante completo (MCP Host)","El comensal"]'
+  correctIndex="2"
+  explanation="Claude Code es el Host: el restaurante completo que coordina todo. Crea un mesero (Client) por cada cocina externa (Server) a la que quieras conectarte."
+/>
+
+<NarratedSection id="configurar-mcp-add" heading="Agregar tu primer servidor MCP" sourcePage="339">
+
+Configurar un servidor MCP es como instalar una app: le dices a Claude Code "quiero conectarme a esto" y listo. El comando principal es `claude mcp add`.
+
+Para un servicio remoto como GitHub:
+
+```bash
+claude mcp add --transport http github https://api.githubcopilot.com/mcp/
+```
+
+Desglose:
+- `claude mcp add`: agrega un servidor
+- `--transport http`: usa internet
+- `github`: el nombre que tú eliges
+- `https://...`: la dirección del servidor
+
+Después, dentro de Claude Code, escribe `/mcp` y verás la opción de autenticarte con OAuth (login por navegador).
+
+</NarratedSection>
+
+<NarratedSection id="regla-orden-flags" heading="Regla de oro: el orden de los flags" sourcePage="340">
+
+Este es el error más común. **Todas las opciones (`--transport`, `--env`, `--scope`, `--header`) van ANTES del nombre del servidor.**
+
+Estructura correcta:
+
+```
+claude mcp add [opciones] nombre-servidor [-- comando args]
+```
+
+✅ Correcto:
+```bash
+claude mcp add --transport http --scope project paypal https://mcp.paypal.com/mcp
+```
+
+❌ Incorrecto (va a fallar):
+```bash
+claude mcp add paypal --transport http https://mcp.paypal.com/mcp
+```
+
+Y para servidores locales (stdio), hay un **doble guion `--`** que separa opciones de Claude Code del comando que arranca el servidor.
+
+</NarratedSection>
+
+<TerminalTask
+  id="task-listar-servidores"
+  instruction="Antes de agregar servidores, conviene saber cómo ver los que ya tienes. Este comando muestra todos los servidores MCP configurados en tu Claude Code. Si no tienes ninguno, verás una lista vacía — eso también es información útil."
+  command="claude mcp list"
+  expectedOutcome="Verás una lista de servidores MCP configurados (o un mensaje diciendo que no hay ninguno). Con esto confirmas que el comando `claude mcp` funciona antes de empezar a añadir servidores."
+  verifyHint="Si ves 'command not found: claude', Claude Code no está instalado o no está en el PATH. Revisa la instalación primero."
+/>
+
+<NarratedSection id="scopes" heading="Dónde se guarda: los tres scopes" sourcePage="341">
+
+Cuando agregas un servidor, Claude Code lo guarda en un archivo. Pero tienes tres opciones sobre dónde:
+
+- **local** (por defecto): solo para ti, solo en este proyecto.
+- **project**: compartido con tu equipo via git. Se guarda en `.mcp.json` en la raíz del proyecto.
+- **user**: solo para ti, pero en todos tus proyectos.
+
+Se elige con `--scope`:
+
+```bash
+claude mcp add --transport http --scope project paypal https://mcp.paypal.com/mcp
+```
+
+Si hay conflictos (mismo nombre en distintos scopes), la prioridad es: **local > project > user**.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-scope"
+  question="Quieres que tu equipo completo tenga acceso al mismo servidor MCP cuando clone el proyecto. ¿Qué scope debes usar?"
+  options='["local, porque es el más seguro","project, porque se guarda en .mcp.json y se comparte via git","user, porque así lo ven todos los usuarios","No se puede compartir configuración MCP entre equipos"]'
+  correctIndex="1"
+  explanation="El scope `project` guarda la configuración en `.mcp.json` dentro del proyecto, y ese archivo se sube a git. Todos los que clonen el repo tendrán la misma configuración."
+/>
+
+<NarratedSection id="comandos-mcp-utiles" heading="Otros comandos MCP útiles" sourcePage="341">
+
+Además de `add`, tienes estos ayudantes:
+
+- `claude mcp list` — ver todos los servidores configurados
+- `claude mcp get github` — ver detalles de uno específico
+- `claude mcp remove github` — eliminar uno
+- `claude mcp add-json nombre '{...}'` — agregar desde un JSON completo
+- `claude mcp reset-project-choices` — resetear aprobaciones de servidores de proyecto
+
+Y dentro de Claude Code, el comando `/mcp` te muestra el estado de todos los servidores y permite autenticarte.
+
+</NarratedSection>
+
+<NarratedSection id="variables-entorno-mcpjson" heading="Variables de entorno en .mcp.json" sourcePage="345">
+
+Problema: el archivo `.mcp.json` se sube a git. No quieres meter tu API key ahí, porque todo el equipo (y quien vea el repo) la vería.
+
+Solución: usa **variables de entorno** con la sintaxis `$VAR`:
+
+```json
+{
+  "mcpServers": {
+    "api-server": {
+      "type": "http",
+      "url": "${API_BASE_URL:-https://api.example.com}/mcp",
+      "headers": {
+        "Authorization": "Bearer ${API_KEY}"
+      }
+    }
+  }
+}
+```
+
+El `$API_KEY` se reemplaza por el valor de la variable de entorno. Y `${VAR:-default}` usa un valor por defecto si la variable no existe. Así las claves viven en tu máquina, no en git.
+
+</NarratedSection>
+
+<NarratedSection id="servidores-populares" heading="Servidores MCP populares" sourcePage="346">
+
+A abril de 2026 hay más de 12,000 servidores MCP disponibles. Estos son los más útiles:
+
+**Desarrollo**:
+- **GitHub**: gestiona PRs, issues, revisiones.
+- **Sentry**: monitoreo de errores en producción.
+- **Playwright**: automatización de navegador para testing.
+
+**Bases de datos**:
+- **PostgreSQL via DBHub**: consulta tu base con lenguaje natural. Imagina decir "¿cuántos usuarios se registraron esta semana?" y que Claude escriba el SQL.
+- **Filesystem**: operaciones de archivos con controles de acceso al directorio que le indiques.
+
+**Productividad**:
+- **Notion**: documentos y bases de datos.
+- **Slack**: busca mensajes, envía notificaciones.
+- **HubSpot**, **Jira/Atlassian**.
+
+**Utilidades**: **Memory** (memoria persistente), **Fetch** (contenido web), **Sequential Thinking** (resolución paso a paso).
+
+</NarratedSection>
+
+<NarratedSection id="tool-search" heading="Tool Search: ahorrar contexto" sourcePage="349">
+
+Si tienes muchos servidores MCP, podrías tener **cientos** de herramientas cargadas. Eso gasta la **ventana de contexto** (la cantidad de texto que Claude puede procesar a la vez).
+
+**Tool Search** resuelve esto. Es como el índice de un libro: en vez de leer el libro entero para encontrar algo, consultas el índice primero.
+
+Se controla con la variable `ENABLE_TOOL_SEARCH`:
+- `true` (por defecto): siempre activado.
+- `auto`: se activa cuando las herramientas pasan del 10% del contexto.
+- `auto:5`: se activa al 5%.
+- `false`: desactivado, todas las herramientas cargan al inicio.
+
+Importante: Tool Search necesita modelos Sonnet 4 u Opus 4 o superiores. Haiku no lo soporta.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-tool-search"
+  question="¿Cuál es el beneficio principal de Tool Search?"
+  options='["Hace que Claude responda más rápido al usuario final","Evita cargar cientos de herramientas al inicio, ahorrando ventana de contexto","Permite usar servidores MCP sin autenticación","Convierte herramientas HTTP en herramientas stdio"]'
+  correctIndex="1"
+  explanation="Tool Search difiere la carga de herramientas: Claude solo busca las que realmente necesita en el momento. Así no desperdicia la ventana de contexto con herramientas que tal vez nunca use."
+/>
+
+<NarratedSection id="crear-servidor-python" heading="Crear tu propio servidor MCP en Python" sourcePage="351">
+
+¿Necesitas una integración que no existe? La construyes tú. Hay SDKs oficiales en 10 lenguajes; TypeScript y Python son los más sencillos.
+
+Ejemplo mínimo en Python. Primero instalas:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+uv init mi-servidor && cd mi-servidor
+uv venv && source .venv/bin/activate
+uv add 'mcp[cli]' httpx
+```
+
+Luego creas `server.py`:
+
+```python
+from mcp.server.fastmcp import FastMCP
+
+mcp = FastMCP('mi-servidor')
+
+@mcp.tool()
+def obtener_clima(ciudad: str) -> str:
+    """Obtiene el clima actual de una ciudad."""
+    return f"El clima en {ciudad}: 22C, soleado"
+
+if __name__ == '__main__':
+    mcp.run()
+```
+
+El decorador `@mcp.tool()` convierte cualquier función en una herramienta MCP. FastMCP usa los type hints y el docstring para generar la descripción automáticamente. Y lo conectas con:
+
+```bash
+claude mcp add --transport stdio mi-clima -- uv run server.py
+```
+
+</NarratedSection>
+
+<NarratedSection id="regla-stdout" heading="⚠️ Regla crítica: nunca escribas a stdout" sourcePage="352">
+
+Si tu servidor usa transporte **stdio**, hay una regla que no puedes romper: **nunca escribas a stdout** (la salida estándar).
+
+¿Por qué? Porque stdout es el canal que MCP usa para enviar sus mensajes. Si tu código hace un `print("debug")` en Python, ese texto se mezcla con los mensajes MCP y todo se rompe.
+
+Solución: usa **stderr** para mensajes de depuración.
+
+```python
+import sys
+print('mensaje de debug', file=sys.stderr)
+```
+
+O usa la librería `logging`, que escribe a stderr por defecto.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-stdout"
+  question="Tu servidor MCP stdio deja de funcionar cuando agregas un `print(&quot;estoy aquí&quot;)` para depurar. ¿Por qué?"
+  options='["Porque `print` está prohibido en Python","Porque stdout es el canal que MCP usa para sus mensajes, y tu print los contamina","Porque los servidores stdio no pueden imprimir nada","Porque falta importar la librería de debug"]'
+  correctIndex="1"
+  explanation="En stdio, cliente y servidor se hablan por stdout/stdin. Si escribes a stdout con print, mezclas tu texto con los mensajes MCP y el protocolo se rompe. Usa stderr (con `file=sys.stderr`) para depurar."
+/>
+
+<NarratedSection id="seguridad-mcp" heading="Seguridad MCP: lo esencial" sourcePage="355">
+
+MCP es poderoso, pero con poder viene responsabilidad:
+
+- **Servidores de terceros no están verificados por Anthropic**. Úsalos bajo tu propio riesgo.
+- **Cuidado con prompt injection**: servidores que traen contenido de internet pueden colar instrucciones maliciosas.
+- **Aprobación de proyectos**: Claude Code te pide permiso antes de usar servidores definidos en `.mcp.json` de un proyecto que clonaste.
+- **Secretos seguros**: los tokens OAuth se guardan en el keychain del sistema, nunca en texto plano. Buena práctica: **rotar tokens cada 90 días**.
+- **Usa variables de entorno** para claves. Nunca las pongas directamente en archivos de configuración.
+
+</NarratedSection>
+
+<NarratedSection id="cierre" heading="Recapitulando" sourcePage="355">
+
+Ya viste los dos superpoderes de Claude Code. Los **hooks** son acciones automáticas que se disparan en momentos clave: útiles para formatear código, notificarte o bloquear operaciones peligrosas. Recuerda los tres códigos de salida: `0` éxito, `2` bloquear, otros error no bloqueante.
+
+**MCP** es el USB-C de la IA: un protocolo para conectar Claude Code con GitHub, bases de datos, Slack y miles de herramientas más. Host, Client y Server; transportes stdio o http; scopes local, project y user.
+
+Empieza simple: una notificación, un servidor GitHub. Cuando le agarres confianza, escribe tu propio servidor MCP en Python. Paso a paso, pieza a pieza.
+
+</NarratedSection>

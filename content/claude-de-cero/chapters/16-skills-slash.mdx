@@ -1,0 +1,315 @@
+---
+chapterNumber: 16
+slug: skills-slash
+title: 'Skills y Slash Commands: pipelines, sub-agentes y automatización con Claude'
+part: claude-code
+estimatedMinutes: 31
+prerequisites:
+  - claude-code-basico
+  - cli-basico
+status: approved
+generatedAt: '2025-01-20T12:00:00Z'
+sourcePagesFrom: 476
+sourcePagesTo: 505
+model: claude-opus-4-7
+---
+<NarratedSection id="intro-linea-ensamblaje" heading="¿Y si Claude trabajara en equipo consigo mismo?" sourcePage="476">
+
+Imagina una fábrica de chocolates. Una máquina mezcla, otra moldea, otra envuelve. Cada una hace una cosa y pasa el resultado a la siguiente. Ninguna hace todo sola.
+
+Con Claude puedes montar algo parecido. Se llama **pipeline multi-agente**: varios Claudes trabajando en fila, cada uno con un rol distinto. Uno investiga, otro escribe, otro revisa.
+
+En este capítulo vamos a ver cómo encadenar Claudes, cómo crear ayudantes especializados (sub-agentes), cómo lanzar equipos enteros en paralelo y cómo hacerlo todo sin que los costos se disparen. Empecemos por lo más básico: conectar dos Claudes con un tubo.
+
+</NarratedSection>
+
+<NarratedSection id="pipeline-basico" heading="El patrón básico: investigar, escribir, revisar" sourcePage="476">
+
+El truco se basa en una herramienta muy antigua del terminal: el **pipe** (se escribe `|` y se pronuncia 'paip'). Un pipe es como un tubo que toma lo que sale de un comando y lo mete en el siguiente.
+
+El flag `-p` de Claude significa 'print': le das una instrucción, Claude responde, y ya. Sin chat interactivo. Perfecto para encadenar.
+
+Mira este ejemplo del libro: tres Claudes en fila. El primero investiga y guarda el resultado en un archivo JSON. El segundo lee ese JSON y escribe un artículo. El tercero revisa el artículo final.
+
+```bash
+claude -p 'Investiga las mejores practicas de autenticacion' \
+  --output-format json > research.json
+
+cat research.json | claude -p 'Escribe un articulo basado en esta investigacion' \
+  --output-format json > draft.json
+
+cat draft.json | claude -p 'Revisa la calidad del articulo' > final.txt
+```
+
+Cada Claude puede tener su propio modelo. Usa **Haiku** (rápido y barato) para tareas simples, y **Opus** (potente pero caro) para las que exigen razonamiento serio. Así optimizas costo sin perder calidad.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-pipeline"
+  question="¿Qué hace el símbolo `|` (pipe) en un pipeline de Claude?"
+  options='["Borra el archivo anterior antes de ejecutar el siguiente comando","Toma la salida de un comando y la pasa como entrada al siguiente","Ejecuta dos comandos en paralelo al mismo tiempo","Activa el modo seguro de Claude"]'
+  correctIndex="1"
+  explanation="El pipe conecta comandos como un tubo: lo que sale del primero entra en el segundo. Así podemos encadenar varios Claudes donde cada uno alimenta al siguiente."
+/>
+
+<NarratedSection id="claude-unix" heading="Claude se mezcla con el resto del sistema" sourcePage="477">
+
+Como Claude entiende pipes, puedes combinarlo con herramientas de toda la vida: `git`, `tail`, `gh`. Son comandos que probablemente ya usas.
+
+Un ejemplo potente: revisar los archivos que cambiaste en Git buscando problemas de seguridad:
+
+```bash
+git diff main --name-only | claude -p "revisa estos archivos por problemas de seguridad"
+```
+
+`git diff main --name-only` saca la lista de archivos modificados. El pipe se la pasa a Claude, que los revisa.
+
+Otro: monitorear logs en vivo.
+
+```bash
+tail -f app.log | claude -p "alertame si ves anomalias"
+```
+
+Y puedes incluso meter Claude dentro de tu `package.json` como si fuera un **linter** (un verificador de código automático):
+
+```json
+"lint:claude": "claude -p 'eres un linter. mira los cambios vs main y reporta problemas de typos...'"
+```
+
+Ahora `npm run lint:claude` revisa tu código con IA. Sin magia. Solo tuberías.
+
+</NarratedSection>
+
+<NarratedSection id="sub-agentes" heading="Sub-agentes: ayudantes especializados" sourcePage="478">
+
+Piensa en un gerente que delega. El gerente no hace todo: reparte el trabajo a especialistas. Un **sub-agente** es exactamente eso: un Claude ayudante al que Claude principal le pasa una tarea concreta.
+
+Cada sub-agente vive en su propia **ventana de contexto** (su propia memoria para esa tarea). Tiene su prompt, sus herramientas y sus permisos. Cuando acaba, devuelve el resultado y desaparece.
+
+Claude Code ya trae varios listos:
+
+- **Explore**: busca y lee código. Usa Haiku, es barato y rápido. Solo lectura.
+- **Plan**: junta contexto y propone un plan antes de tocar nada.
+- **General-purpose**: para tareas largas y complejas. Tiene todas las herramientas.
+- **Bash**: ejecuta comandos de terminal en un contexto aparte.
+
+Los puedes crear tú mismo. La forma más común es un archivo Markdown en `.claude/agents/` con un pequeño encabezado YAML que define nombre, descripción, herramientas permitidas y modelo. Por ejemplo, un `code-reviewer.md` que solo tenga acceso a `Read`, `Grep` y `Glob` y use Sonnet.
+
+Una regla importante que a veces sorprende: **los sub-agentes no pueden crear más sub-agentes**. No hay delegación en cadena. Si necesitas eso, toca coordinar desde la conversación principal.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-subagentes"
+  question="¿Cuál de estas afirmaciones sobre sub-agentes es correcta según el libro?"
+  options='["Un sub-agente puede crear otros sub-agentes para delegar en cadena","Los sub-agentes comparten la misma ventana de contexto que el agente principal","Cada sub-agente corre en su propia ventana de contexto y devuelve el resultado al agente principal","Solo se pueden crear sub-agentes con la flag --dangerously-skip-permissions"]'
+  correctIndex="2"
+  explanation="Cada sub-agente tiene su propia ventana de contexto, prompt y herramientas. Y no, no pueden crear otros sub-agentes: no hay delegación en cadena."
+/>
+
+<NarratedSection id="ubicaciones-subagentes" heading="Dónde guardar tus sub-agentes" sourcePage="479">
+
+Hay tres lugares posibles, con prioridades distintas. Piensa en ello como cajones con etiquetas:
+
+- **`.claude/agents/`** dentro del proyecto: se comparte con tu equipo vía Git. Prioridad alta.
+- **`~/.claude/agents/`** en tu usuario: disponible en todos tus proyectos personales. Prioridad media.
+- Flag **`--agents`** en el CLI: solo existe durante esa sesión. Prioridad máxima (pero efímero).
+
+Y un detalle útil: los sub-agentes pueden correr en **primer plano** (bloquean la conversación hasta terminar) o en **segundo plano** (Claude sigue trabajando en paralelo). Para mandar una tarea al fondo, pulsa `Ctrl+B`.
+
+</NarratedSection>
+
+<NarratedSection id="agent-teams" heading="Agent Teams: un equipo de fútbol de Claudes" sourcePage="480">
+
+Los **Agent Teams** son la versión más ambiciosa. En vez de un gerente con ayudantes puntuales, tienes un equipo completo trabajando a la vez.
+
+La analogía del libro es un equipo de fútbol:
+
+- **Team Lead**: el capitán. Tu sesión principal. Reparte las jugadas.
+- **Teammates**: los jugadores. Instancias separadas de Claude Code.
+- **Task List**: el plan de juego. Una lista compartida de tareas.
+- **Mailbox**: las señales durante el partido. Un buzón para que se manden mensajes.
+
+Ojo: esta función es **experimental**. Está apagada por defecto y necesita Claude Code v2.1.32 o superior. Se activa con la variable de entorno `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`.
+
+Un caso típico: revisar un Pull Request desde tres ángulos a la vez. Un teammate mira seguridad, otro mira performance, otro mira los tests. Los tres trabajan en paralelo y al final el lead junta los hallazgos.
+
+Buenas prácticas del libro: empieza con **3-5 teammates**, asigna **5-6 tareas** por cada uno, y evita que dos toquen el mismo archivo (causa conflictos). Y ojo con el bolsillo: un equipo consume **bastantes más tokens** que una sesión individual.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-teams"
+  question="Según las mejores prácticas del libro, ¿con cuántos teammates conviene empezar en un Agent Team?"
+  options='["1 o 2, para no complicarse","3 a 5 teammates","10 a 15 para cubrir todo","Tantos como tareas haya, uno por tarea"]'
+  correctIndex="1"
+  explanation="El libro recomienda empezar con 3 a 5 teammates, con 5-6 tareas cada uno. Más no siempre es mejor: suma complejidad y tokens."
+/>
+
+<NarratedSection id="git-worktrees" heading="Git Worktrees: varios escritorios, mismo proyecto" sourcePage="481">
+
+Imagina trabajar en dos cosas del mismo proyecto a la vez sin que los cambios choquen. Eso es un **git worktree**: una copia de trabajo separada de tu repositorio, con el mismo historial de Git pero con sus propios archivos.
+
+Es como tener dos escritorios, cada uno con una copia del mismo documento. Puedes escribir en los dos a la vez sin mezclarlos.
+
+```bash
+claude --worktree feature-auth
+# En otra terminal:
+claude --worktree bugfix-123
+```
+
+Cada worktree se crea en `.claude/worktrees/<nombre>/` con su rama. Si Claude no hace cambios, el worktree se borra solo. Si hay cambios, te pregunta si quieres conservarlo.
+
+Consejo del libro: añade `.claude/worktrees/` a tu `.gitignore` para no ensuciar el repo.
+
+</NarratedSection>
+
+<NarratedSection id="seguridad" heading="Las reglas de oro cuando Claude trabaja solo" sourcePage="482">
+
+Cuando Claude trabaja sin que alguien lo vigile, la seguridad importa el doble. Nadie está viendo cada paso. El libro resume seis reglas de oro:
+
+1. **Nunca** pongas tu API key directo en los archivos del workflow. Usa secretos de GitHub o GitLab.
+2. Limita las herramientas con `--allowedTools`. En CI, sé especialmente estricto con `Bash`.
+3. Pon límite de turnos con `--max-turns` (entre 3 y 10 para CI/CD).
+4. Pon límite de dinero con `--max-budget-usd`.
+5. Revisa los cambios de Claude **antes** de hacer merge. Siempre.
+6. En la nube, usa OIDC para Bedrock y Vertex: credenciales temporales, sin llaves estáticas.
+
+Hay un flag peligroso: `--dangerously-skip-permissions`. Salta todas las comprobaciones de permisos. Es dejar la puerta de casa abierta. Úsalo solo en entornos totalmente controlados (como un contenedor de CI sin datos sensibles). En la mayoría de casos, es mejor restringir con `--allowedTools`.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-seguridad"
+  question="¿Cuál es el rango recomendado para `--max-turns` cuando Claude corre en CI/CD?"
+  options='["Entre 1 y 2 turnos","Entre 3 y 10 turnos","Entre 50 y 100 turnos","Sin límite, para que pueda terminar la tarea"]'
+  correctIndex="1"
+  explanation="El libro recomienda entre 3 y 10 turnos en CI/CD. Poner un límite es tu seguro contra bucles infinitos y costos disparados."
+/>
+
+<NarratedSection id="variables-entorno" heading="Variables de entorno útiles" sourcePage="485">
+
+Las **variables de entorno** son como interruptores que el sistema lee antes de arrancar un programa. Las más útiles para automatización:
+
+- `ANTHROPIC_API_KEY`: tu llave de API. Obligatoria si usas la API directa.
+- `CLAUDE_CODE_DISABLE_CRON=1`: apaga las tareas programadas.
+- `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1`: apaga las tareas en segundo plano.
+- `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`: activa los Agent Teams.
+
+En CI/CD, además, hay un flag muy útil llamado `--bare`. Hace que Claude arranque rápido: **no** carga hooks, skills, plugins ni `CLAUDE.md`. Resultado: pipelines más veloces y predecibles.
+
+```bash
+claude --bare -p 'Analiza y corrige errores de lint' \
+  --max-turns 10 \
+  --max-budget-usd 2.00 \
+  --allowedTools 'Bash,Read,Edit' \
+  --output-format json \
+  --no-session-persistence
+```
+
+Fíjate en `--no-session-persistence`: evita que la sesión se guarde a disco. Perfecto para ejecuciones efímeras.
+
+</NarratedSection>
+
+<TerminalTask
+  id="task-pipeline"
+  instruction="Vamos a practicar el patrón básico de pipeline. Abre tu terminal en un directorio de pruebas y ejecuta un mini-pipeline de dos pasos: primero pides a Claude que liste 3 ideas sobre un tema, y luego pasas ese resultado a otro Claude que elija la mejor. Usa el flag `-p` en ambos y conéctalos con un pipe `|`. Pon también un límite de turnos bajo."
+  command="claude -p 'Lista 3 ideas breves para un blog sobre café' --max-turns 2 | claude -p 'De la lista anterior, elige la mejor idea y justifica en una frase' --max-turns 2"
+  expectedOutcome="Verás primero que el primer Claude genera una lista de 3 ideas, y esa lista se convierte en la entrada del segundo Claude, que elige una. Has creado tu primer pipeline de 2 agentes."
+  verifyHint="Si el segundo Claude no recibe nada, revisa que el primer comando esté produciendo texto por stdout (no a un archivo) y que el pipe `|` esté bien escrito. Puedes probar primero solo el primer comando para ver su salida."
+/>
+
+<NarratedSection id="ejemplos-practicos" heading="Ejemplos que puedes copiar mañana" sourcePage="483">
+
+Te dejo tres patrones del libro que valen oro en el día a día.
+
+**Commit automático** con permisos acotados:
+
+```bash
+claude -p "Mira mis cambios staged y crea un commit apropiado" \
+  --allowedTools "Bash(git diff *),Bash(git log *),Bash(git status *),Bash(git commit *)"
+```
+
+Claude ve tus cambios, escribe un buen mensaje y hace el commit. Solo puede usar los comandos git que listamos.
+
+**Sesión multi-turno** con `--continue`:
+
+```bash
+claude -p "Revisa este codebase por problemas de performance"
+claude -p "Ahora enfocate en las queries de base de datos" --continue
+claude -p "Resume todos los problemas encontrados" --continue
+```
+
+Cada `--continue` retoma donde quedó el anterior, compartiendo el contexto.
+
+**Monitoreo con `/loop`**:
+
+```
+/loop 5m revisa si el deployment terminó y dime qué pasó
+```
+
+Claude verifica cada 5 minutos mientras la sesión esté abierta. Atención: las tareas de `/loop` expiran a los **3 días**. Para algo más durable, usa tareas Cloud o GitHub Actions con schedule.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-bare"
+  question="¿Qué hace el flag `--bare` en Claude Code y por qué es útil en CI/CD?"
+  options='["Elimina todos los archivos del proyecto antes de ejecutar","Arranca Claude sin cargar hooks, skills, plugins ni CLAUDE.md, haciendo el pipeline más rápido y predecible","Obliga a Claude a usar siempre el modelo Opus","Desactiva la API key y usa un modelo local"]'
+  correctIndex="1"
+  explanation="`--bare` salta la auto-detección de hooks, skills, plugins y CLAUDE.md. En CI/CD eso significa arranques más rápidos y comportamientos más predecibles."
+/>
+
+<NarratedSection id="github-action" heading="Claude revisando PRs automáticamente" sourcePage="484">
+
+Un patrón muy usado: cada vez que alguien abre o actualiza un Pull Request, Claude lo revisa. Se monta con una **GitHub Action**, que es un trabajo automático que corre en los servidores de GitHub.
+
+```yaml
+name: Code Review
+on:
+  pull_request:
+    types: [opened, synchronize]
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: "Revisa este PR por calidad, correctitud y seguridad."
+          claude_args: "--max-turns 5"
+```
+
+Tres cosas que notar:
+
+1. La API key viene de **secrets**, no está escrita en el archivo. Esto es fundamental.
+2. `--max-turns 5` limita iteraciones para no dispararse en costo.
+3. Se dispara con eventos `opened` y `synchronize`: PR nuevo o actualizado.
+
+Con esto, cada PR recibe una primera revisión automática en cuestión de segundos. El humano revisa al final.
+
+</NarratedSection>
+
+<TerminalTask
+  id="task-commit-auto"
+  instruction="Vamos a probar el patrón de commit automático en un repo de prueba. Primero crea un repo git vacío, haz un cambio pequeño y déjalo en staged. Luego ejecuta Claude con permisos limitados a comandos git para que genere y haga el commit. Lee bien el resultado antes de aceptar."
+  command="claude -p &quot;Mira mis cambios staged y crea un commit apropiado&quot; --allowedTools &quot;Bash(git diff *),Bash(git log *),Bash(git status *),Bash(git commit *)&quot; --max-turns 5"
+  expectedOutcome="Claude revisa el diff, propone un mensaje de commit descriptivo y lo aplica. Solo puede usar los 4 comandos git que listamos en --allowedTools; cualquier otro comando sería rechazado."
+  verifyHint="Comprueba con `git log -1` que el último commit tiene el mensaje que Claude generó. Si ves que intenta otro comando distinto, es la señal de que --allowedTools está funcionando: está bloqueándolo."
+/>
+
+<NarratedSection id="cierre" heading="Lo que nos llevamos" sourcePage="487">
+
+Repasemos los bloques de este capítulo:
+
+- **Pipelines multi-agente**: encadenas varios `claude -p` con pipes. Cada uno tiene un rol. Usa Haiku para lo simple y Opus para lo complejo.
+- **Sub-agentes**: especialistas con su propia ventana de contexto. Se guardan en `.claude/agents/`. No pueden crear más sub-agentes.
+- **Agent Teams** (experimental): un equipo completo con lead, teammates, task list y mailbox. Consume muchos tokens; empieza con 3-5.
+- **Git worktrees**: sesiones paralelas sin conflictos de archivos.
+- **Seguridad**: secretos fuera del código, `--allowedTools` granular, `--max-turns`, `--max-budget-usd`, y revisión humana antes del merge.
+- **Flags útiles en CI/CD**: `--bare`, `--no-session-persistence`, `--output-format json`.
+
+Con esto tienes el vocabulario para diseñar automatizaciones serias con Claude. En el siguiente capítulo saltamos a otro nivel: qué cambia cuando no eres una persona sola, sino una empresa entera usando Claude.
+
+</NarratedSection>

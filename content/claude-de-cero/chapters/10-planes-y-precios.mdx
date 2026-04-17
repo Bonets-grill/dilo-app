@@ -1,0 +1,235 @@
+---
+chapterNumber: 10
+slug: planes-y-precios
+title: Planes y Precios
+part: claude-ai
+estimatedMinutes: 20
+prerequisites: []
+status: approved
+generatedAt: '2026-04-17T02:00:00.000Z'
+sourcePagesFrom: 155
+sourcePagesTo: 170
+model: hand-written-by-claude
+---
+
+<NarratedSection id="panorama-general" heading="Los cinco planes, vistos desde arriba" sourcePage="156">
+
+Claude tiene varios planes. Van desde uno gratuito hasta opciones para grandes empresas. La idea de este capítulo es simple: que sepas qué incluye cada plan, cuánto cuesta y cuál te conviene.
+
+Piensa en los planes como los paquetes de un servicio de streaming. Netflix tiene Básico, Estándar y Premium. Claude tiene algo parecido. Hay **5 planes** organizados en dos grupos.
+
+Los **planes individuales** son para una sola persona: Free, Pro y Max. Los **planes organizacionales** son para equipos y empresas: Team y Enterprise. Cada plan sube en precio, pero también sube en funciones y en cuánto puedes usar Claude. Es una escalera: entre más alto subas, más puedes hacer.
+
+Además existe la **API de Claude**. API significa "interfaz de programación de aplicaciones", es decir, una puerta trasera para que programadores conecten sus propios programas a Claude. La API es un producto separado y tiene su propio sistema de precios.
+
+</NarratedSection>
+
+<Quiz
+  id="q-panorama"
+  question="¿Cómo se agrupan los cinco planes de Claude?"
+  options='["Tres planes individuales (Free, Pro, Max) y dos organizacionales (Team, Enterprise)", "Cinco planes individuales sin grupos", "Dos planes gratis y tres de pago", "Un plan por cada modelo de Claude"]'
+  correctIndex="0"
+  explanation="Los individuales son Free, Pro y Max. Los organizacionales son Team y Enterprise. La API es un producto separado, no uno de los cinco planes."
+/>
+
+<NarratedSection id="plan-free" heading="Plan Free: tu prueba de manejo" sourcePage="156">
+
+El plan **Free** es como una prueba de manejo en un concesionario de coches. No pagas nada. Solo necesitas crear una cuenta en `claude.ai`.
+
+Con el plan gratuito puedes usar Claude en la web, en iPhone y en Android. Tienes acceso a los modelos **Sonnet 4.6**, **Sonnet 4.5** y **Haiku 4.5**. Puedes hacer búsquedas web desde el chat. Puedes crear Artifacts básicos (piezas de contenido que Claude genera para ti). Y puedes subir documentos e imágenes para que Claude los analice.
+
+El límite es aproximado: **30 a 100 mensajes por día** con Sonnet, dependiendo de la complejidad de cada mensaje. El contador se reinicia cada 5 horas.
+
+Pero ojo con lo que NO incluye. No tienes acceso a **Opus 4.6**, el modelo más potente. Los Projects están limitados a 5 como máximo (los planes pagados tienen ilimitados). El **Extended Thinking** (cuando Claude piensa en voz alta antes de responder) está disponible con uso restringido. No tienes **Claude Code** ni **Cowork**. Tampoco puedes elegir qué modelo usar: no hay selector de modelos.
+
+Si solo quieres probar Claude para tareas sencillas, Free es perfecto. Pero si lo vas a usar todos los días, te vas a quedar corto rápido.
+
+</NarratedSection>
+
+<Quiz
+  id="q-free-limites"
+  question="¿Qué modelo NO está disponible en el plan Free?"
+  options='["Sonnet 4.6", "Sonnet 4.5", "Haiku 4.5", "Opus 4.6"]'
+  correctIndex="3"
+  explanation="Opus 4.6 es el modelo más potente y está reservado para planes de pago. Free incluye los dos Sonnet y Haiku 4.5."
+/>
+
+<NarratedSection id="plan-pro" heading="Plan Pro: el salto más importante" sourcePage="157">
+
+El plan **Pro** es como pasar de la versión gratuita de Spotify a Premium. Pagas una cuota mensual y se desbloquea todo.
+
+Tienes dos opciones de pago. **Mensual**: $20 USD al mes. **Anual**: aproximadamente $17 USD al mes (pagas el año completo de una vez). La opción anual te ahorra unos $36 al año. Es como recibir casi dos meses gratis.
+
+Pro te da **al menos 5 veces más uso** que Free en cada ventana de 5 horas. Eso son alrededor de 45 mensajes cada 5 horas con Sonnet (depende de la longitud del mensaje). También tiene un **límite semanal** que aplica a todos los modelos y se reinicia 7 días después.
+
+Las funciones que se desbloquean con Pro son importantes:
+
+- **Todos los modelos**, incluyendo Opus 4.6 y Sonnet 4.6.
+- **Selector de modelos**: tú decides qué modelo usar en cada chat.
+- **Projects** y bases de conocimiento.
+- **Extended Thinking**: Claude piensa antes de responder.
+- **Claude Code**: programación asistida desde la terminal.
+- **Cowork** (preview): investigación automatizada paso a paso.
+- **Google Workspace**: conecta Docs, Gmail y Drive.
+- **Acceso prioritario** cuando hay mucho tráfico.
+- **Acceso anticipado** a nuevas funciones.
+
+La **ventana de contexto** (cuánto texto puede procesar Claude en una conversación) es de 200,000 tokens. Eso equivale a unas 500 páginas de texto.
+
+Un detalle que suele confundir: Pro **no incluye acceso a la API**. La API se paga aparte en la Consola de API.
+
+</NarratedSection>
+
+<Quiz
+  id="q-pro-api"
+  question="Si pagas el plan Pro, ¿puedes usar la API de Claude sin coste extra?"
+  options='["Sí, está incluido en Pro", "No, la API se paga aparte en la Consola de API", "Solo para programadores profesionales", "Solo si pagas el plan anual"]'
+  correctIndex="1"
+  explanation="El plan Pro y la API son productos separados. Pro te da acceso al chat, apps y funciones. La API requiere pago aparte para conectar tu propio código."
+/>
+
+<NarratedSection id="plan-max" heading="Plan Max: para uso intensivo" sourcePage="158">
+
+Si usas Claude todo el día, todos los días, Pro se te puede quedar chico. Para eso existe **Max**. Es como la tarifa ilimitada del teléfono: mucha más capacidad.
+
+Max viene en dos versiones:
+
+- **Max 5x**: $100/mes. Te da 5 veces más uso que Pro (25 veces más que Free). Aproximadamente **225 mensajes cada 5 horas**.
+- **Max 20x**: $200/mes. Te da 20 veces más uso que Pro (100 veces más que Free). Aproximadamente **900 mensajes cada 5 horas**.
+
+Ambos tienen dos límites semanales: uno general (todos los modelos) y otro específico para Sonnet. Los dos se reinician cada 7 días.
+
+Además de todo lo que trae Pro, Max añade **prioridad máxima** (nunca esperas, ni en horario pico), acceso **primero en fila** a nuevos modelos y funciones, **Claude Code completo** con flujos avanzados desde la terminal y **Cowork** para tareas multi-paso en Claude Desktop.
+
+Un detalle importante: Max **solo se vende con facturación mensual**. No hay opción anual. Si haces upgrade desde Pro, el cobro se **prorratea**. Prorratear significa que solo pagas la diferencia por los días que quedan del mes. No pagas doble.
+
+</NarratedSection>
+
+<Quiz
+  id="q-max-billing"
+  question="¿Puedes pagar el plan Max de forma anual para ahorrar, como con Pro?"
+  options='["Sí, Max tiene opción anual con descuento", "No, Max solo existe con facturación mensual", "Solo Max 20x tiene opción anual", "Depende del país"]'
+  correctIndex="1"
+  explanation="Max solo se vende con facturación mensual. Si quieres pagar anual, tus opciones individuales son Pro y Team."
+/>
+
+<NarratedSection id="plan-team" heading="Plan Team: para trabajar en grupo" sourcePage="159">
+
+Imagina que tienes un equipo de 10 personas. Cada uno podría pagar su propio plan Pro. Pero **Team** es mejor: agrega herramientas de colaboración, seguridad y administración centralizada.
+
+En Team, cada persona ocupa un **asiento**. Hay dos tipos:
+
+- **Estándar**: $25/mes (mensual) o $20/mes (anual). Da 1.25x el uso de Pro.
+- **Premium**: $125/mes (mensual) o $100/mes (anual). Da 6.25x el uso de Pro.
+
+Puedes mezclar tipos. Tal vez tu equipo de marketing necesita asientos Estándar, pero los programadores necesitan Premium.
+
+**Requisitos**: mínimo 5 miembros, máximo 150 asientos. Si necesitas más de 150, pasas a Enterprise. Los límites se aplican **por persona**. No es un límite compartido del equipo.
+
+Team incluye todo lo de Pro y Max, más herramientas para equipos:
+
+- **Administración centralizada**: un administrador controla todo.
+- **Facturación centralizada**: una sola factura para todo el equipo.
+- **SSO** (Single Sign-On): los empleados entran con sus credenciales corporativas.
+- **Domain Capture**: detecta cuando alguien de tu empresa se registra.
+- **Roles y permisos**: decides quién puede hacer qué.
+- **Conectores**: Google Drive, Gmail, Calendar, GitHub, Microsoft 365 y Slack.
+- **Búsqueda empresarial**: Claude busca en tus herramientas conectadas.
+- **Proyectos compartidos** y bases de conocimiento colectivas.
+- **Chats compartidos** en tiempo real.
+
+</NarratedSection>
+
+<Quiz
+  id="q-team-requisitos"
+  question="¿Cuál es el tamaño mínimo y máximo de un equipo en el plan Team?"
+  options='["1 mínimo, 50 máximo", "5 mínimo, 150 máximo", "10 mínimo, sin máximo", "3 mínimo, 100 máximo"]'
+  correctIndex="1"
+  explanation="Team requiere al menos 5 miembros y permite hasta 150 asientos. Si tu organización supera 150 personas, el siguiente paso es Enterprise."
+/>
+
+<NarratedSection id="plan-enterprise" heading="Plan Enterprise: para grandes organizaciones" sourcePage="160">
+
+**Enterprise** es el plan más completo. Está diseñado para empresas que necesitan seguridad de nivel corporativo y sin límites de uso.
+
+Enterprise tiene un modelo de precio diferente al resto. Pagas una **tarifa por asiento** (por usuario, por mes, facturado anual). Y el **uso se factura aparte**, a tasas de API estándar. No hay límites de uso a nivel de plan ni de asiento.
+
+Es como un contrato de electricidad: pagas una cuota base por estar conectado, y luego pagas lo que consumes.
+
+Incluye todo de Team, más varias funciones exclusivas. La **ventana de contexto ampliada** llega a 500K tokens con Sonnet 4.6 en chat, y hasta 1 millón de tokens con Claude Code y Sonnet 4.6. También trae **registros de auditoría** (rastreo completo de actividad), **SCIM** (sincronización automática de usuarios con tu directorio), **retención de datos personalizada**, **Compliance API**, **Analytics API**, **HIPAA BAA** disponible (solo en planes asistidos por ventas), **IP allowlisting**, **Tenant Restrictions** y exportación de datos organizacionales.
+
+Hay **tres formas de comprar Enterprise**:
+
+1. **Autoservicio**: vas a `claude.ai/create/enterprise`. Pagas con tarjeta o créditos prepagados. Empiezas de inmediato.
+2. **Asistido por ventas**: contactas al equipo de Anthropic. Permite pago por factura, ACH, pruebas, HIPAA BAA y términos personalizados.
+3. **AWS Marketplace**: compras directamente desde tu cuenta de AWS. Útil si ya tienes presupuesto asignado en AWS.
+
+</NarratedSection>
+
+<Quiz
+  id="q-enterprise-precio"
+  question="¿Cómo funciona el cobro de Enterprise?"
+  options='["Un precio fijo mensual como Pro", "Tarifa por asiento más uso facturado aparte a tasas API", "Solo pago único anual", "Gratis para organizaciones grandes"]'
+  correctIndex="1"
+  explanation="Enterprise cobra una tarifa por asiento que cubre el acceso, y el uso se factura aparte según consumo de API. Es como una cuota base de electricidad más el consumo."
+/>
+
+<NarratedSection id="extra-usage-api" heading="Extra Usage y precios de la API" sourcePage="161">
+
+Imagina que se te acaban los minutos del teléfono a mitad de mes. **Extra Usage** es como comprar un paquete adicional para seguir hablando.
+
+Cuando alcanzas tu límite de sesión (cada 5 horas), Claude te avisa. Si tienes Extra Usage activado, puedes seguir usando Claude y se te cobra a **tasas de API estándar**. Está disponible en Pro, Max 5x y Max 20x. Para activarlo vas a **Settings &gt; Usage &gt; Extra usage**, pulsas **Enable**, configuras método de pago y pones un límite mensual.
+
+Importante: el uso en `claude.ai`, Claude Code y Claude Desktop cuenta hacia el **mismo límite**. No son límites separados por plataforma. Y Extra Usage **solo se puede activar desde la versión web**, no desde la app móvil.
+
+La **API** también tiene su propio sistema de precios. Cobra por **tokens**. Un token es un pedacito de texto, más o menos una palabra o parte de una palabra. Los precios se cuentan por millón de tokens:
+
+- **Haiku 4.5**: $1 entrada, $5 salida. El más económico.
+- **Sonnet 4.6**: $3 entrada, $15 salida. Buen equilibrio.
+- **Opus 4.6**: $5 entrada, $25 salida. El más potente y caro.
+
+Hay dos trucos para ahorrar en la API. El **Batch API**: si no necesitas la respuesta al instante, mandas peticiones en lote y obtienes **50% de descuento**. El **Prompt Caching**: si siempre mandas el mismo texto al inicio (como instrucciones), Claude lo guarda en cache. La lectura del cache cuesta solo 0.1x el precio base, un 90% de ahorro.
+
+La API tiene **niveles (tiers)**. Entre más créditos compres, más alto tu nivel, y más peticiones por minuto puedes hacer. Tier 1 empieza comprando $5 en créditos.
+
+</NarratedSection>
+
+<Quiz
+  id="q-api-tokens"
+  question="¿Qué es un token en la API de Claude?"
+  options='["Una moneda virtual que compras", "Un pedacito de texto, más o menos una palabra o parte de una palabra", "Un permiso de acceso", "Un modelo de Claude"]'
+  correctIndex="1"
+  explanation="Un token es una unidad pequeña de texto. La API cobra por millones de tokens de entrada y de salida, y cada modelo tiene su propio precio."
+/>
+
+<NarratedSection id="como-elegir" heading="Cómo elegir el plan correcto" sourcePage="163">
+
+No necesitas el plan más caro. Necesitas el plan que se ajuste a tu uso real. Aquí van unas guías simples.
+
+**Si eres un usuario individual:**
+
+- **Solo quieres probar Claude**: empieza con **Free**. Es gratis y no pierdes nada.
+- **Usas Claude varias veces al día**: **Pro** ($20/mes). Es el salto más importante en funciones.
+- **Claude es tu herramienta principal de trabajo**: **Max 5x** ($100/mes). Si te quedas corto, subes a Max 20x.
+
+Pro es la mejor opción para la mayoría de usuarios que usan Claude a diario. Por $20 al mes obtienes acceso a Opus, Extended Thinking, Claude Code y Projects ilimitados.
+
+**Si eres un equipo u organización:**
+
+- **Equipo de 5 a 150 personas**: **Team**. Mezcla asientos Estándar y Premium según cada miembro.
+- **Más de 150 personas, o necesitas seguridad avanzada**: **Enterprise**.
+- **Necesitas HIPAA, retención personalizada o auditoría**: Enterprise **asistido por ventas**.
+
+Los planes de Claude no son un matrimonio. Puedes **cambiar cuando quieras**. De Free a Pro vas a `claude.ai/upgrade`. De Pro a Max vas a **Settings &gt; Billing** y eliges Max 5x o 20x; solo pagas la diferencia proporcional. Cancelar también es fácil: **Settings &gt; Billing &gt; Cancel**. La cancelación toma efecto al final del período de facturación actual.
+
+Sobre reembolsos, seamos directos: los pagos son generalmente **no reembolsables**, salvo excepciones por ley o términos de servicio. Y si pagaste por la App Store de Apple o por Google Play, el reembolso tienes que pedirlo a Apple o a Google. Anthropic no puede procesarlos.
+
+</NarratedSection>
+
+<Quiz
+  id="q-elegir"
+  question="Eres una persona que usa Claude todos los días como herramienta principal de trabajo. ¿Qué plan encaja mejor como punto de partida según el capítulo?"
+  options='["Free, porque es gratis", "Pro ($20/mes) y subir a Max si te quedas corto", "Enterprise, para tener seguridad avanzada", "Team Premium, aunque estés solo"]'
+  correctIndex="1"
+  explanation="Pro es el salto más importante en funciones y cubre a la mayoría de usuarios diarios. Si se queda corto, Max 5x es el siguiente paso natural. Team y Enterprise son para organizaciones."
+/>

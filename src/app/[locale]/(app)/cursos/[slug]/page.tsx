@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Loader2, BookOpen, Lock } from "lucide-react";
+import { ArrowLeft, Loader2, BookOpen, Lock, PlayCircle, CheckCircle2 } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { createBrowserSupabase } from "@/lib/supabase/client";
+import { CHAPTERS, PARTS } from "@/lib/course/slugs";
 
 // react-pdf usa APIs del DOM — cargar solo en cliente
 const CoursePDFViewer = dynamic(() => import("@/components/CoursePDFViewer"), {
@@ -118,7 +119,65 @@ export default function CursoPage() {
     );
   }
 
-  // Viewer
+  // Curso interactivo MDX (solo claude-de-cero-a-cien por ahora)
+  if (slug === "claude-de-cero-a-cien") {
+    return (
+      <div className="h-full overflow-y-auto">
+        <div className="max-w-2xl mx-auto px-4 py-5 space-y-5">
+          <div className="flex items-center gap-3">
+            <Link href="/store" className="text-[var(--dim)]">
+              <ArrowLeft size={18} />
+            </Link>
+            <BookOpen size={18} className="text-[var(--accent)]" />
+            <div className="flex-1 min-w-0">
+              <p className="text-base font-semibold">{info.course?.title}</p>
+              <p className="text-[11px] text-[var(--dim)]">25 capítulos · MDX narrado</p>
+            </div>
+          </div>
+
+          <Link
+            href={`/cursos/${slug}/c/que-es-claude` as never}
+            className="flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-r from-indigo-500/15 to-purple-500/15 border border-indigo-500/30 hover:border-indigo-500/50 transition"
+          >
+            <PlayCircle size={32} className="text-indigo-400 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold">Empezar por el principio</p>
+              <p className="text-[11px] text-[var(--dim)]">Capítulo 1 — Qué es Claude</p>
+            </div>
+          </Link>
+
+          {PARTS.map((part) => {
+            const chapters = CHAPTERS.filter((c) => c.part === part.id);
+            if (chapters.length === 0) return null;
+            return (
+              <section key={part.id}>
+                <h3 className="text-[10px] font-semibold uppercase tracking-wider text-[var(--dim)] mb-2">
+                  {part.label}
+                </h3>
+                <div className="space-y-1">
+                  {chapters.map((c) => (
+                    <Link
+                      key={c.slug}
+                      href={`/cursos/${slug}/c/${c.slug}` as never}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--bg2)] transition"
+                    >
+                      <span className="text-[10px] font-mono text-[var(--dim)] w-6 text-right">
+                        {c.chapterNumber.toString().padStart(2, "0")}
+                      </span>
+                      <CheckCircle2 size={14} className="text-[var(--dim)] opacity-30 flex-shrink-0" />
+                      <span className="text-sm flex-1">{c.title}</span>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // PDF viewer (fallback para otros cursos que sigan siendo PDF)
   return (
     <div className="h-full flex flex-col">
       <div className="flex-shrink-0 flex items-center gap-3 px-4 py-2 border-b border-[var(--border)]">

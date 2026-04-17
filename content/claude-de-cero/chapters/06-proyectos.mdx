@@ -1,0 +1,397 @@
+---
+chapterNumber: 6
+slug: proyectos
+title: Proyectos y Organización con Claude Code
+part: claude-ai
+estimatedMinutes: 31
+prerequisites:
+  - Saber abrir una terminal
+  - 'Tener una cuenta de pago de Anthropic (Pro, Max, Teams o Console)'
+status: approved
+generatedAt: '2025-01-15T12:00:00Z'
+sourcePagesFrom: 176
+sourcePagesTo: 210
+model: claude-opus-4-7
+---
+<NarratedSection id="intro-gancho" heading="Un compañero programador en tu computadora" sourcePage="176">
+
+Imagina que pudieras sentar a un compañero experto en programación justo al lado de tu computadora. Le muestras tu proyecto, le pides ayuda y él lee tus archivos, propone cambios y hasta los aplica. Eso es **Claude Code**: una herramienta que corre en tu **terminal** (la ventana de texto donde escribes comandos) y trabaja con tus archivos.
+
+En este capítulo vamos a instalarlo, encenderlo por primera vez y conocer sus comandos más importantes. No te preocupes si nunca has usado la terminal: iremos paso a paso.
+
+</NarratedSection>
+
+<NarratedSection id="instalar-verificar" heading="Instalar y verificar que todo funciona" sourcePage="176">
+
+La forma recomendada de instalar Claude Code se llama **instalador nativo**. Es un solo comando que descarga el programa y lo prepara. En macOS o Linux se ve así:
+
+```
+curl -fsSL https://claude.ai/install.sh | bash
+```
+
+Una vez instalado, conviene comprobar dos cosas. Primero, que el comando existe: `claude --version` muestra el número de versión. Segundo, un chequeo más profundo con `claude doctor`, que revisa tipo de instalación, auto-actualización, configuración y posibles errores.
+
+Si ya tenías Claude Code instalado con **npm** (el gestor de paquetes de Node.js), el libro recomienda migrar al nativo: primero corres el instalador de arriba y después `npm uninstall -g @anthropic-ai/claude-code` para borrar la versión vieja.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-doctor"
+  question="¿Para qué sirve el comando claude doctor?"
+  options='["Para actualizar Claude Code a la última versión","Para diagnosticar la instalación: versión, configuración y posibles errores","Para desinstalar Claude Code de tu máquina","Para iniciar sesión con tu cuenta de Anthropic"]'
+  correctIndex="1"
+  explanation="claude doctor es la herramienta de diagnóstico. Revisa tipo de instalación, versión, auto-actualización, configuración y posibles errores. Es el primer comando que debes probar cuando algo falla."
+/>
+
+<NarratedSection id="notas-plataforma" heading="Cada sistema operativo, sus detalles" sourcePage="177">
+
+En **macOS** todo suele funcionar sin sobresaltos. El shell (el programa que interpreta tus comandos) predeterminado es **Zsh**, y las credenciales se guardan en el **Keychain**, el mismo lugar encriptado donde tu Mac guarda tus contraseñas de Wi-Fi.
+
+En **Linux** suele ir igual de suave. Excepción: **Alpine Linux** usa una librería distinta llamada *musl* en vez de *glibc*, así que necesita dependencias extra con `apk add libgcc libstdc++ ripgrep`. Si tu servidor tiene poca RAM y la instalación muere con el mensaje 'Killed', hay que agregar *swap* (memoria virtual en disco) con `fallocate` y `swapon`.
+
+En **Windows** el requisito extra es **Git for Windows**. ¿Por qué? Porque Claude Code usa **Git Bash** internamente para ejecutar comandos. Sin él, no arranca. Se descarga gratis desde git-scm.com/downloads/win.
+
+</NarratedSection>
+
+<NarratedSection id="wsl-docker" heading="WSL y Docker: casos especiales" sourcePage="178">
+
+**WSL** (Windows Subsystem for Linux) te permite correr Linux dentro de Windows. Claude Code funciona ahí, pero ojo: **WSL 1** no soporta *sandboxing* (la capa de seguridad que aísla lo que Claude Code puede hacer), mientras que **WSL 2** sí, aunque requiere instalar `bubblewrap` y `socat`.
+
+Un detalle práctico de rendimiento: trabaja en `/home/` (el sistema de archivos nativo de Linux), no en `/mnt/c/` (el de Windows). La diferencia de velocidad es enorme.
+
+Si usas **Docker** (contenedores que aíslan software), no instales desde el directorio raíz `/`. El instalador escanea la carpeta actual y puede colgarse. En el Dockerfile, primero usa `WORKDIR /tmp` y después instala. Y dale memoria suficiente con `docker build --memory=4g .`.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-windows"
+  question="En Windows, ¿qué software adicional necesita Claude Code para poder arrancar?"
+  options='["Visual Studio Code","Docker Desktop","Git for Windows (para usar Git Bash internamente)","Node.js y npm"]'
+  correctIndex="2"
+  explanation="Claude Code usa Git Bash internamente para ejecutar comandos en Windows. Por eso requiere instalar Git for Windows desde git-scm.com/downloads/win. Sin él, no arranca."
+/>
+
+<NarratedSection id="primera-ejecucion" heading="Primera ejecución: arrancar y hacer login" sourcePage="179">
+
+Ya con Claude Code instalado, el flujo es sencillo. Primero, **navega a la carpeta de tu proyecto** con `cd tu-proyecto`. Esto es importante: Claude Code funciona mucho mejor cuando lo lanzas desde la carpeta donde viven tus archivos, porque así puede leerlos. Piénsalo como llevar a tu compañero programador a tu oficina: necesita ver tus archivos para ayudarte.
+
+Luego escribe `claude` y pulsa Enter. La primera vez, se abre tu navegador automáticamente para que inicies sesión con tu cuenta de Anthropic. Si el navegador no se abre (pasa mucho en SSH o WSL), presiona `c` para copiar la URL y pégala tú mismo en el navegador.
+
+Los tipos de cuenta soportados son: **Claude Pro/Max**, **Teams/Enterprise**, **Console**, y proveedores cloud como **Bedrock**, **Vertex** o **Foundry** (estos últimos no usan login web, sino variables de entorno).
+
+</NarratedSection>
+
+<NarratedSection id="pantalla-bienvenida" heading="La pantalla de bienvenida y tu primer mensaje" sourcePage="180">
+
+Tras el login ves la pantalla de bienvenida con tu cuenta, el modelo activo y tus conversaciones recientes. Desde ahí puedes escribir una pregunta directamente o usar comandos especiales que empiezan con `/`.
+
+Prueba algo sencillo: escribe `Explicame la estructura de este proyecto`. Claude Code leerá tus archivos y te dará un resumen.
+
+Atajos útiles desde el principio: `?` muestra todos los atajos de teclado, `Tab` autocompleta comandos y rutas, y la flecha arriba te trae comandos anteriores del historial. Y si quieres lanzar algo directo sin entrar a la sesión interactiva, tienes `claude -p "explica esta funcion"`, que responde y sale.
+
+</NarratedSection>
+
+<TerminalTask
+  id="task-version"
+  instruction="Abre tu terminal y comprueba que Claude Code está instalado correctamente. Vas a pedirle que te diga su número de versión. Este comando no modifica nada en tu sistema, solo imprime información."
+  command="claude --version"
+  expectedOutcome="La terminal muestra un número de versión (por ejemplo '1.0.58' o similar). Si en su lugar ves 'command not found', significa que Claude Code no está instalado o no está en tu PATH."
+  verifyHint="Si aparece 'command not found: claude', añade ~/.local/bin al PATH siguiendo las instrucciones del capítulo según tu sistema operativo."
+/>
+
+<NarratedSection id="canales" heading="Canales de actualización: rápido o estable" sourcePage="181">
+
+Claude Code tiene dos **canales de actualización**, que son como dos carriles de una autopista. En **Latest** (el predeterminado) recibes las novedades apenas salen; es el carril rápido pero puede incluir algún bug nuevo. En **Stable** recibes todo con una semana de retraso, y si una versión tenía errores graves, se la saltan.
+
+Para instalar directo en stable: `curl -fsSL https://claude.ai/install.sh | bash -s stable`. Para cambiar de canal después, usa `/config` dentro de una sesión y elige 'Auto-update channel'.
+
+Si necesitas desactivar las auto-actualizaciones (útil en entornos controlados por una empresa), añade en tu `settings.json`:
+
+```
+{"env": {"DISABLE_AUTOUPDATER": "1"}}
+```
+
+</NarratedSection>
+
+<NarratedSection id="archivos-config" heading="Dónde vive la configuración" sourcePage="182">
+
+Claude Code guarda su configuración en varios archivos. No necesitas tocarlos hoy, pero es bueno saber dónde están.
+
+- `~/.claude/settings.json` — Tu configuración **personal**: permisos, hooks, preferencias.
+- `.claude/settings.json` — Configuración del **proyecto**, compartida con tu equipo vía Git.
+- `.claude/settings.local.json` — Configuración **local** del proyecto. NO se sube a Git.
+- `~/.claude.json` — Estado global: tema visual, OAuth, servidores MCP.
+- `CLAUDE.md` — Instrucciones para Claude Code: estándares de código, decisiones arquitectónicas y reglas del proyecto.
+- `.mcp.json` — Servidores **MCP** (Model Context Protocol) del proyecto; son herramientas externas que Claude puede usar.
+
+El símbolo `~` significa 'tu carpeta de usuario'. Todo lo que empieza con `~/` vive en tu home; lo que no, vive en la carpeta del proyecto.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-claude-md"
+  question="¿Cuál es el propósito del archivo CLAUDE.md en un proyecto?"
+  options='["Guardar las credenciales de tu cuenta de Anthropic","Definir instrucciones para Claude Code: estándares de código y reglas del proyecto","Listar los servidores MCP que usa tu proyecto","Registrar el historial de todas tus conversaciones"]'
+  correctIndex="1"
+  explanation="CLAUDE.md es donde escribes instrucciones para Claude Code: estándares de código, decisiones arquitectónicas y reglas del proyecto. Es como el manual de convivencia que lee Claude antes de trabajar."
+/>
+
+<NarratedSection id="red-empresa" heading="Redes empresariales: proxy y certificados" sourcePage="183">
+
+Si trabajas en una empresa con **proxy** (un intermediario entre tu computadora e internet) o **firewall**, esta parte te interesa. Si estás en tu portátil personal, puedes saltarla.
+
+Claude Code necesita acceder a: `api.anthropic.com`, `claude.ai`, `platform.claude.com` y `storage.googleapis.com`. Si tu empresa bloquea alguno, no funcionará.
+
+Para configurar proxy, Claude Code respeta las variables estándar:
+
+```
+export HTTP_PROXY=http://proxy.example.com:8080
+export HTTPS_PROXY=http://proxy.example.com:8080
+```
+
+Importante: solo soporta proxies HTTP y HTTPS, **no SOCKS**. Si tu empresa inspecciona tráfico encriptado (*TLS inspection*), indica el certificado con `NODE_EXTRA_CA_CERTS=/ruta/al/certificado.pem`.
+
+</NarratedSection>
+
+<NarratedSection id="errores-comunes" heading="Errores comunes y cómo resolverlos" sourcePage="184">
+
+Los problemas más típicos tienen solución conocida.
+
+**'command not found: claude'**: el directorio de instalación no está en tu PATH (la lista de carpetas donde tu terminal busca comandos). La solución en Zsh/macOS es añadir `~/.local/bin` al PATH:
+
+```
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+**'Killed' durante la instalación en Linux**: falta memoria. Se arregla añadiendo 2 GB de swap con `fallocate` y `swapon`.
+
+**Errores de TLS/SSL**: suelen venir de certificados viejos o del proxy corporativo. En Linux, `sudo apt-get install ca-certificates` actualiza los certificados raíz.
+
+**'OAuth error: Invalid code'**: el código de login expiró o se copió incompleto. Presiona Enter para reintentar; si estás en SSH o WSL, usa `c` para copiar la URL completa.
+
+</NarratedSection>
+
+<NarratedSection id="formas-iniciar" heading="Formas de iniciar Claude Code" sourcePage="193">
+
+Hay varias maneras de abrir Claude Code, cada una para una situación distinta.
+
+La **sesión interactiva** es una conversación ida y vuelta, como chatear. `claude` abre una sesión vacía, y `claude "explica este proyecto"` abre la sesión y envía tu mensaje de inmediato.
+
+El **modo print** (`-p` o `--print`) es como mandar un SMS: envías, recibes respuesta y se acabó. Perfecto para scripts:
+
+```
+claude -p "explica esta función"
+cat archivo.txt | claude -p "resume esto"
+```
+
+Para retomar trabajo previo tienes `claude -c` (continúa la última conversación de este directorio) y `claude -r "auth-refactor"` (reanuda una sesión por nombre).
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-modo-print"
+  question="¿En qué situación es más útil usar el modo print (claude -p) en vez de la sesión interactiva?"
+  options='["Cuando quieres tener una conversación larga con Claude y hacer varias preguntas seguidas","Cuando necesitas ejecutar Claude desde un script de bash y procesar la respuesta automáticamente","Cuando es la primera vez que usas Claude Code y necesitas iniciar sesión","Cuando quieres que Claude modifique muchos archivos de forma interactiva"]'
+  correctIndex="1"
+  explanation="El modo print ejecuta la consulta, imprime la respuesta y sale. No abre sesión interactiva. Es ideal para scripts y automatización donde no necesitas conversación de ida y vuelta."
+/>
+
+<NarratedSection id="flags-modelo" heading="Elegir el cerebro: flags de modelo y esfuerzo" sourcePage="194">
+
+Un **flag** es como un interruptor que activas al arrancar Claude. Van después de `claude` y empiezan con `--` (o `-` para la versión corta).
+
+`--model` elige qué 'cerebro' usa Claude. Puedes pasar el nombre completo o un alias corto: `claude --model sonnet`, `claude --model opus`, `claude --model haiku`.
+
+`--fallback-model` es tu **plan B**: si el modelo principal está saturado, Claude usa este otro. Solo funciona con `--print`.
+
+`--effort` controla cuánto esfuerzo pone Claude en cada respuesta. Los niveles son: `low` (rápido y conciso), `medium` (balanceado), `high` (por defecto, más profundo), `max` (máxima profundidad, solo con Opus 4.6) y `auto` (Claude decide según la tarea). También lo puedes cambiar dentro de una sesión con `/effort`.
+
+</NarratedSection>
+
+<NarratedSection id="worktrees-bare" heading="Worktrees y modo bare" sourcePage="195">
+
+Un **worktree** es como una mesa de trabajo separada: múltiples copias de tu proyecto, cada una en su mesa, sin mezclarse. Útil para trabajar en varias features a la vez.
+
+```
+claude -w feature-auth
+```
+
+Esto crea un worktree en `<repo>/.claude/worktrees/feature-auth`. Si añades `--tmux`, se abre en una sesión tmux (un multiplexor que parte la terminal en paneles).
+
+El **modo bare** (`--bare`) es el modo mínimo. Salta hooks, skills, plugins, servidores MCP, auto-memoria y archivos CLAUDE.md. Solo quedan Bash, lectura y edición de archivos. Piénsalo como el 'modo seguro' de Windows: ideal para **CI/CD** (sistemas que ejecutan pruebas automáticas) donde necesitas resultados consistentes en toda máquina.
+
+</NarratedSection>
+
+<NarratedSection id="permisos-herramientas" heading="Permisos: las llaves de tu casa" sourcePage="197">
+
+Claude Code puede leer archivos, ejecutar comandos y editar código. Estos flags controlan **qué herramientas puede usar sin pedirte permiso**. Es como decidir a qué habitaciones de tu casa le das la llave.
+
+`--allowedTools` permite herramientas sin preguntar. Soporta comodines (`*`): `claude --allowedTools "Bash(git log *)" "Bash(git diff *)" "Read"`.
+
+`--disallowedTools` las elimina por completo. Claude ni sabe que existen: `claude --disallowedTools "Bash(git push *)" "WebFetch"`.
+
+`--tools` define la lista exacta de herramientas disponibles. Todo lo demás se elimina.
+
+Los **modos de permiso** (`--permission-mode`) son seis: `default` (pide la primera vez), `acceptEdits` (auto-acepta ediciones), `plan` (solo lectura, no modifica), `auto` (aprueba con un clasificador de seguridad en background), `dontAsk` (rechaza salvo pre-aprobadas) y `bypassPermissions` (salta todo, peligroso).
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-permisos"
+  question="¿Cuál es la diferencia entre --disallowedTools y denegar permisos a una herramienta?"
+  options='["No hay diferencia, son exactamente lo mismo","--disallowedTools elimina la herramienta por completo; Claude ni sabe que existe. Denegar permisos la mantiene visible pero bloqueada","--disallowedTools solo funciona en Linux; denegar permisos funciona en todos los sistemas","--disallowedTools es temporal; denegar permisos es permanente"]'
+  correctIndex="1"
+  explanation="Según el texto, --disallowedTools es más fuerte: la herramienta desaparece del mapa. Con denegar permisos Claude sabe que existe pero no puede usarla. La diferencia importa porque afecta cómo Claude razona sobre qué puede hacer."
+/>
+
+<NarratedSection id="rutas-protegidas" heading="Rutas siempre protegidas" sourcePage="199">
+
+Hay archivos y directorios que Claude Code **nunca** modifica automáticamente, ni siquiera en modo `bypassPermissions`. Siempre pide permiso explícito. Es una red de seguridad que protege lo crítico de tu sistema.
+
+**Directorios protegidos**: `.git`, `.vscode`, `.idea`, `.husky`, y `.claude` (excepto las subcarpetas `commands`, `agents`, `skills` y `worktrees`).
+
+**Archivos protegidos**: `.gitconfig`, `.gitmodules`, `.bashrc`, `.bash_profile`, `.zshrc`, `.zprofile`, `.profile`, `.ripgreprc`, `.mcp.json` y `.claude.json`.
+
+Esto impide que Claude, por error, destroce tu configuración de Git o tu shell de arranque.
+
+</NarratedSection>
+
+<NarratedSection id="output-automatizacion" heading="Formato de salida y freno de mano" sourcePage="200">
+
+Para **automatizar** con scripts, el formato de respuesta importa. `--output-format` cambia cómo Claude entrega lo que dice (solo con `--print`): `text` (plano, por defecto), `json` (objeto completo, fácil de parsear) y `stream-json` (eventos línea por línea, vas viendo la respuesta en vivo).
+
+Si quieres una estructura exacta, `--json-schema` le pasa un **JSON Schema** y Claude devuelve datos que lo cumplen. Es como darle un formulario a rellenar.
+
+Y como 'freno de mano' para evitar sorpresas, tienes:
+
+- `--max-turns 3`: límite de cuántas veces Claude puede pensar y actuar.
+- `--max-budget-usd 5.00`: tope de gasto en dólares.
+
+Ambos solo funcionan con `--print`. Son tu seguro contra tareas que se descontrolan.
+
+</NarratedSection>
+
+<NarratedSection id="system-prompt" heading="System prompt: reemplazar o añadir" sourcePage="201">
+
+El **system prompt** son las instrucciones base que Claude sigue siempre. Es como el manual de entrenamiento de un empleado. Puedes cambiarlo por completo o solo añadirle cosas.
+
+`--system-prompt "..."` **reemplaza TODO** el prompt por defecto. Claude pierde sus instrucciones originales y solo sigue las tuyas. Úsalo con cuidado.
+
+`--append-system-prompt "..."` **añade al final**. Claude mantiene sus capacidades originales y además sigue tus reglas extra. Es la opción más segura y recomendada para la mayoría de casos.
+
+```
+claude --append-system-prompt "Siempre usa TypeScript e incluye comentarios JSDoc"
+```
+
+Ambos tienen una variante `-file` que lee desde un archivo. Útil para compartir prompts entre todo tu equipo.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-append"
+  question="¿Por qué --append-system-prompt es más seguro que --system-prompt para la mayoría de casos?"
+  options='["Porque se ejecuta más rápido","Porque añade instrucciones al final conservando las capacidades originales de Claude, en vez de reemplazarlas por completo","Porque funciona sin conexión a internet","Porque es gratis mientras --system-prompt cuesta tokens extra"]'
+  correctIndex="1"
+  explanation="--append-system-prompt agrega al final del prompt por defecto, así Claude conserva todas sus capacidades originales Y sigue tus instrucciones extra. Con --system-prompt reemplazas todo y Claude pierde sus instrucciones originales."
+/>
+
+<NarratedSection id="comandos-slash" heading="Comandos slash: los atajos de dentro" sourcePage="204">
+
+Dentro de una sesión interactiva, los **comandos slash** empiezan con `/` y te dan atajos sin salir de la conversación. Hay muchísimos; estos son los imprescindibles:
+
+- `/help` — lista todos los comandos.
+- `/clear` — borra el historial de la conversación actual.
+- `/resume` — retoma una conversación anterior.
+- `/compact` — resume toda la conversación para liberar espacio de contexto. Crítico en sesiones largas.
+- `/init` — crea un CLAUDE.md inicial para tu proyecto.
+- `/doctor` — diagnóstico de la instalación.
+- `/permissions` — gestiona qué herramientas usa sin preguntar.
+- `/status` — muestra versión, modelo, cuenta y conectividad.
+- `/cost` y `/stats` — consumo y estadísticas de uso.
+- `/diff` — visor de qué cambió Claude, archivo por archivo.
+- `/rewind` — tu 'deshacer' general: retrocede conversación y código a un punto anterior.
+
+</NarratedSection>
+
+<NarratedSection id="input-especial" heading="Tres prefijos mágicos en el prompt" sourcePage="207">
+
+Dentro de la sesión interactiva hay tres símbolos con superpoderes al principio de una línea:
+
+- `!` — ejecuta un comando bash directamente. Ejemplo: `! git status`. El resultado se añade al contexto.
+- `@` — autocompleta rutas de archivo. Escribe `@src/comp` y pulsa Tab; Claude recibirá el archivo como contexto.
+- `/` — accede a comandos slash y skills.
+
+Con estos tres prefijos tienes la terminal, el explorador de archivos y el menú de funciones, todo sin salir del chat.
+
+</NarratedSection>
+
+<NarratedSection id="atajos-teclado" heading="Atajos de teclado que ahorran tiempo" sourcePage="207">
+
+Estos atajos trabajan dentro de una sesión interactiva:
+
+- `Ctrl+C` — cancela lo que Claude está haciendo.
+- `Ctrl+D` — sale de Claude Code.
+- `Ctrl+G` — abre tu editor de texto para escribir prompts largos.
+- `Ctrl+R` — busca en el historial de comandos.
+- `Ctrl+T` — muestra u oculta la lista de tareas.
+- `Shift+Tab` / `Alt+M` — cicla entre modos de permisos.
+- `Esc + Esc` — **rewind**: restaura código y conversación a un punto anterior.
+- `Alt+T` — alterna **extended thinking** (pensamiento más profundo).
+
+Para **entrada multilínea** (por ejemplo pegar un bloque de código): `\` + Enter funciona siempre; `Option+Enter` en macOS; `Shift+Enter` en terminales como iTerm2, WezTerm, Ghostty o Kitty. Si tu terminal no lo soporta, ejecuta `/terminal-setup`.
+
+</NarratedSection>
+
+<NarratedSection id="variables-entorno" heading="Variables de entorno: instrucciones en la pared" sourcePage="208">
+
+Las **variables de entorno** son como carteles pegados en la pared de la oficina. Claude Code las lee al arrancar y ajusta su comportamiento. Se configuran en tu terminal antes de ejecutar Claude.
+
+Ejemplo: `export ANTHROPIC_MODEL=opus` y luego `claude`.
+
+Las más útiles según el libro:
+
+- `ANTHROPIC_API_KEY` — tu API key de Anthropic.
+- `ANTHROPIC_MODEL` — equivalente a `--model`.
+- `ANTHROPIC_BASE_URL` — URL alternativa para proxies/gateways.
+- `CLAUDE_CODE_MAX_OUTPUT_TOKENS` — máximo de tokens de salida (default 32000, máximo 64000).
+- `DISABLE_AUTOUPDATER=1` — desactiva auto-actualizaciones.
+- `DISABLE_TELEMETRY=1` — desactiva telemetría.
+- `CLAUDECODE` — se pone a 1 automáticamente en shells creados por Claude Code. Útil para detectar si estás dentro de una sesión.
+
+Para proveedores cloud existen `CLAUDE_CODE_USE_BEDROCK`, `CLAUDE_CODE_USE_VERTEX` y `CLAUDE_CODE_USE_FOUNDRY`.
+
+</NarratedSection>
+
+<TerminalTask
+  id="task-doctor"
+  instruction="Ejecuta el diagnóstico completo de Claude Code. Este comando revisa tu instalación: tipo, versión, auto-actualización, configuración y servidores MCP. No modifica nada, solo reporta. Es el primer comando que deberías probar cuando algo no funciona como esperas."
+  command="claude doctor"
+  expectedOutcome="Verás un informe por secciones: tipo de instalación (nativa, npm, brew, winget), versión, estado del canal de actualización, variables de entorno detectadas y, si aplica, servidores MCP configurados. Cualquier problema aparece marcado con un mensaje claro."
+  verifyHint="Si algún apartado aparece en rojo o con advertencia, léelo: el propio comando suele sugerir el siguiente paso (por ejemplo, actualizar o añadir al PATH)."
+/>
+
+<TerminalTask
+  id="task-print"
+  instruction="Prueba el modo no interactivo. Vas a pedirle a Claude que te salude brevemente y salga. Esto demuestra cómo podrías usar Claude Code dentro de scripts de bash: envías una consulta, recibes la respuesta y la sesión termina sola. Asegúrate antes de haber hecho login al menos una vez con 'claude' para que tus credenciales estén guardadas."
+  command="claude -p &quot;Dime en una frase qué es Claude Code&quot;"
+  expectedOutcome="La terminal imprime una frase corta describiendo Claude Code y vuelve al prompt de tu shell. No entra en modo conversación. Esto confirma que el flag -p (print) funciona."
+  verifyHint="Si obtienes un error de autenticación, ejecuta primero 'claude' una vez para hacer login en el navegador. Después el modo -p reutilizará esas credenciales."
+/>
+
+<Quiz
+  id="quiz-final"
+  question="Selecciona TODAS las afirmaciones correctas sobre Claude Code según lo visto en este capítulo."
+  options='["Conviene ejecutar claude desde la carpeta del proyecto para que pueda leer tus archivos","El plan gratuito de Claude.ai incluye acceso a Claude Code sin límites","Usar sudo con npm install es la forma recomendada de instalar Claude Code","claude doctor es una buena primera herramienta de diagnóstico cuando algo falla","El modo bare (--bare) es útil para entornos CI/CD donde quieres comportamiento consistente"]'
+  correctIndex="[0,3,4]"
+  explanation="Correctas: ejecutar desde la carpeta del proyecto da mejor contexto, claude doctor es el diagnóstico recomendado, y --bare salta hooks, skills, plugins y MCP para CI/CD consistente. Incorrectas: el plan gratuito NO incluye Claude Code (necesitas Pro, Max, Teams, Enterprise o Console), y nunca uses sudo con npm para Claude Code porque causa problemas de permisos difíciles de arreglar."
+  multiple="true"
+/>
+
+<NarratedSection id="cierre" heading="Recapitulando" sourcePage="210">
+
+Ya sabes instalar Claude Code con el instalador nativo, comprobar que funciona con `--version` y `doctor`, y arrancarlo desde la carpeta de tu proyecto. Conoces la diferencia entre sesión interactiva y modo print, los flags clave (`--model`, `--effort`, `--permission-mode`, `--allowedTools`), los comandos slash más útiles dentro de la sesión, y las variables de entorno para configurar desde fuera.
+
+Tres consejos prácticos del libro para cerrar: **ejecuta siempre claude desde tu proyecto**, **usa claude doctor como primer diagnóstico**, y **en WSL trabaja en /home/** en vez de /mnt/c/ para rendimiento decente. Con esta base, en los siguientes capítulos iremos a fondo con CLAUDE.md, permisos avanzados y servidores MCP.
+
+</NarratedSection>

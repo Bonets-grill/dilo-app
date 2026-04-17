@@ -1,0 +1,260 @@
+---
+chapterNumber: 21
+slug: api-claude
+title: 'La API de Claude: hablar con Claude desde tu código'
+part: avanzado
+estimatedMinutes: 27
+prerequisites:
+  - fundamentos-ia
+  - claude-ai-basico
+status: approved
+generatedAt: '2025-01-15T12:00:00Z'
+sourcePagesFrom: 606
+sourcePagesTo: 630
+model: claude-opus-4-7
+---
+<NarratedSection id="intro-gancho" heading="¿Qué es una API y por qué nos importa?" sourcePage="624">
+
+Imagina que Claude vive en una oficina a la que tú no puedes entrar. Pero esa oficina tiene una **ventanilla** donde puedes dejar tu pregunta escrita en un papel, y al rato te devuelven la respuesta por la misma ventanilla.
+
+Esa ventanilla se llama **API** (se pronuncia 'ei-pi-ai'). Son las siglas en inglés de *Application Programming Interface*. En cristiano: es la forma en que dos programas se hablan entre sí.
+
+Hasta ahora, cuando has usado Claude, lo has hecho desde la web (claude.ai) o desde la terminal (Claude Code). En este capítulo vamos a asomarnos a la **API de Claude**: la puerta que usan los desarrolladores para meter a Claude dentro de sus propias apps.
+
+</NarratedSection>
+
+<NarratedSection id="endpoint-messages" heading="La dirección de la oficina: el endpoint" sourcePage="625">
+
+Cuando envías una carta, necesitas una dirección postal. Cuando tu programa le habla a Claude, también necesita una dirección. Esa dirección se llama **endpoint** (punto final).
+
+El endpoint principal de Claude es esta URL:
+
+`https://api.anthropic.com/v1/messages`
+
+Ahí vive la **Messages API**, que es la puerta de entrada oficial para enviar mensajes y recibir respuestas. Soporta texto, imágenes, PDFs, herramientas, streaming... todo empieza aquí.
+
+La API de Claude sigue un estilo llamado **RESTful**. No te asustes: solo significa que se usan URLs para identificar cosas y verbos estándar para pedir acciones. Por ejemplo, `POST /v1/messages` envía un mensaje, y `GET /v1/models` pregunta qué modelos hay disponibles. Las respuestas siempre vuelven en formato **JSON** (un formato de texto ordenado que los programas entienden fácil).
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-endpoint"
+  question="¿Qué es un endpoint en el contexto de la API de Claude?"
+  options='["El nombre del modelo que vas a usar","La dirección URL a la que tu programa envía peticiones","El precio por millón de tokens","Una herramienta para medir la velocidad de respuesta"]'
+  correctIndex="1"
+  explanation="Un endpoint es la dirección URL a la que tu programa envía peticiones para hablar con Claude. El principal es https://api.anthropic.com/v1/messages."
+/>
+
+<NarratedSection id="http-json" heading="HTTP, HTTPS y el idioma que hablan los programas" sourcePage="626">
+
+Para que tu programa y Claude se entiendan, usan un idioma común llamado **HTTP** (HyperText Transfer Protocol). Es el mismo idioma que usa tu navegador cuando abres una web.
+
+La API de Claude usa **HTTPS**, que es la versión con candado: todo va cifrado para que nadie pueda espiar lo que envías. Los dos verbos que más verás son `GET` (pedir algo) y `POST` (enviar algo).
+
+Cuando envías un `POST` a la Messages API, tu programa le dice a Claude: 'aquí tienes un mensaje, respóndeme'. Claude lo procesa y te devuelve una respuesta en JSON.
+
+</NarratedSection>
+
+<NarratedSection id="modelos-alias-id" heading="Model Alias vs Model ID: apodo o nombre completo" sourcePage="627">
+
+Cuando le hablas a la API, tienes que decirle **qué modelo de Claude** quieres usar. Y aquí hay dos formas de nombrarlo.
+
+Un **Model Alias** es un apodo corto que siempre apunta a la versión más reciente. Por ejemplo, `claude-sonnet-4-6` siempre significa 'el último Sonnet 4.6'. Si Anthropic saca una mejora, tu código automáticamente la usa sin que cambies nada. Cómodo, pero no es reproducible al 100%.
+
+Un **Model ID** es el nombre técnico completo, incluyendo la fecha. Por ejemplo: `claude-sonnet-4-6-20260301`. Ese número es la **Snapshot Date** (fecha de snapshot): garantiza que siempre usarás exactamente esa versión. Útil cuando necesitas resultados reproducibles, como en investigación o en producción estable.
+
+La diferencia es como pedir 'el último iPhone' (alias) versus 'iPhone 15 Pro de septiembre 2023' (ID exacto).
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-alias"
+  question="Si quieres que tu código siempre use la versión más reciente de un modelo sin tener que actualizarlo, ¿qué deberías usar?"
+  options='["Un Model ID con fecha exacta","Un Model Alias","El endpoint /v1/models","La Snapshot Date"]'
+  correctIndex="1"
+  explanation="El Model Alias (ej: claude-sonnet-4-6) apunta siempre a la versión más reciente. El Model ID con fecha (ej: claude-sonnet-4-6-20260301) se queda fijo en una versión exacta."
+/>
+
+<NarratedSection id="tokens-mtok" heading="¿Cuánto cuesta? Tokens y MTok" sourcePage="626">
+
+Claude no cobra por mensajes, cobra por **tokens**. Un token es la unidad mínima que Claude procesa: puede ser una palabra, parte de una palabra o un signo. En promedio, 1 token son unas 3.5 letras en inglés, o 0.75 palabras.
+
+Los precios se expresan en **MTok**, que significa *Mega Token*: un millón de tokens. Verás cosas como '$5 / input MTok', que quiere decir 5 dólares por cada millón de tokens que envías de entrada. Un MTok equivale a unas 750,000 palabras en inglés: casi una novela.
+
+Hay dos tipos de tokens que se cobran por separado: los de **entrada** (lo que tú le envías) y los de **salida** (lo que Claude responde). Los de salida suelen ser más caros.
+
+</NarratedSection>
+
+<NarratedSection id="streaming-sse" heading="Streaming: ver a Claude escribir en vivo" sourcePage="628">
+
+¿Has notado que en claude.ai las respuestas van apareciendo palabra por palabra, como si Claude las escribiera en vivo? Eso se llama **streaming**.
+
+En lugar de esperar a que Claude termine toda su respuesta y te la entregue de golpe, el streaming te manda los fragmentos según se generan. Se siente más rápido, aunque la respuesta completa tarde lo mismo.
+
+Por debajo, esto funciona con una tecnología llamada **Server-Sent Events (SSE)**. El servidor te manda una secuencia continua de eventos por la misma conexión. Los eventos típicos son:
+
+- `message_start`: 'empiezo la respuesta'
+- `content_block_delta`: 'aquí va otro trocito'
+- `message_stop`: 'ya terminé'
+
+Hay una métrica relacionada que se llama **TTFT** (*Time To First Token*): el tiempo que tarda Claude en soltar el primer token. Un TTFT bajo = Claude 'arranca a hablar' rápido.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-streaming"
+  question="¿Cuál es la principal ventaja del streaming (con Server-Sent Events) sobre recibir la respuesta completa de golpe?"
+  options='["Cuesta menos dinero por token","La respuesta llega antes en total","Mejora la experiencia de usuario porque ves la respuesta según se genera","Garantiza que la respuesta sea JSON válido"]'
+  correctIndex="2"
+  explanation="El streaming no hace que la respuesta total llegue antes, pero sí que empiece a llegar antes (TTFT bajo). El usuario siente que Claude 'habla' en vivo, igual que en claude.ai."
+/>
+
+<NarratedSection id="parametros-creatividad" heading="Temperature, Top-p y Top-k: los diales de creatividad" sourcePage="629">
+
+La API te deja ajustar qué tan creativa o predecible es la respuesta de Claude con tres parámetros.
+
+**Temperature** (temperatura) es un número de 0 a 1. Con 0, Claude responde de forma consistente y predecible (ideal para código o datos). Con 1, responde de forma variada y creativa (ideal para escritura). Piensa en un dial que va de 'serio' a 'creativo'.
+
+**Top-p** (también llamado *Nucleus Sampling*) controla la diversidad eligiendo palabras cuya probabilidad acumulada llegue al valor `p`. Un 0.5 da respuestas enfocadas. Un 0.95 da más variedad.
+
+**Top-k** limita cuántas palabras candidatas considera Claude en cada paso. Si k=10, solo mira las 10 palabras más probables e ignora el resto.
+
+No suele hacer falta tocar los tres a la vez. Normalmente basta con ajustar `temperature`.
+
+</NarratedSection>
+
+<NarratedSection id="stop-reason" heading="¿Por qué paró Claude? El campo stop_reason" sourcePage="629">
+
+Cada vez que la API te devuelve una respuesta, incluye un campo llamado **stop_reason** que explica por qué Claude dejó de escribir. Es útil para entender qué pasó.
+
+Los valores más comunes son:
+
+- `end_turn`: terminó normalmente, llegó al final de su respuesta.
+- `max_tokens`: se quedó sin cupo de tokens (tú pusiste un límite y lo alcanzó).
+- `tool_use`: Claude necesita ejecutar una herramienta antes de seguir.
+
+Es como la razón por la que alguien deja de hablar: o terminó, o se le acabó el tiempo, o necesita hacer algo primero.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-stop-reason"
+  question="Tu programa recibe una respuesta con stop_reason = 'max_tokens'. ¿Qué significa?"
+  options='["Claude terminó su respuesta correctamente","Claude necesita usar una herramienta para continuar","La respuesta se cortó porque llegó al límite de tokens que configuraste","Hubo un error en el servidor"]'
+  correctIndex="2"
+  explanation="max_tokens significa que la respuesta se cortó al alcanzar el límite de tokens. Si querías la respuesta completa, necesitas aumentar ese límite."
+/>
+
+<NarratedSection id="structured-output" heading="Structured Outputs: darle un formulario a Claude" sourcePage="629">
+
+A veces no quieres que Claude escriba en prosa libre: quieres que rellene un formato exacto, como un JSON con campos concretos. Ahí entra **Structured Output** (salida estructurada).
+
+Le pasas a la API un 'esquema' (como un formulario en blanco) y Claude está obligado a responder siguiendo ese formato. Es como darle un formulario del banco: solo puede rellenar las casillas definidas.
+
+Por debajo, esto funciona gracias a una técnica llamada **Constrained Decoding** (decodificación restringida). No le 'pedimos' a Claude que devuelva JSON válido: se lo forzamos a nivel de generación. Garantía total de formato correcto.
+
+</NarratedSection>
+
+<NarratedSection id="prompt-caching" heading="Prompt Caching: no repetir lo mismo 100 veces" sourcePage="627">
+
+Supón que tienes una app que envía a Claude el mismo system prompt larguísimo (3.000 palabras) en cada petición. Procesarlo una y otra vez sería caro y lento.
+
+Para eso existe el **Prompt Caching**. Claude guarda en memoria las partes del prompt que se repiten. La primera vez se procesa todo; las siguientes, solo se procesa lo nuevo.
+
+¿El ahorro? Hasta **90% menos en costos** y **85% menos en latencia** (latencia = tiempo de espera). Es como guardar una plantilla en Word en lugar de reescribirla cada vez.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-caching"
+  question="¿En qué caso aprovecharías mejor el Prompt Caching?"
+  options='["Cuando cada petición tiene un prompt completamente distinto","Cuando envías el mismo system prompt largo una y otra vez en muchas peticiones","Cuando quieres que Claude use herramientas externas","Cuando quieres respuestas en streaming"]'
+  correctIndex="1"
+  explanation="El Prompt Caching brilla cuando hay partes repetidas (como un system prompt grande) que se mandan muchas veces. Si cada prompt es único, no ayuda."
+/>
+
+<NarratedSection id="batch-api" heading="Batch API: enviar muchas peticiones de golpe" sourcePage="624">
+
+A veces no tienes prisa, pero tienes **volumen**. Quieres procesar 10.000 comentarios de clientes, o traducir 50.000 frases. Para eso existe la **Batch API** (API por lotes).
+
+En lugar de enviar peticiones una por una, las envías todas juntas en un 'paquete'. Claude las procesa cuando tiene hueco, y te entrega los resultados cuando termina. Puede tardar hasta **24 horas**, pero es hasta un **50% más barato**.
+
+Es como enviar una caja llena de cartas en lugar de una por una en el correo. Si necesitas resultado inmediato, no es para ti. Si puedes esperar, ahorras mucho dinero.
+
+</NarratedSection>
+
+<NarratedSection id="rate-limits" heading="Rate Limits y el cubo de tokens" sourcePage="628">
+
+La API no te deja hacer peticiones infinitas: hay un **Rate Limit** (límite de tasa). Si te pasas, la API te dice 'espera un momento'.
+
+La forma de controlar esto se llama **Token Bucket** (cubo de tokens). Imagina un cubo que se va llenando con tokens continuamente. Cada petición consume tokens del cubo. Si el cubo se vacía, tienes que esperar a que se rellene.
+
+El tamaño del cubo depende de tu **tier** (nivel de uso). Cuanto más gastas en Anthropic, más alto es tu tier y más grande tu cubo. Si necesitas garantías fuertes, existe el **Priority Tier**: pagas un compromiso de gasto y obtienes mayor disponibilidad y límites más altos. Es como la clase business de un avión.
+
+</NarratedSection>
+
+<NarratedSection id="herramientas-avanzadas" heading="Funciones avanzadas: Tool Use, Files API y MCP Connector" sourcePage="625">
+
+La API tiene capacidades más sofisticadas que vale la pena conocer, aunque no las uses hoy.
+
+**Tool Use** (uso de herramientas): tú defines funciones externas que Claude puede llamar (como 'consultar_clima' o 'buscar_producto'). Claude decide cuándo usarlas, tú las ejecutas y le devuelves el resultado. Es como darle un cinturón de herramientas.
+
+**Files API**: sube archivos de hasta 500 MB una vez, y úsalos en muchas peticiones sin re-enviarlos. Es como dejar un documento en la oficina de Claude para que lo consulte cuando quiera. Está en beta.
+
+**MCP Connector**: permite conectarse a servidores MCP (*Model Context Protocol*) directamente desde la API, sin montar un cliente propio.
+
+**Citations**: Claude te dice exactamente de qué parte de tus documentos sacó cada afirmación. Como las notas al pie de un libro.
+
+**Interleaved Thinking**: Claude piensa entre cada uso de herramienta, no solo al principio. Como un detective que reflexiona después de cada pista.
+
+**Web Fetch** y **Code Execution**: Claude puede leer URLs concretas y ejecutar código dentro de la respuesta.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-batch-vs-priority"
+  question="Tienes que procesar 100.000 textos de baja prioridad para esta noche. ¿Qué función de la API encaja mejor?"
+  options='["Priority Tier, para máxima velocidad","Batch API, porque puedes esperar y ahorras hasta 50%","Streaming, para ver el progreso en vivo","Structured Output, para formato fijo"]'
+  correctIndex="1"
+  explanation="La Batch API es ideal cuando tienes mucho volumen y puedes esperar hasta 24 horas. Ahorras hasta 50% frente a mandar peticiones normales una a una."
+/>
+
+<NarratedSection id="deprecation-prefill" heading="Deprecación: cuando algo viejo deja de funcionar" sourcePage="627">
+
+De vez en cuando, Anthropic anuncia que una versión antigua de un modelo o una función va a dejar de funcionar. Eso se llama **Deprecation** (deprecación).
+
+No te sacan el suelo de golpe: te avisan con tiempo para que migres a la versión nueva. Es como cuando tu teléfono deja de recibir actualizaciones: funciona un tiempo, pero acabas cambiándolo.
+
+Un ejemplo concreto: la técnica **Prefill** (pre-rellenado), que servía para forzar el inicio de una respuesta de Claude, está **deprecada desde Claude 4.6**. Hoy se usa Structured Outputs o instrucciones claras en el system prompt ('Responde directamente sin preámbulo') en su lugar.
+
+</NarratedSection>
+
+<TerminalTask
+  id="task-curl-messages"
+  instruction="Vamos a simular una llamada a la Messages API usando `curl` (una herramienta de terminal que envía peticiones HTTP). NO ejecutes esto de verdad si no tienes una API key real: el objetivo es que leas el comando y entiendas cada parte.
+
+Analiza esta petición línea por línea. Identifica: (1) el endpoint, (2) el modelo, (3) dónde va la API key, (4) el mensaje del usuario."
+  command="curl https://api.anthropic.com/v1/messages \
+  -H &quot;x-api-key: $ANTHROPIC_API_KEY&quot; \
+  -H &quot;anthropic-version: 2023-06-01&quot; \
+  -H &quot;content-type: application/json&quot; \
+  -d '{
+    &quot;model&quot;: &quot;claude-sonnet-4-6&quot;,
+    &quot;max_tokens&quot;: 1024,
+    &quot;messages&quot;: [
+      {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;Hola Claude, preséntate en una frase.&quot;}
+    ]
+  }'"
+  expectedOutcome="Identificas que: (1) el endpoint es https://api.anthropic.com/v1/messages, (2) el modelo es claude-sonnet-4-6 (un Model Alias), (3) la API key se envía en la cabecera x-api-key leyendo la variable de entorno ANTHROPIC_API_KEY, y (4) el mensaje del usuario va dentro del array messages con role 'user'."
+  verifyHint="Si quieres probarlo de verdad, primero necesitas crear una API key en console.anthropic.com y exportarla como variable de entorno: export ANTHROPIC_API_KEY=sk-ant-..."
+/>
+
+<NarratedSection id="cierre" heading="Lo que te llevas" sourcePage="630">
+
+Has visto la 'ventanilla' oficial para hablar con Claude desde código: la **Messages API** en `https://api.anthropic.com/v1/messages`.
+
+Ahora reconoces los conceptos clave: endpoint, model alias vs ID, tokens y MTok, streaming con SSE, stop_reason, structured outputs, prompt caching, batch API, rate limits con token bucket y funciones como tool use, citations o files API.
+
+No hace falta memorizar todo hoy. Lo importante es que cuando leas la documentación oficial de Anthropic, ya no te suene a chino: tienes el mapa mental para orientarte. En los próximos capítulos veremos cómo esto se combina con técnicas avanzadas de prompting y agentes.
+
+</NarratedSection>

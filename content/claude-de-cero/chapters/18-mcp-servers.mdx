@@ -1,0 +1,289 @@
+---
+chapterNumber: 18
+slug: mcp-servers
+title: 'MCP Servers: conectando Claude Code con herramientas externas'
+part: claude-code
+estimatedMinutes: 26
+prerequisites:
+  - Tener Claude Code instalado
+  - Saber abrir una terminal
+  - Haber usado claude al menos una vez
+status: approved
+generatedAt: '2025-01-20T12:00:00Z'
+sourcePagesFrom: 531
+sourcePagesTo: 560
+model: claude-opus-4-7
+---
+<NarratedSection id="intro-hook" heading="Imagina que tu asistente pudiera usar tus apps favoritas" sourcePage="545">
+
+Piensa en Claude Code como un ayudante muy listo que vive dentro de tu terminal. Por defecto sabe leer archivos y ejecutar comandos, pero no sabe nada de tu GitHub, tu base de datos ni tu Notion.
+
+¿Y si pudiéramos darle acceso controlado a esas herramientas? Eso es exactamente lo que hace **MCP**. Se pronuncia "eme-ce-pé" y significa **Model Context Protocol** (Protocolo de Contexto para Modelos).
+
+Es un idioma común que permite a Claude hablar con servicios externos: GitHub, Postgres, documentación interna, lo que quieras. En este capítulo vamos a ver cómo agregar y manejar esos servidores paso a paso.
+
+</NarratedSection>
+
+<NarratedSection id="que-es-mcp-server" heading="¿Qué es un servidor MCP?" sourcePage="545">
+
+Un **servidor MCP** es un pequeño programa que actúa de puente entre Claude y una herramienta externa. Por ejemplo, un servidor MCP para GitHub le permite a Claude leer issues, crear pull requests o buscar en tus repos.
+
+Piénsalo como un adaptador de enchufe: Claude habla su idioma por un lado, la herramienta externa habla el suyo por el otro, y el servidor MCP traduce entre ambos.
+
+En Claude Code, todo lo relacionado con MCP se maneja con el subcomando `claude mcp`. Un **subcomando** es simplemente una orden específica dentro de Claude Code, como un menú dentro de un menú.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-que-es-mcp"
+  question="¿Cuál es la mejor analogía para un servidor MCP?"
+  options='["Un antivirus que revisa los archivos antes de abrirlos","Un adaptador que traduce entre Claude y una herramienta externa","Un modelo de IA más rápido que Sonnet","Un editor de texto integrado en la terminal"]'
+  correctIndex="1"
+  explanation="Un servidor MCP es un puente/adaptador. Claude habla su idioma, la herramienta externa el suyo, y el servidor MCP traduce entre ambos para que puedan cooperar."
+/>
+
+<NarratedSection id="tipos-de-transporte" heading="Los tres tipos de conexión (transport)" sourcePage="545">
+
+Cuando agregas un servidor MCP tienes que decirle a Claude **cómo** conectarse. A eso se le llama el **transport** (transporte). Hay tres opciones:
+
+- **stdio**: el servidor corre como un programa local en tu máquina. Claude habla con él por la entrada y salida estándar, como cuando conectas dos programas con un pipe (`|`).
+- **sse**: Server-Sent Events. Se usa para servidores remotos que envían datos en streaming.
+- **http**: una conexión HTTP normal, como cuando tu navegador habla con una página web.
+
+No te preocupes por memorizarlos. Cuando copies un ejemplo de la documentación de un servidor, te dirán cuál usar.
+
+</NarratedSection>
+
+<NarratedSection id="agregar-servidor-http" heading="Agregar un servidor MCP: ejemplo con GitHub" sourcePage="545">
+
+Veamos el ejemplo real del libro. Este comando agrega el servidor oficial de GitHub a Claude Code:
+
+```
+claude mcp add --transport http github https://api.githubcopilot.com/mcp/
+```
+
+Vamos por partes:
+
+- `claude mcp add` — el subcomando para agregar un servidor.
+- `--transport http` — el tipo de conexión. Aquí es HTTP.
+- `github` — el **nombre** que le pones tú al servidor. Puede ser cualquiera.
+- `https://api.githubcopilot.com/mcp/` — la URL donde vive el servidor.
+
+Regla importante que aparece en el texto: **los flags van ANTES del nombre del servidor**. Si los pones después, no funcionan.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-orden-flags"
+  question="En `claude mcp add --transport http github https://...`, ¿dónde deben ir los flags como --transport?"
+  options='["Al final, después de la URL","Antes del nombre del servidor","En un archivo JSON separado obligatoriamente","Da igual, el orden no importa"]'
+  correctIndex="1"
+  explanation="El texto lo dice explícitamente: los flags van ANTES del nombre del servidor. Si los pones después, Claude no los lee correctamente."
+/>
+
+<NarratedSection id="flags-de-mcp-add" heading="Los flags útiles de claude mcp add" sourcePage="545">
+
+Cuando agregas un servidor puedes configurar varias cosas. Estos son los flags disponibles según el texto:
+
+- `--transport` — tipo de conexión (stdio, sse, http). **Es obligatorio**.
+- `--env KEY=value` — pasa variables de entorno al servidor. Es **repetible**: puedes ponerlo varias veces para pasar varias variables.
+- `--scope` — dónde guardar la configuración: `local`, `project` o `user`. El default es `local`.
+- `--header 'Name: Value'` — headers HTTP. También repetible.
+- `--callback-port` — puerto fijo para el flujo OAuth.
+- `--client-id` — el ID de OAuth si el servidor lo pide.
+- `--client-secret` — pide el secret de OAuth con entrada oculta (no se ve al escribir).
+
+Un **scope** es simplemente el alcance: si guardas en `local` solo aplica a ti en este proyecto; en `project` se comparte con el equipo; en `user` aplica a todos tus proyectos.
+
+</NarratedSection>
+
+<NarratedSection id="ejemplo-stdio-con-env" heading="Ejemplo con transport stdio y variables de entorno" sourcePage="553">
+
+Muchos servidores MCP corren localmente con `npx` (un comando que ejecuta paquetes de Node.js sin instalarlos). Para estos usamos `stdio`.
+
+Este es el ejemplo textual del libro:
+
+```
+claude mcp add --transport stdio --env API_KEY=your_key my-server -- npx -y @my/mcp-server
+```
+
+Fíjate en dos detalles importantes:
+
+1. `--env API_KEY=your_key` le pasa la clave al servidor como variable de entorno.
+2. El `--` (doble guion) **separa** los flags de Claude del comando que se va a ejecutar. Todo lo que va después del `--` es el comando del servidor.
+
+Esa barra doble evita que Claude confunda los flags propios con los del servidor.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-doble-guion"
+  question="¿Para qué sirve el `--` (doble guion) en `claude mcp add ... my-server -- npx -y @my/mcp-server`?"
+  options='["Es un comentario, Claude lo ignora","Separa los flags de Claude del comando del servidor","Indica que el servidor es opcional","Desactiva las variables de entorno"]'
+  correctIndex="1"
+  explanation="El `--` es un separador estándar en la línea de comandos. Todo lo que va después pertenece al programa externo (aquí, el servidor MCP), no a Claude."
+/>
+
+<NarratedSection id="otros-subcomandos-mcp" heading="Los demás subcomandos de claude mcp" sourcePage="546">
+
+Una vez que sabes agregar servidores, necesitas gestionarlos. El texto lista estos subcomandos:
+
+- `claude mcp list` — lista todos los servidores configurados.
+- `claude mcp get <name>` — muestra los detalles de uno específico.
+- `claude mcp remove <name>` — elimina un servidor.
+- `claude mcp add-json <name> '<json>'` — agrega un servidor pegando su configuración en JSON directamente.
+- `claude mcp add-from-claude-desktop` — importa servidores que ya tenías en Claude Desktop. **Solo funciona en macOS y WSL**.
+- `claude mcp reset-project-choices` — reinicia las aprobaciones que diste para servidores de proyecto.
+- `claude mcp serve` — inicia **Claude Code mismo** como servidor MCP stdio, para que otras apps se conecten a él. Interesante: Claude puede ser también el servidor, no solo el cliente.
+
+</NarratedSection>
+
+<TerminalTask
+  id="task-listar-mcp"
+  instruction="Abre tu terminal y pide a Claude Code que te muestre qué servidores MCP tienes configurados ahora mismo. Si nunca agregaste ninguno, la lista estará vacía, y eso está bien. Es una forma segura de comprobar que el subcomando funciona."
+  command="claude mcp list"
+  expectedOutcome="Verás una lista (posiblemente vacía) con los servidores MCP configurados. Si aparece vacía, significa que aún no has agregado ninguno. No se modifica nada en tu sistema."
+  verifyHint="Si el comando falla con 'command not found: claude', revisa que Claude Code esté instalado y en tu PATH."
+/>
+
+<NarratedSection id="mencionar-recursos-mcp" heading="Usar recursos MCP dentro del chat con @" sourcePage="551">
+
+Una vez conectado un servidor MCP, puedes traer sus datos al chat con el símbolo `@`. Es como adjuntar un archivo, pero el "archivo" vive en un servicio externo.
+
+Los ejemplos textuales del libro son:
+
+- `@github:issue://123` — referencia un issue de GitHub.
+- `@docs:file://api/authentication` — referencia documentación.
+- `@postgres:schema://users` — referencia el schema de la tabla users en Postgres.
+
+El formato es `@<nombre-del-servidor>:<tipo>://<ruta>`. Claude lee ese recurso y lo incluye en el contexto de la conversación. Ya no tienes que copiar y pegar a mano.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-referencia-mcp"
+  question="Tienes un servidor MCP llamado `github` conectado. ¿Cuál de estas referencias traería el issue número 42 al chat?"
+  options='["#github/issue/42","@github:issue://42","github.issue(42)","!github issue 42"]'
+  correctIndex="1"
+  explanation="La sintaxis es `@<servidor>:<tipo>://<ruta>`. En este caso: `@github:issue://42`. Es como adjuntar algo al chat, pero desde un servicio externo."
+/>
+
+<NarratedSection id="slash-commands-mcp" heading="Gestionar MCP desde dentro de una sesión" sourcePage="550">
+
+Cuando ya estás dentro de Claude Code, puedes usar **slash commands** (comandos que empiezan con `/`) para manejar MCP sin salir. Los que menciona el texto son:
+
+- `/mcp` — abre el panel de servidores MCP: ver estado, autenticar, reconectar.
+- `/mcp reconnect [server]` — reconecta a un servidor que se desconectó.
+
+También hay dos consejos muy útiles del capítulo previo:
+
+- `/context` — te muestra qué está consumiendo tu **ventana de contexto** (el espacio de memoria de la sesión). El texto avisa: "muchas veces el culpable es un MCP server o un CLAUDE.md muy largo". Los servidores MCP pueden cargar mucha información y comerse el contexto.
+- `/doctor` — diagnóstico automático cuando algo falla.
+
+</NarratedSection>
+
+<NarratedSection id="variables-entorno-mcp" heading="Variables de entorno que controlan MCP" sourcePage="548">
+
+Además de los flags, hay variables de entorno específicas para MCP. Una **variable de entorno** es un valor que configuras en la terminal y que Claude lee al arrancar.
+
+Las que lista el texto son:
+
+- `MCP_TIMEOUT` — cuántos milisegundos espera Claude a que un servidor MCP arranque. Ejemplo del libro: `MCP_TIMEOUT=10000 claude` (espera hasta 10 segundos).
+- `MAX_MCP_OUTPUT_TOKENS` — límite de tokens de salida de MCP. Por defecto son 25000.
+- `ENABLE_TOOL_SEARCH` — controla la búsqueda de herramientas MCP. Valores: `true`, `false`, `auto`, `auto:<N>`.
+- `ENABLE_CLAUDEAI_MCP_SERVERS` — con valor `false`, deshabilita los servidores MCP que vienen de claude.ai.
+- `MCP_CLIENT_SECRET` — el secret de OAuth, para no tener que escribirlo cada vez.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-output-excede"
+  question="Tu servidor MCP falla con el error: &quot;MCP tool output exceeds 10,000 tokens&quot;. Según el texto, ¿cuál es la solución recomendada?"
+  options='["Borrar el servidor y volver a instalarlo","Usar export MAX_MCP_OUTPUT_TOKENS=50000","Cambiar a modelo Opus","Reiniciar la computadora"]'
+  correctIndex="1"
+  explanation="El texto lo dice explícitamente en la sección de errores comunes: cuando la salida MCP es demasiado grande, se aumenta el límite con MAX_MCP_OUTPUT_TOKENS."
+/>
+
+<NarratedSection id="errores-comunes-mcp" heading="Errores comunes con MCP y cómo resolverlos" sourcePage="552">
+
+El texto lista errores reales que te puedes encontrar. Vamos con los relacionados a MCP:
+
+**"Connection closed" en Windows nativo.** Pasa porque `npx` no se ejecuta directamente en Windows. La solución del libro es envolver el comando con `cmd /c`:
+
+```
+claude mcp add --transport stdio my-server -- cmd /c npx -y @some/package
+```
+
+**"Incompatible auth server".** El servidor te pide OAuth. Regístralo como app OAuth y pasa `--client-id` y `--client-secret`.
+
+**"MCP tool output exceeds 10,000 tokens".** La salida es muy grande. Sube el límite con `export MAX_MCP_OUTPUT_TOKENS=50000`.
+
+Y el consejo general del libro: ante cualquier problema, ejecuta `/doctor` primero. Diagnostica la mayoría de cosas automáticamente.
+
+</NarratedSection>
+
+<NarratedSection id="configuracion-mcp-archivos" heading="Archivos de configuración relacionados con MCP" sourcePage="543">
+
+Además de los comandos, hay dos archivos importantes según el texto:
+
+- `.mcp.json` — servidores MCP del **proyecto** actual. Se puede commitear al repo para que todo el equipo tenga los mismos servidores.
+- `~/.claude.json` — guarda preferencias, OAuth, servidores MCP y caches a nivel de usuario.
+
+También hay dos flags de arranque útiles:
+
+- `--mcp-config` — carga servidores MCP desde un archivo JSON específico. Es **repetible**, puedes cargar varios archivos.
+- `--strict-mcp-config` — usa **SOLO** los servidores del archivo que pasas con `--mcp-config`. Ignora todo lo demás configurado en otros lugares.
+
+Ejemplo textual del libro: `claude --strict-mcp-config --mcp-config ./mcp.json`. Útil cuando quieres un entorno limpio y controlado, como en CI/CD.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-strict-mcp"
+  question="¿Qué hace exactamente la combinación `--strict-mcp-config --mcp-config ./mcp.json`?"
+  options='["Instala todos los servidores del archivo de forma permanente","Usa solo los servidores del archivo ./mcp.json e ignora cualquier otra config MCP","Bloquea que se puedan agregar más servidores en el futuro","Borra los servidores que no estén en el archivo"]'
+  correctIndex="1"
+  explanation="`--strict-mcp-config` le dice a Claude: solo confía en los servidores del archivo que te paso, ignora los demás. Es temporal (solo para esa sesión) y no borra nada."
+/>
+
+<NarratedSection id="permisos-con-mcp" heading="Permisos: cuándo Claude pide confirmación" sourcePage="555">
+
+Los servidores MCP exponen **herramientas** nuevas. Una herramienta es una acción que Claude puede ejecutar (leer algo, escribir algo, llamar a una API).
+
+Por defecto, Claude te pide permiso antes de usar herramientas sensibles. Puedes ajustar esto:
+
+- `--allowedTools` — herramientas que se ejecutan **sin** pedir permiso. Acepta patrones como `Bash(git *)`.
+- `--disallowedTools` — herramientas que se eliminan por completo; Claude ni siquiera sabe que existen.
+- `--permission-prompt-tool` — delega la decisión de permisos a una herramienta MCP externa. Útil para automatización avanzada.
+
+Dentro de la sesión tienes `/allowed-tools` para configurar los permisos de forma interactiva.
+
+Muy importante del texto: **nunca uses `--dangerously-skip-permissions` en tu máquina personal**. Ese flag desactiva todos los permisos y el libro lo llama "YOLO Mode". Solo para containers aislados de CI/CD.
+
+</NarratedSection>
+
+<TerminalTask
+  id="task-simular-add"
+  instruction="Vamos a preparar (sin ejecutar todavía) el comando que agregaría el servidor MCP de GitHub tal como aparece en el libro. Escríbelo en tu terminal con `echo` delante para verlo sin ejecutarlo. Esto te ayuda a acostumbrar tus ojos al formato."
+  command="echo claude mcp add --transport http github https://api.githubcopilot.com/mcp/"
+  expectedOutcome="La terminal imprime la línea exacta del comando. No agrega nada ni modifica tu configuración: `echo` solo muestra texto. Confirma que entiendes el orden: flags primero, luego el nombre, luego la URL."
+  verifyHint="Si quisieras ejecutarlo de verdad, quitarías el `echo` del principio. Pero ahora mismo estamos solo leyendo, no modificando nada."
+/>
+
+<NarratedSection id="resumen" heading="Lo que te llevas de este capítulo" sourcePage="556">
+
+Los servidores MCP son la forma en la que Claude Code se conecta con el mundo exterior: GitHub, Postgres, documentación, herramientas internas de tu empresa.
+
+Los puntos clave que cubrimos:
+
+- **Agregar**: `claude mcp add --transport <tipo> <nombre> <url-o-comando>`. Flags antes del nombre.
+- **Gestionar**: `list`, `get`, `remove`, `reset-project-choices`.
+- **Usar recursos** en el chat con `@servidor:tipo://ruta`.
+- **Desde la sesión**: slash commands `/mcp`, `/context`, `/doctor`.
+- **Variables clave**: `MCP_TIMEOUT`, `MAX_MCP_OUTPUT_TOKENS`.
+- **Archivos**: `.mcp.json` del proyecto, `~/.claude.json` de usuario.
+- **Precaución**: los servidores MCP pueden comerse mucho contexto; revisa con `/context`.
+
+En el siguiente capítulo veremos cómo combinar MCP con agentes personalizados para tareas más complejas.
+
+</NarratedSection>

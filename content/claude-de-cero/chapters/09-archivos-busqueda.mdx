@@ -1,0 +1,392 @@
+---
+chapterNumber: 9
+slug: archivos-busqueda
+title: 'Archivos, Búsqueda y Conversaciones'
+part: claude-ai
+estimatedMinutes: 17
+prerequisites:
+  - primeros-pasos-claude
+  - proyectos-claude
+status: approved
+generatedAt: '2025-01-20T10:00:00Z'
+sourcePagesFrom: 137
+sourcePagesTo: 154
+model: claude-opus-4-7
+---
+<NarratedSection id="intro-gancho" heading="Claude como tu asistente con escritorio propio" sourcePage="138">
+
+Imagina que tienes un asistente muy listo sentado a tu lado. Le puedes pasar un contrato para que lo lea, pedirle que busque una noticia en internet, o decirle que guarde ordenados todos los papeles que ya trabajaron juntos.
+
+Eso es exactamente lo que hace Claude en este capítulo. No solo conversa: también **lee tus archivos**, **busca en la web** y **recuerda** lo que hablaron antes.
+
+En las próximas páginas vas a ver cómo subir documentos, activar la búsqueda en internet, organizar tus chats y guardar una copia de todo. Piensa en esto como aprender a usar las gavetas de tu escritorio digital.
+
+</NarratedSection>
+
+<NarratedSection id="subir-archivos" heading="Subir un archivo: el clip mágico" sourcePage="138">
+
+¿Tienes un PDF importante en tu computadora? En vez de copiar y pegar el texto (que es tedioso), puedes **adjuntarlo** directamente. Adjuntar significa enganchar un archivo al mensaje, como cuando mandas una foto por WhatsApp.
+
+En el cuadro donde escribes tu mensaje verás un **icono de clip** (📎). Haces click ahí, eliges el archivo de tu computadora y listo. Claude lo abre, lo lee y te responde sobre su contenido.
+
+Es como entregarle un papel a un colega y pedirle que lo revise por ti. La gran ventaja: no tienes que explicarle el contexto, él lo ve todo.
+
+</NarratedSection>
+
+<NarratedSection id="tipos-archivo" heading="Qué archivos acepta (y cuáles no)" sourcePage="138">
+
+Claude entiende muchos formatos, pero no todos. Aquí va la lista corta:
+
+**Documentos:** PDF, DOCX (Word), TXT, Markdown (.md), CSV (tablas con comas), HTML, JSON, ODT, RTF, EPUB.
+
+**Hojas de cálculo:** XLSX de Excel (requiere activar "Code execution" en Ajustes).
+
+**Imágenes:** JPEG, PNG, GIF, WEBP.
+
+**Lo que NO acepta:** video (MP4), audio (MP3), PowerPoint (PPTX) y archivos ejecutables. Si tienes un PowerPoint, el truco es **convertirlo a PDF** primero.
+
+Ojo con un detalle importante: cuando subes un DOCX o RTF, Claude **solo lee el texto**. Las imágenes que están dentro del Word no las ve. Si quieres que analice gráficas o fotos incrustadas, pásalo a PDF. Solo el PDF permite análisis visual completo.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-pptx"
+  question="Quieres que Claude analice una presentación de PowerPoint con muchas gráficas. ¿Qué haces?"
+  options='["Subo el archivo .pptx directamente, Claude lo acepta","Convierto el PowerPoint a PDF y luego lo subo","Lo subo como archivo .mp4","Copio y pego el título de cada diapositiva"]'
+  correctIndex="1"
+  explanation="Claude no acepta PPTX directamente. La solución oficial del capítulo es convertirlo a PDF primero — así Claude puede leer el texto y analizar las imágenes y gráficas."
+/>
+
+<NarratedSection id="limites-tamano" heading="Cuánto cabe: los límites" sourcePage="139">
+
+Un escritorio tiene espacio, pero no infinito. Con Claude pasa lo mismo.
+
+**Por archivo:** máximo **30 MB**. Si pesa más, toca comprimirlo o partirlo en pedazos.
+
+**Por conversación:** máximo **20 archivos**. Si necesitas más, abre un chat nuevo o usa un Proyecto.
+
+**En Proyectos:** número de archivos ilimitado, pero todo el contenido debe caber en la **ventana de contexto** (la memoria de trabajo de Claude) de 200.000 tokens. En planes pagados, una tecnología llamada **RAG** amplía esa capacidad hasta 10 veces.
+
+**Imágenes:** resolución máxima 8000 × 8000 píxeles. Para que Claude vea bien los detalles, usa imágenes de al menos 1000 × 1000 píxeles.
+
+</NarratedSection>
+
+<NarratedSection id="procesar-pdfs" heading="Cómo lee Claude un PDF según su tamaño" sourcePage="140">
+
+No todos los PDFs se tratan igual. Es como pedirle a alguien que revise un libro: si son pocas páginas, lo lee con calma y hasta mira las fotos. Si son miles, solo escanea rápido.
+
+**Menos de 100 páginas:** Claude lee el texto Y analiza las imágenes, gráficos y tablas. Análisis completo.
+
+**Entre 100 y 1000 páginas:** el análisis visual se reduce. Claude se enfoca más en el texto.
+
+**Más de 1000 páginas:** solo extrae texto. Sin análisis visual.
+
+**Tip práctico:** cuando le digas a Claude "mira la página 42", usa el número que muestra el visor del PDF, no el número impreso en el documento. A veces no coinciden (por las páginas de índice, por ejemplo).
+
+</NarratedSection>
+
+<NarratedSection id="claude-crea-archivos" heading="Claude también crea archivos" sourcePage="140">
+
+Aquí viene algo bonito: Claude no solo lee archivos, también **los crea**. Usa un entorno de ejecución de código (sandbox) para generar documentos descargables.
+
+Puede crear: **Excel** (.xlsx), **PowerPoint** (.pptx), **Word** (.docx), **PDF**, **imágenes** (.png) y **scripts de Python**.
+
+Por ejemplo, puedes pedirle: *"Crea una hoja de Excel con el resumen de ventas por trimestre basado en estos datos"* y te genera el archivo listo para descargar. Lo puedes guardar directo o mandarlo a tu Google Drive si tienes la cuenta conectada.
+
+**Requisitos:** tener activado "Code execution and file creation" en Ajustes. Límite: 30 MB por archivo creado. Disponible en todos los planes, incluido el gratis.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-limites"
+  question="¿Cuál de estas afirmaciones es correcta según el capítulo?"
+  options='["Puedes subir hasta 100 archivos por conversación","El tamaño máximo por archivo es 30 MB y el máximo por chat es 20 archivos","Los PDFs de 500 páginas se analizan visualmente igual que los de 10 páginas","Los archivos de audio MP3 se pueden subir si son menores a 30 MB"]'
+  correctIndex="1"
+  explanation="El límite es 30 MB por archivo y 20 archivos por conversación. Los PDFs grandes reducen el análisis visual, y Claude no acepta audio ni video."
+/>
+
+<NarratedSection id="busqueda-web" heading="Búsqueda web: darle acceso a internet" sourcePage="141">
+
+El conocimiento de Claude tiene **fecha de corte**: hay cosas recientes que no sabe porque pasaron después de su entrenamiento. Para eso existe la **búsqueda web**.
+
+Cuando la activas, Claude puede consultar internet en tiempo real. Es como darle acceso a Google (aunque internamente usa **Bing**, el buscador de Microsoft). Y lo mejor: te muestra las **fuentes** de donde sacó cada dato.
+
+**Cómo activarla:**
+1. En el cuadro del mensaje, busca el icono de ajustes (como un slider o deslizador).
+2. Haz click.
+3. Busca "Web search".
+4. Activa el interruptor.
+
+Está disponible en todos los planes, incluido el gratis. En Team o Enterprise, un administrador debe habilitarla primero para todo el workspace.
+
+</NarratedSection>
+
+<NarratedSection id="web-fetch" heading="Web Fetch: leer una página completa" sourcePage="141">
+
+A veces no quieres que Claude busque — quieres que lea un artículo específico. Para eso existe **Web Fetch** (traer una web).
+
+Es muy simple: pegas la URL directamente en tu mensaje. Por ejemplo:
+
+*"Lee y resume el contenido de https://ejemplo.com/articulo"*
+
+Claude visita la página, lee todo el contenido y te lo resume o responde preguntas sobre él.
+
+**Advertencia si usas el plan Free:** leer un artículo largo (de 10.000 palabras, por ejemplo) ocupa mucho espacio en la ventana de contexto. Es como meter un libro entero en tu mochila: llena mucho. Úsalo con moderación si no tienes plan pagado.
+
+</NarratedSection>
+
+<NarratedSection id="research" heading="Research: el modo investigador profundo" sourcePage="142">
+
+**Research** es la versión potente de la búsqueda web. En vez de una búsqueda, Claude hace **muchas búsquedas encadenadas**, como lo haría un periodista investigando un tema.
+
+Piensa la diferencia así:
+- **Búsqueda web:** googlear una vez y leer el primer resultado.
+- **Research:** buscar, leer, hacerse nuevas preguntas, buscar otra vez… hasta **45 minutos** de investigación autónoma.
+
+**Cómo activarlo:**
+1. Primero debes tener la búsqueda web activada (es requisito).
+2. Busca el botón "Research" en la esquina inferior izquierda del chat.
+3. Cuando está **blanco**, está apagado. Cuando está **azul**, está encendido.
+
+**Detalles:** solo está en planes pagados (Pro, Max, Team, Enterprise). Consume tus límites de uso más rápido que un chat normal. Si tienes Gmail, Calendar o Docs conectados, Research también busca ahí.
+
+**Truco:** si Claude no usa Research cuando deberías, fuérzalo escribiendo: *"Claude, please use the Research tool to…"* seguido de tu pregunta.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-research"
+  question="¿Qué diferencia principal hay entre la búsqueda web y Research?"
+  options='["Research solo busca imágenes, la búsqueda web solo texto","Research hace muchas búsquedas encadenadas durante hasta 45 minutos; la búsqueda web hace una consulta puntual","La búsqueda web es solo para planes pagados, Research está en el plan gratis","No hay diferencia real, son dos nombres para lo mismo"]'
+  correctIndex="1"
+  explanation="Research es una investigación profunda con múltiples búsquedas encadenadas (hasta 45 minutos). La búsqueda web es una consulta puntual. Además, Research solo está en planes pagados; la búsqueda web también en Free."
+/>
+
+<NarratedSection id="gestionar-chats" heading="Organizar tu bandeja de conversaciones" sourcePage="142">
+
+Después de unos meses usando Claude, vas a tener decenas de chats. Es como una bandeja de email que crece sin parar. Necesitas herramientas para no perderte.
+
+**Renombrar** un chat: haz click en el nombre (arriba del chat) y elige "Rename". Dale un nombre que te ayude a encontrarlo: mejor *"Presupuesto boda julio"* que *"Chat sobre cosas"*.
+
+**Eliminar uno:** click en el nombre y "Delete".
+
+**Eliminar varios a la vez:**
+1. Ve al sidebar (la barra lateral) y abre "Chats".
+2. Pasa el mouse sobre las conversaciones: aparecen casillas (checkboxes).
+3. Marca las que quieres.
+4. Haz click en "Delete Selected".
+
+Cuando eliminas un chat, la información se borra de la memoria de Claude en las siguientes **24 horas**.
+
+</NarratedSection>
+
+<NarratedSection id="destacar-mover" heading="Destacar, mover y archivar" sourcePage="143">
+
+**Destacar (Star):** haz click en el icono de estrella ⭐ junto a un chat. Las conversaciones destacadas aparecen fijas arriba, en "Starred Chats". Es como pegar un post-it en un papel importante.
+
+**Mover chats a proyectos:** si tienes varios chats sueltos sobre el mismo tema, puedes moverlos todos a un Proyecto. Así quedan juntos en una carpeta.
+
+**Archivar proyectos:** si ya no usas un proyecto, lo archivas. Eso lo manda al final de la lista. Cuidado: al archivar, los permisos de compartición se resetean a privado.
+
+**Buscar en chats pasados:** puedes preguntarle a Claude en lenguaje natural, como: *"¿Qué discutimos sobre la estrategia de marketing la semana pasada?"*. Claude usa **RAG** (una tecnología que busca en documentos) para encontrar la información en tu historial. Solo disponible en planes pagados.
+
+</NarratedSection>
+
+<NarratedSection id="compartir" heading="Compartir un chat con otra persona" sourcePage="144">
+
+A veces quieres mostrarle a un amigo o compañero una conversación interesante que tuviste con Claude. Lo puedes hacer generando un **enlace compartible**.
+
+**Cómo:**
+1. Click en "Share" (arriba a la derecha del chat).
+2. En el menú emergente, click otra vez en "Share" para generar el enlace.
+3. Copia el link y pásaselo a quien quieras.
+
+**Qué se comparte y qué NO:**
+- Se comparte un **snapshot** (foto instantánea) con todos los mensajes hasta ese momento, incluyendo artifacts.
+- Los mensajes que envíes **después** son privados, no se actualizan en el enlace.
+- Los **archivos adjuntos NO se incluyen**. Solo el texto y los artifacts.
+- Los datos crudos de herramientas MCP quedan ocultos — solo se ve el resultado final.
+
+**Por plan:** en Free/Pro/Max, cualquiera con el enlace ve el chat. En Team/Enterprise, solo miembros de tu organización.
+
+Si te arrepientes, ve al menú Share y cambia la visibilidad de "Public" a "Private". El enlace dejará de funcionar.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-compartir"
+  question="Compartes un chat con un amigo donde habías subido un PDF. ¿Qué verá tu amigo?"
+  options='["Verá los mensajes y artifacts, pero NO el PDF adjunto","Verá absolutamente todo, incluido el PDF descargable","Solo verá el PDF, no los mensajes","El chat se actualizará en tiempo real con lo que sigas escribiendo"]'
+  correctIndex="0"
+  explanation="Los archivos adjuntos NO se incluyen en el snapshot compartido. Tu amigo verá los mensajes y artifacts hasta el momento de generar el enlace, pero no el PDF original."
+/>
+
+<NarratedSection id="incognito" heading="Chats de incógnito: sin dejar rastro" sourcePage="144">
+
+A veces quieres hacer una consulta y que no quede guardada. Como cuando usas el modo privado del navegador. Para eso existen los **chats de incógnito**.
+
+Son conversaciones temporales que **no se guardan en tu historial** y **no contribuyen a la memoria** de Claude.
+
+**Cómo iniciar uno:**
+- Haz click en el icono de fantasma 👻 en la esquina superior derecha al empezar un chat nuevo.
+- O usa el atajo de teclado **Ctrl+Shift+I**.
+
+Sabrás que estás en incógnito porque la pantalla tiene un **borde negro** y una etiqueta que dice "Incognito chat".
+
+**Reglas importantes:**
+- No se guarda en tu historial.
+- No se usa para entrenar a Claude.
+- Claude SÍ puede acceder a tu perfil (tus preferencias de estilo).
+- Se retienen 30 días por razones de seguridad.
+- **No se pueden reabrir ni convertir a chats normales.**
+- No están disponibles dentro de Proyectos.
+
+**Consejo clave:** si hay algo importante en un chat incógnito, **cópialo antes de cerrarlo**. Una vez cerrado, no hay forma de recuperarlo.
+
+</NarratedSection>
+
+<NarratedSection id="memoria" heading="La memoria de Claude: su libreta personal" sourcePage="145">
+
+Claude tiene **memoria**. Pero ojo: no recuerda cada palabra literal de cada conversación. Lo que hace es **sintetizar** — sacar un resumen — de lo que aprende sobre ti, y lo guarda en una especie de libreta personal.
+
+Ejemplo: si le dices que eres programador Python y prefieres explicaciones cortas, no tendrás que repetirlo. Claude lo anota.
+
+**Recuerda:**
+- Tu rol profesional y proyectos.
+- Tus preferencias de comunicación.
+- Tu estilo técnico y de código.
+- Detalles de proyectos en curso.
+
+**NO recuerda:**
+- Conversaciones de incógnito.
+- Chats que eliminaste.
+
+La memoria se actualiza cada 24 horas. Cada Proyecto tiene su **propia memoria separada**.
+
+**Controles en Settings > Capabilities:**
+- **Ver y editar** lo que Claude aprendió de ti.
+- **Pausar:** mantiene lo que hay pero deja de aprender nuevo.
+- **Resetear:** borra todo. ⚠️ Es **permanente e irreversible**.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-memoria"
+  question="¿Cuál de estas acciones NO contribuye a la memoria de Claude?"
+  options='["Un chat normal donde le cuentas que prefieres respuestas en español","Trabajar dentro de un Proyecto","Una conversación en modo incógnito","Editar manualmente la memoria en Settings"]'
+  correctIndex="2"
+  explanation="Los chats de incógnito NO se guardan en el historial NI contribuyen a la memoria. Por eso son útiles para consultas que no quieres que Claude &quot;recuerde&quot;."
+/>
+
+<NarratedSection id="exportar" heading="Exportar todos tus datos" sourcePage="146">
+
+Puedes descargar una copia de **todas** tus conversaciones y datos. Es tu derecho: los datos son tuyos.
+
+**Paso a paso:**
+1. Click en tus **iniciales** (esquina inferior izquierda).
+2. Selecciona "Settings".
+3. Ve a la sección "Privacy".
+4. Click en "Export data".
+5. Revisa tu **email** — recibirás un enlace de descarga.
+
+**Detalles importantes:**
+- El enlace **expira en 24 horas**. Si se te pasa, repites el proceso.
+- Debes estar logueado para descargar.
+- **Solo desde web o desktop**, no desde las apps móviles.
+- Incluye: conversaciones, datos de usuario, memoria y resúmenes.
+- **No se pueden migrar datos entre cuentas distintas** de Claude.
+
+</NarratedSection>
+
+<TerminalTask
+  id="task-exportar"
+  instruction="Entra a claude.ai desde tu computadora (no desde el celular). Ve a tus iniciales (abajo a la izquierda) → Settings → Privacy. Localiza el botón &quot;Export data&quot; y observa qué incluye sin necesariamente exportar todavía. Si decides exportar, revisa tu email dentro de las próximas 24 horas."
+  expectedOutcome="Llegaste a la sección Privacy y ubicaste la opción &quot;Export data&quot;. Si la usaste, recibiste un correo con un enlace de descarga válido por 24 horas."
+  verifyHint="Si no ves &quot;Export data&quot;, revisa que estés usando la versión web o desktop de Claude — no funciona desde iOS o Android."
+/>
+
+<NarratedSection id="limites-uso" heading="Límites de uso: tu tanque de gasolina" sourcePage="147">
+
+Claude no es un buffet ilimitado. Cada plan tiene **un tanque de uso asignado**. Cuanto más pagas, más grande el tanque.
+
+**Cómo se miden:**
+- Los límites se miden en **ventanas de 5 horas**. Después de ese tiempo, se resetea.
+- También hay un límite semanal que se resetea a los 7 días.
+
+**Importante:** todas las superficies de Claude (claude.ai, Claude Code, Claude Desktop) **comparten el mismo tanque**. Lo que gastas en una, lo descuentas de todas.
+
+**Qué consume más o menos:**
+- Qué tan larga es la conversación.
+- Qué funciones usas (búsqueda web, Research, extended thinking).
+- Qué modelo eliges.
+- El tamaño de los archivos adjuntos.
+
+**Horas pico:** entre las 5am y 11am hora del Pacífico, los límites se consumen más rápido. Si puedes, programa tu trabajo intensivo fuera de ese horario.
+
+</NarratedSection>
+
+<NarratedSection id="comparacion-planes" heading="Comparación rápida de planes" sourcePage="147">
+
+Los números son **aproximados** (Anthropic no publica cifras exactas porque dependen de la complejidad):
+
+- **Free:** ~15-40 mensajes cada 5 horas. Modelos Sonnet 4.6 y 4.5. Hasta 5 proyectos. Sin Research ni búsqueda de chats.
+- **Pro ($20/mes):** ~45 mensajes con Sonnet (5× Free). Todos los modelos. Proyectos ilimitados. Research, búsqueda de chats, Claude Code.
+- **Max 5x ($100/mes):** ~225 mensajes (5× Pro). Extended Thinking, acceso prioritario.
+- **Max 20x ($200/mes):** ~900 mensajes (20× Pro). Máxima capacidad.
+- **Team Standard ($25/mes):** 1.25× Pro. Mínimo 5 miembros. SSO y conectores.
+- **Team Premium ($125/mes):** 6.25× Pro.
+- **Enterprise:** límites personalizados. Contexto de hasta **500K tokens** en ciertos modelos.
+
+En Team y Enterprise, los límites son **por persona**. Si un compañero llega al tope, los demás siguen.
+
+</NarratedSection>
+
+<NarratedSection id="optimizar-extra" heading="Consejos para no quedarte sin mensajes" sourcePage="148">
+
+Si sientes que los mensajes se acaban rápido, prueba:
+
+- **Usa Proyectos con RAG** en vez de subir los mismos archivos en cada chat.
+- Mantén las instrucciones de proyecto **cortas y esenciales**.
+- Elimina archivos viejos de los proyectos.
+- Desactiva **extended thinking** cuando no lo necesites (consume más).
+- Desactiva herramientas que no uses (búsqueda web, Research, conectores).
+- **Empieza chats nuevos** en vez de alargar conversaciones viejas muy largas.
+
+**Extra Usage (uso adicional):** en planes Pro, Max 5x y Max 20x, al llegar al tope puedes seguir usando Claude pagando **tarifas de API estándar**. Se configura en Settings > Usage > Enable, agregando método de pago y un tope mensual.
+
+**Detalles de Extra Usage:**
+- Límite de $2.000 por día en fondos prepagados.
+- Solo se configura desde web.
+- Los cargos aparecen separados de tu suscripción.
+- Puedes apagarlo cuando quieras.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-limites-comparten"
+  question="Usas claude.ai en la mañana y Claude Code en la tarde desde el mismo plan Pro. ¿Qué pasa con tus límites?"
+  options='["Cada superficie (claude.ai y Claude Code) tiene su propio tanque independiente","Todas las superficies comparten el mismo tanque: lo que gastas en una, se descuenta de todas","Claude Code no cuenta para los límites","Los límites solo aplican a la app móvil"]'
+  correctIndex="1"
+  explanation="El capítulo lo marca como &quot;muy importante&quot;: todas las superficies de Claude comparten el mismo límite. claude.ai, Claude Code y Claude Desktop consumen del mismo tanque."
+/>
+
+<Quiz
+  id="quiz-final-multi"
+  question="Selecciona TODAS las afirmaciones correctas sobre archivos y búsqueda (puede haber varias)."
+  options='["Claude puede crear archivos Excel, Word, PowerPoint y PDF si tienes Code Execution activado","Research puede durar hasta 45 minutos haciendo búsquedas encadenadas","Puedes subir hasta 100 archivos en una misma conversación","Para analizar imágenes dentro de un Word, lo ideal es convertirlo a PDF primero"]'
+  correctIndex="[0,1,3]"
+  explanation="Claude sí crea archivos ofimáticos con Code Execution, Research investiga hasta 45 minutos, y los PDFs permiten análisis visual (los DOCX solo extraen texto). El límite por chat es de 20 archivos, no 100."
+  multiple="true"
+/>
+
+<NarratedSection id="cierre" heading="Lo que cubriste en este capítulo" sourcePage="154">
+
+Repasemos rápido: ya sabes que Claude lee archivos (PDF, DOCX, Markdown, imágenes…) con tope de **30 MB** por archivo y **20 por chat**. También **crea** Excel, Word, PowerPoint, PDF e imágenes.
+
+La **búsqueda web** y **Research** (hasta 45 minutos de investigación) te dan acceso a información fresca de internet con fuentes. Puedes **organizar** chats con estrellas, proyectos y borrado masivo, **compartirlos** mediante snapshots, usar **incógnito** para consultas privadas y **exportar** tus datos cuando quieras.
+
+Cada plan tiene un tanque de uso que se resetea cada 5 horas, y en planes pagados puedes activar **Extra Usage** para seguir trabajando a tarifa de API si se acaba.
+
+En el próximo capítulo veremos cómo llevar todo esto al siguiente nivel con funciones más avanzadas. Llevas buen ritmo.
+
+</NarratedSection>

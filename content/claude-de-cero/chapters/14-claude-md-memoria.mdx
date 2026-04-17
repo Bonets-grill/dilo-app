@@ -1,0 +1,281 @@
+---
+chapterNumber: 14
+slug: claude-md-memoria
+title: CLAUDE.md y Memoria del Proyecto
+part: claude-code
+estimatedMinutes: 19
+prerequisites:
+  - introduccion-claude-code
+  - api-claude-basica
+status: approved
+generatedAt: '2025-01-20T12:00:00Z'
+sourcePagesFrom: 426
+sourcePagesTo: 450
+model: claude-opus-4-7
+---
+<NarratedSection id="intro-gancho" heading="Cuando algo sale mal, ¿quién te avisa?" sourcePage="426">
+
+Imagina que envías un paquete por correo. Si la dirección está mal, el cartero no se queda callado: te devuelve el paquete con una nota que explica qué pasó. La API de Claude hace exactamente lo mismo.
+
+Cada vez que le pides algo a Claude por código, la respuesta viene con pistas. Algunas dicen "todo bien". Otras dicen "espera un momento" o "revisa esto". En este capítulo vas a ver cómo leer esas pistas y cómo construir cosas interesantes con la API: desde respuestas en formato exacto hasta agentes que trabajan solos.
+
+Empecemos por entender los mensajes que la API te envía cuando algo no sale como esperabas.
+
+</NarratedSection>
+
+<NarratedSection id="headers-rate-limit" heading="Los headers: el recibo que viene con cada respuesta" sourcePage="426">
+
+Cada respuesta de la API trae unas etiquetas invisibles llamadas **headers**. Un header (se pronuncia 'jéder') es como la información del recibo: no es el producto, pero te dice datos importantes.
+
+Tres headers son clave. El primero es `anthropic-ratelimit-requests-remaining`: te dice cuántas solicitudes te quedan. El segundo es `anthropic-ratelimit-tokens-remaining`: cuántos tokens (las piezas de texto que Claude procesa) te quedan. El tercero es `retry-after`: si recibes un error de tipo 429, este header te indica cuántos segundos debes esperar antes de volver a intentarlo.
+
+Con estos datos puedes aplicar **backoff exponencial**. Suena complicado, pero es simple: si falla una vez, esperas el tiempo indicado; si falla de nuevo, esperas el doble. Es como tocar la puerta: si no abren, esperas; si sigues sin respuesta, esperas más antes de tocar otra vez.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-retry-after"
+  question="Recibes un error 429 de la API. ¿Qué header deberías mirar primero?"
+  options='["anthropic-ratelimit-requests-remaining","retry-after","request-id"]'
+  correctIndex="1"
+  explanation="El header retry-after te dice cuántos segundos esperar antes de reintentar cuando recibes un 429 (rate limit)."
+/>
+
+<NarratedSection id="errores-comunes" heading="Los errores no son tu enemigo" sourcePage="426">
+
+Cuando algo falla, la API te manda un código HTTP y un tipo descriptivo. No son castigos: son pistas. Vamos uno por uno.
+
+**400 invalid_request_error**: algo está mal en tu JSON. **401 authentication_error**: tu API key es inválida o falta (revisa la variable `ANTHROPIC_API_KEY`). **403 permission_error**: tu key no tiene permiso para ese recurso. **404 not_found_error**: el recurso no existe; verifica la URL. **413 request_too_large**: tu solicitud pesa más de 32 MB; reduce el payload o usa la Files API.
+
+Luego están los errores del servidor. **429 rate_limit_error**: superaste el límite; espera y reintenta. **500 api_error**: error interno de Anthropic, no es culpa tuya. **529 overloaded_error**: la API está sobrecargada; reintenta con backoff o usa Batches API.
+
+La regla de oro: lee el mensaje. La API casi siempre te dice qué arreglar.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-errores"
+  question="¿Qué error indica que tu API key es inválida o falta?"
+  options='["400 invalid_request_error","401 authentication_error","403 permission_error","404 not_found_error"]'
+  correctIndex="1"
+  explanation="El 401 significa problema de autenticación: la API key es inválida o no está configurada en ANTHROPIC_API_KEY."
+/>
+
+<NarratedSection id="extended-thinking" heading="Extended Thinking: ver cómo piensa Claude" sourcePage="427">
+
+Imagina que le pides a un estudiante que resuelva un problema de mates. Le dices: "Muéstrame tu trabajo, no solo el resultado". Eso es **Extended Thinking**: Claude piensa paso a paso antes de responder, y tú puedes ver ese razonamiento.
+
+Se activa con el parámetro `thinking={"type": "enabled", "budget_tokens": 5000}`. El `budget_tokens` es cuántos tokens puede gastar Claude pensando. Mínimo 1.024, y debe ser menor que `max_tokens`.
+
+La respuesta trae bloques de tipo `thinking` (el razonamiento) y luego un bloque `text` (la respuesta final). También viene un `signature` que verifica que ese pensamiento es auténtico.
+
+Existen variantes útiles. Con `"type": "adaptive"`, Claude decide si necesita pensar o no. El parámetro `display` controla cómo se muestra: `summarized` incluye un resumen del razonamiento; `omitted` oculta el pensamiento pero deja el signature como prueba de que ocurrió.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-thinking"
+  question="¿Qué hace el parámetro budget_tokens en Extended Thinking?"
+  options='["Define el costo máximo en dólares","Indica cuántos tokens puede usar Claude para pensar antes de responder","Limita el tamaño de la respuesta final"]'
+  correctIndex="1"
+  explanation="budget_tokens es el presupuesto de pensamiento: debe ser al menos 1.024 y menor que max_tokens."
+/>
+
+<NarratedSection id="otras-apis" heading="Más APIs en la caja de herramientas" sourcePage="428">
+
+Además de la Messages API (la principal), Anthropic ofrece otras piezas útiles.
+
+**Token Counting API** (`POST /v1/messages/count_tokens`): te dice cuántos tokens tiene tu mensaje antes de enviarlo. Ideal para estimar costos. **Models API** (`GET /v1/models`): lista todos los modelos disponibles. **Files API** (beta): sube archivos una vez y reutilízalos en muchas solicitudes. **Usage and Cost API**: monitorea cuánto estás gastando. **Skills API** (beta): crea conjuntos reutilizables de instrucciones y herramientas para tus agentes.
+
+Claude también vive fuera de Anthropic. Puedes usarlo en **Amazon Bedrock** (AWS), **Google Vertex AI** (Google Cloud) y **Azure AI Foundry** (Microsoft). Los 7 SDKs oficiales soportan estas plataformas: solo cambias la configuración del cliente.
+
+</NarratedSection>
+
+<NarratedSection id="ejemplo-primera-conversacion" heading="Tu primera conversación con Claude en Python" sourcePage="429">
+
+Nada explica mejor que un ejemplo real. Mira este código de 10 líneas:
+
+```python
+from anthropic import Anthropic
+
+client = Anthropic()
+message = client.messages.create(
+    model="claude-opus-4-6",
+    max_tokens=1024,
+    system="Responde siempre en español.",
+    messages=[{"role": "user", "content": "Que es una API?"}],
+)
+print(message.content[0].text)
+```
+
+¿Qué pasa aquí? Creas un cliente, envías un mensaje con un **system prompt** (instrucciones generales para Claude) en español, y muestras la respuesta. El SDK lee la API key automáticamente de la variable de entorno `ANTHROPIC_API_KEY`. Por eso **nunca** pegues tu key directo en el código.
+
+Para ver la respuesta palabra por palabra mientras se genera, usas **streaming** con `client.messages.stream(...)`. Perfecto para chatbots donde no quieres que el usuario espere callado.
+
+</NarratedSection>
+
+<TerminalTask
+  id="task-primera-llamada"
+  instruction="Antes de ejecutar el código de ejemplo, configura tu API key en la terminal. Esto la guarda solo para esta sesión y evita escribirla en el código."
+  command="export ANTHROPIC_API_KEY=&quot;tu-api-key-aqui&quot;"
+  expectedOutcome="La variable queda disponible en la sesión actual de la terminal. Si luego ejecutas `echo $ANTHROPIC_API_KEY`, verás tu key (reemplaza 'tu-api-key-aqui' por una real antes de usar)."
+  verifyHint="Ejecuta `echo $ANTHROPIC_API_KEY` para confirmar que la variable existe."
+/>
+
+<NarratedSection id="structured-outputs" heading="Structured Outputs: respuestas con forma exacta" sourcePage="438">
+
+A veces no quieres texto libre: quieres datos. Por ejemplo, extraer de un email el nombre, correo y plan de un cliente en formato JSON limpio.
+
+**Structured Outputs** (salidas estructuradas) resuelve esto. Le dices a Claude qué forma debe tener la respuesta usando un **JSON Schema** (un plano que describe los campos, sus tipos y cuáles son obligatorios). Claude devuelve siempre un JSON válido que cumple tu esquema.
+
+Es como darle un formulario en lugar de una hoja en blanco. En vez de: "escribe lo que quieras", le dices: "llena estos campos: `nombre` (texto), `email` (texto), `plan` (texto)".
+
+Escribir JSON Schema a mano es tedioso. Por eso los SDKs tienen ayudantes. En **Python** usas **Pydantic**: defines una clase y el SDK la convierte en schema por ti. En **TypeScript** usas **Zod** con el helper `zodOutputFormat`. Luego llamas `client.messages.parse(...)` y recibes un objeto tipado directamente, sin parsear JSON a mano.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-pydantic"
+  question="¿Para qué sirve Pydantic al trabajar con Structured Outputs en Python?"
+  options='["Para conectarse a bases de datos","Para definir la estructura esperada como una clase, y que el SDK la convierta en JSON Schema automáticamente","Para cifrar la API key"]'
+  correctIndex="1"
+  explanation="Pydantic te permite definir la forma de la respuesta como una clase Python. El SDK genera el schema y valida la respuesta."
+/>
+
+<NarratedSection id="limitaciones-schema" heading="Lo que NO puedes poner en tu schema" sourcePage="441">
+
+No todo JSON Schema se soporta. Algunas keywords no funcionan en Structured Outputs: `minimum`, `maximum`, `minLength`, `maxLength`, `pattern`, `oneOf`, `allOf`, `const` y `default`.
+
+¿Qué hacen los SDKs de Python y TypeScript con esto? Son amables: remueven las constraints no soportadas y las meten como texto en las descripciones. Si tu campo tiene `minimum: 100`, el SDK añade "Must be at least 100" a la descripción. No lo bloquea de forma técnica, pero se lo sugiere a Claude.
+
+Hay límites numéricos que sí debes respetar: máximo **20 strict tools por request**, máximo **24 parámetros opcionales** en total, y máximo **16 parámetros con union types (anyOf)** en total.
+
+Y dos incompatibilidades importantes: Structured Outputs **no se puede combinar con Citations** (error 400) ni con **Message Prefilling**. Pero sí funciona bien con batch processing y streaming.
+
+</NarratedSection>
+
+<NarratedSection id="rag-intro" heading="RAG: darle a Claude tu biblioteca" sourcePage="442">
+
+Claude sabe mucho, pero no conoce tus documentos internos. **RAG** (Retrieval-Augmented Generation, generación aumentada con recuperación) soluciona eso: antes de responder, buscas información relevante en tus documentos y se la pasas.
+
+RAG tiene tres pasos simples. **Paso 1 (chunking):** cortas tus documentos en pedazos pequeños, como fichas de un libro. **Paso 2 (embedding):** cada chunk se convierte en un vector numérico. Un **embedding** es como una coordenada GPS del significado: textos similares quedan cerca en el mapa. **Paso 3 (búsqueda y respuesta):** cuando llega una pregunta, buscas los chunks más cercanos y los envías a Claude junto con la pregunta.
+
+¿Cómo saber si tu RAG sirve? Hay cuatro métricas. **Precisión**: de los chunks recuperados, cuántos eran útiles (3 de 3 = 100%). **Recall**: de todos los chunks útiles que existían, cuántos encontraste. **F1 Score**: el balance entre precisión y recall. **MRR (Mean Reciprocal Rank)**: qué tan arriba aparece el primer resultado correcto en la lista.
+
+El cookbook de Anthropic muestra que con técnicas como **re-ranking con Claude**, la precisión sube de 71% a 81%.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-rag"
+  question="Si tu sistema RAG recupera 3 chunks y solo 2 son realmente relevantes para la pregunta, ¿cuál es la precisión?"
+  options='["33%","50%","66%","100%"]'
+  correctIndex="2"
+  explanation="Precisión = chunks útiles recuperados / chunks recuperados = 2/3 ≈ 66%."
+/>
+
+<NarratedSection id="citations-api" heading="Citations API: notas al pie verificables" sourcePage="443">
+
+Cuando Claude responde usando documentos, ¿cómo saber de dónde sacó cada afirmación? La **Citations API** hace que Claude respalde cada frase con una referencia al documento original, como las notas al pie de un libro académico.
+
+Se activa con `citations: {enabled: true}` en cada documento. Soporta tres tipos: **plain text** (texto simple, chunking por oración con índices de caracteres), **PDF** (incluye número de página, empezando en 1) y **custom content** (tú defines los bloques; ideal cuando ya tienes chunks preprocesados).
+
+Cada documento tiene tres campos: `source` (el contenido, que sí es citable), `title` (título opcional, no citable) y `context` (metadata opcional, tampoco citable).
+
+Y hay un bonus de costos: el `cited_text` **no cuenta como tokens de salida**. En turnos siguientes tampoco cuenta como tokens de entrada. Es más barato que pedirle a Claude que copie fragmentos a mano.
+
+</NarratedSection>
+
+<NarratedSection id="tool-use" heading="Tool Use: Claude con superpoderes" sourcePage="445">
+
+Por defecto, Claude solo lee texto y genera texto. Con **Tool Use** (uso de herramientas) puede ejecutar funciones que tú defines: consultar una base de datos, llamar una API, enviar emails, lo que quieras.
+
+Cada herramienta necesita tres cosas. Primero, un `name`: corto, descriptivo, máximo 64 caracteres, solo letras, números, guiones y guiones bajos. Segundo, un `description`: detallado, de 3-4 oraciones, explicando qué hace, cuándo usarla y qué significa cada parámetro. Tercero, un `input_schema`: un JSON Schema con los parámetros que acepta.
+
+Las descripciones detalladas importan muchísimo. Cuanto mejor describas la herramienta, mejor la usa Claude.
+
+Un detalle de costos: al definir al menos una herramienta, Claude añade un system prompt interno. Esto consume **346 tokens extra** con `tool_choice` en `auto` o `none`, y **313 tokens extra** con `any` o `tool` (en Opus 4.6, Sonnet 4.6 y Haiku 4.5).
+
+</NarratedSection>
+
+<NarratedSection id="tool-choice" heading="Controlar cuándo Claude usa herramientas" sourcePage="446">
+
+El parámetro `tool_choice` controla el comportamiento de Claude ante las herramientas. Hay cuatro opciones.
+
+**auto**: Claude decide si usarla o no (valor por defecto). **any**: Claude debe usar alguna herramienta, no puede responder sin usarla. **tool**: Claude debe usar una herramienta específica que tú le indicas. **none**: Claude no puede usar herramientas, solo texto.
+
+Por defecto, Claude puede usar varias herramientas en paralelo en una sola respuesta. Si prefieres que use solo una a la vez, agrega `disable_parallel_tool_use: true`.
+
+**Ojo con un error común**: cuando un mensaje del usuario contiene un `tool_result` y texto, el `tool_result` debe ir **primero** en el array de contenido. Si pones el texto antes, recibes un error 400. Es un detalle pequeño que causa dolores de cabeza grandes.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-tool-choice"
+  question="Si quieres forzar a Claude a usar alguna herramienta sin importar cuál, ¿qué valor de tool_choice eliges?"
+  options='["auto","any","tool","none"]'
+  correctIndex="1"
+  explanation="Con 'any', Claude debe usar alguna herramienta. Con 'auto' decide, con 'tool' usa una específica, y con 'none' no usa ninguna."
+/>
+
+<NarratedSection id="agentes-autonomos" heading="Agentes autónomos: Claude que trabaja solo" sourcePage="447">
+
+Un **agente autónomo** es un programa que usa Claude para tomar decisiones y ejecutar acciones sin que un humano intervenga en cada paso. Puede leer archivos, buscar información, escribir código y corregir errores por su cuenta.
+
+El **Agent SDK** de Anthropic (antes llamado Claude Code SDK) te da las mismas herramientas que usa Claude Code internamente. Se instala con `pip install claude-agent-sdk` (Python) o `npm install @anthropic-ai/claude-agent-sdk` (TypeScript).
+
+Un agente básico se ve así: llamas `query(...)` con un prompt como "Encuentra y corrige el bug en auth.py" y una lista de `allowed_tools` como `['Read', 'Edit', 'Bash']`. El SDK maneja el bucle de herramientas internamente: tú solo defines qué puede hacer.
+
+Los agentes también pueden delegar a **subagentes** especializados, como un jefe que asigna tareas a su equipo. Por ejemplo, un subagente `code-reviewer` con sus propias herramientas e instrucciones. Aviso: Claude Opus 4.6 a veces sobreusa subagentes cuando una operación directa sería más rápida. Vigila que la delegación tenga sentido.
+
+</NarratedSection>
+
+<TerminalTask
+  id="task-instalar-sdk"
+  instruction="Instala el Agent SDK de Anthropic en Python. Este comando descarga la librería que te permite crear agentes autónomos con Claude."
+  command="pip install claude-agent-sdk"
+  expectedOutcome="pip descarga e instala claude-agent-sdk junto con sus dependencias. Al final verás un mensaje como 'Successfully installed claude-agent-sdk-x.y.z'."
+  verifyHint="Ejecuta `python -c &quot;import claude_agent_sdk; print('ok')&quot;` para verificar la instalación."
+/>
+
+<NarratedSection id="patrones-agentes-largos" heading="Patrones para agentes que trabajan mucho tiempo" sourcePage="448">
+
+Los agentes que trabajan por periodos largos necesitan estrategias especiales, igual que un maratonista no corre como un velocista.
+
+**Gestión de estado**: usa JSON para datos estructurados, texto libre para notas de progreso, y git para checkpoints (puntos de guardado). **Multi-context window**: usa la primera ventana de contexto para setup (tests, scripts de inicialización); las siguientes para iterar y refinar.
+
+**Self-correction**: el patrón más común es generar un borrador, revisarlo y refinarlo. Tres pasadas suelen dar mejor resultado que una. **Seguridad**: pide confirmación humana antes de acciones destructivas o irreversibles. Un agente que borra archivos sin preguntar es peligroso.
+
+Estos patrones no son magia: son sentido común aplicado al código.
+
+</NarratedSection>
+
+<NarratedSection id="contexto-largo" heading="Ventana de contexto: la memoria de trabajo" sourcePage="449">
+
+Cada vez que envías un mensaje a Claude, le mandas toda la conversación anterior. Es como releerle toda la historia en cada turno. Esto consume **tokens** (las piezas de texto que Claude procesa).
+
+La **ventana de contexto** es el límite de cuánto puede recordar Claude en una conversación. Estándar: **200.000 tokens**. Beta: **1 millón de tokens**.
+
+Claude puede rastrear cuántos tokens le quedan. Al inicio recibe su presupuesto (`<budget:token_budget>200000</budget:token_budget>`) y después de cada herramienta recibe actualizaciones (`<system_warning>Token usage: 35000/200000; 165000 remaining</system_warning>`). Esta capacidad se llama **context awareness** y está en Sonnet 4.6, Sonnet 4.5 y Haiku 4.5.
+
+</NarratedSection>
+
+<NarratedSection id="compaction-rot" heading="Compaction y context rot: dos caras de la misma moneda" sourcePage="450">
+
+Cuando una conversación se alarga, tienes dos problemas opuestos.
+
+El primero lo resuelve **compaction** (compactación). Es como tomar notas resumidas de una reunión larga: cuando los tokens de entrada superan el 80% del contexto (configurable con `trigger_tokens`), Claude genera un resumen de las partes antiguas y descarta los mensajes originales. Se activa con el beta `compact-2026-01-12` y el parámetro `context_management={'edits': [{'type': 'compact_20260112'}]}`. Solo funciona con Opus 4.6 y Sonnet 4.6.
+
+El segundo problema se llama **context rot** (deterioro de contexto). Aquí viene la trampa: a medida que crece el texto acumulado, la precisión y el recall de Claude **bajan**. Más contexto no siempre es mejor. Por eso a veces conviene resumir, borrar partes viejas o empezar una nueva conversación en lugar de amontonar información.
+
+Con esto cierras el circuito: leer headers, manejar errores, estructurar respuestas, conectar documentos, usar herramientas, construir agentes y cuidar la memoria. Tienes las piezas para empezar a construir.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-final"
+  question="¿Qué es el 'context rot' y por qué importa?"
+  options='["Un error 500 cuando la conversación es muy larga","La caída de precisión y recall de Claude cuando el contexto acumulado crece demasiado","Un límite estricto de 200.000 tokens que nunca se puede superar"]'
+  correctIndex="1"
+  explanation="Context rot es el deterioro gradual de la precisión y el recall a medida que el contexto crece. Por eso compaction o resumir conversaciones largas ayuda."
+/>

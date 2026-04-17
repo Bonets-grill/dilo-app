@@ -1,0 +1,312 @@
+---
+chapterNumber: 2
+slug: primeros-pasos
+title: Primeros Pasos con Claude
+part: fundamentos
+estimatedMinutes: 24
+prerequisites:
+  - introduccion
+status: approved
+generatedAt: '2026-03-01T00:00:00Z'
+sourcePagesFrom: 41
+sourcePagesTo: 65
+model: claude-opus-4-7
+---
+<NarratedSection id="gancho-menu-restaurante" heading="Un menú con tres platos" sourcePage="41">
+
+Imagina que entras a un restaurante y te dan un menú con tres platos. Uno es rápido y barato, otro es el favorito de todos, y el tercero es el más elegante (y caro). ¿Cuál pides? Depende del hambre que tengas y del dinero en tu bolsillo.
+
+Claude funciona igual. No es un solo modelo, son **tres**, y cada uno sirve mejor para ciertas tareas. En este capítulo vas a conocerlos y, además, vas a ver cómo hablarles para que te entiendan bien a la primera.
+
+Empecemos por lo más básico: qué modelo elegir.
+
+</NarratedSection>
+
+<NarratedSection id="los-tres-modelos" heading="Haiku, Sonnet y Opus: los tres hermanos" sourcePage="41">
+
+Claude viene en tres versiones. Los nombres son poéticos porque en inglés **haiku**, **sonnet** y **opus** son tipos de poemas: del más corto al más grande.
+
+**Haiku 4.5** es el más rápido y el más barato. Cuesta $1 por cada millón de palabras que le mandas de entrada, y $5 por cada millón que te escribe de salida. (Técnicamente son **tokens**, que son pedacitos de texto parecidos a una palabra. Un millón de tokens son unas 750,000 palabras, o sea, varias novelas.)
+
+**Sonnet 4.6** es el favorito de los desarrolladores. Cuesta $3 de entrada y $15 de salida por millón de tokens. Es el modelo por defecto en los planes Free y Pro de Claude.
+
+**Opus 4.6** es el más inteligente. Cuesta $5 de entrada y $25 de salida. Es el que usarías para los problemas más difíciles.
+
+Un dato para que te ubiques: el 70% de los desarrolladores que probaron Sonnet 4.6 lo prefirieron incluso sobre Sonnet 4.5. Y el 59% lo prefiere sobre Opus 4.5. Por eso se suele decir: **si no sabes cuál elegir, empieza con Sonnet**.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-modelo-default"
+  question="Si eres nuevo y no sabes qué modelo usar, ¿cuál recomienda el libro como punto de partida?"
+  options='["Opus 4.6, porque siempre más caro es mejor","Haiku 4.5, porque es el más barato","Sonnet 4.6, por su equilibrio entre calidad y precio","Cualquiera menos Sonnet"]'
+  correctIndex="2"
+  explanation="Sonnet 4.6 es el modelo por defecto en Free y Pro, cubre el 90% de los casos de uso y cuesta 40% menos que Opus rindiendo casi igual."
+/>
+
+<NarratedSection id="ventana-contexto" heading="¿Cuánto texto puede leer de una vez?" sourcePage="41">
+
+La **ventana de contexto** es cuánto texto puede manejar Claude en una sola conversación. Piénsalo como la memoria de trabajo del modelo: todo lo que le mandas tiene que caber ahí.
+
+Opus 4.6 y Sonnet 4.6 tienen una ventana de **1 millón de tokens** (unas 750,000 palabras, más que varias novelas). Está disponible para todos, sin configuración extra. Haiku 4.5 se queda en 200,000 tokens, que ya es bastante.
+
+Y hay otro número importante: la **salida máxima**, que es cuánto puede escribir Claude de una sola vez. Opus llega a 128,000 tokens de salida. Sonnet y Haiku, a 64,000. Suficiente para textos larguísimos.
+
+</NarratedSection>
+
+<NarratedSection id="capacidades-compartidas" heading="Lo que los tres pueden hacer" sourcePage="43">
+
+Los tres modelos (Haiku, Sonnet y Opus) comparten varias habilidades. Vale la pena conocerlas porque son las que vas a usar a diario.
+
+**Visión**: pueden ver imágenes. Les mandas una foto, una captura de pantalla o un diagrama y lo entienden. **Tool use** (uso de herramientas): pueden llamar funciones externas, buscar en internet o ejecutar código. **Computer use**: pueden controlar un mouse y un teclado virtual, como un humano. **Extended thinking**: pueden pensar internamente antes de responder, como cuando tú piensas en silencio antes de contestar una pregunta de examen. Y por supuesto, **funcionan en muchos idiomas**, incluido el español.
+
+Algunas funciones sí son exclusivas de los modelos grandes. El **Adaptive Thinking** (el modelo decide solo cuánto pensar según la dificultad) solo lo tienen Opus 4.6 y Sonnet 4.6. Los **Agent Teams** (varios Claudes trabajando juntos) y el **Fast Mode** (6 veces más rápido por 6 veces el precio) son exclusivos de Opus 4.6.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-capacidades"
+  question="¿Cuál de estas funciones es exclusiva de Opus 4.6?"
+  options='["Visión (entender imágenes)","Funcionar en español","Agent Teams (varios Claudes trabajando juntos)","Extended thinking"]'
+  correctIndex="2"
+  explanation="Visión, idiomas y extended thinking los tienen los tres modelos. Agent Teams es la característica exclusiva de Opus 4.6."
+/>
+
+<NarratedSection id="tres-formas-ahorrar" heading="Tres trucos para pagar menos" sourcePage="43">
+
+Como los precios se cobran por tokens, hay tres maneras inteligentes de gastar menos.
+
+**1. Batch API (50% de descuento).** Si no necesitas la respuesta al instante, puedes mandar muchas peticiones juntas. Claude las procesa cuando tenga capacidad y te cobra la mitad. Es como enviar paquetes por correo económico: más lento, pero más barato. Con Batch API, Haiku baja a $0.50 / $2.50 por millón de tokens. Una ganga.
+
+**2. Prompt Caching.** Si le mandas muchas veces el mismo texto largo (por ejemplo, un manual), puedes **cachearlo**, que quiere decir guardarlo temporalmente para no pagarlo entero de nuevo. Hay dos opciones: cache de 5 minutos (escribir cuesta 1.25x) y cache de 1 hora (escribir cuesta 2x). Pero cada **relectura** desde cache cuesta solo 0.1x. Es como sacar una fotocopia en vez de volver a imprimir.
+
+**3. Elegir el modelo correcto.** No uses Opus para clasificar emails aburridos. Usa Haiku. Ahorras hasta 80% y la calidad es igual en tareas simples.
+
+Lo mejor: los descuentos se acumulan. Batch API + Prompt Caching + Haiku puede darte un ahorro total de más del 95%.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-ahorro"
+  question="Tienes que clasificar 10,000 mensajes de soporte y no necesitas las respuestas al instante. ¿Qué combinación ahorra más?"
+  options='["Opus 4.6 + respuesta inmediata","Haiku 4.5 + Batch API","Opus 4.6 + Batch API","Sonnet 4.6 + Fast Mode"]'
+  correctIndex="1"
+  explanation="Clasificar mensajes es una tarea simple: Haiku basta. Y como no necesitas respuestas al instante, Batch API te da otro 50% de descuento encima."
+/>
+
+<NarratedSection id="nombres-modelos" heading="Cómo se llaman los modelos por dentro" sourcePage="44">
+
+Cuando uses Claude por código, tienes que escribir el nombre exacto del modelo. El formato es: `claude-[nivel]-[version]-[fecha]`.
+
+Por ejemplo: `claude-sonnet-4-6-20260217`. Ese número largo del final es la fecha (17 de febrero de 2026) y se llama **snapshot**. Un snapshot garantiza que el modelo se comporta exactamente igual, hoy y siempre.
+
+También existen **alias** sin fecha, como `claude-sonnet-4-6`. Un alias siempre apunta a la versión más reciente de ese modelo.
+
+¿Cuándo usar cada uno?
+
+- **Para desarrollo y pruebas**: usa el alias. Siempre tendrás lo más nuevo.
+- **Para producción** (tu app funcionando con usuarios reales): usa el snapshot con fecha. Así evitas que tu app cambie de comportamiento de un día para otro sin avisarte.
+
+Es la diferencia entre decir "quiero la última versión de Chrome" y "quiero Chrome versión 120". En producción, quieres una versión fija.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-alias-snapshot"
+  question="Tu app está en producción con usuarios reales. ¿Qué identificador de modelo conviene usar?"
+  options='["Un alias como claude-sonnet-4-6 para siempre tener lo último","Un snapshot con fecha como claude-sonnet-4-5-20250929","Ninguno, da igual","El nombre en mayúsculas"]'
+  correctIndex="1"
+  explanation="En producción usas snapshots con fecha para que el modelo se comporte igual siempre. Los alias son mejores para desarrollo y pruebas."
+/>
+
+<NarratedSection id="que-es-prompt" heading="Qué es un prompt y por qué importa" sourcePage="53">
+
+Ya tienes los modelos en mente. Ahora viene la segunda mitad del capítulo: **cómo hablarle a Claude**.
+
+Un **prompt** (se pronuncia "promt") es el texto que le mandas a Claude. Puede ser una palabra, una pregunta o varias páginas. Es tu forma de comunicarte con el modelo.
+
+Piensa en Claude como un empleado nuevo. Es brillante, pero acaba de llegar. No conoce tu empresa, tus reglas ni tus preferencias. Si le das instrucciones vagas, va a hacer su mejor esfuerzo... pero probablemente no será lo que esperabas.
+
+La **regla de oro del prompting** es simple: imagina que le muestras tu prompt a un compañero de trabajo que no conoce la tarea. Si esa persona se confundiría, Claude también se va a confundir.
+
+</NarratedSection>
+
+<NarratedSection id="claro-directo" heading="Sé claro y directo (como en un restaurante)" sourcePage="53">
+
+La técnica más importante es también la más simple: **di exactamente lo que quieres**.
+
+Claude toma tus instrucciones de forma literal. Es como pedir comida. No le dices al mesero "tráeme algo rico". Le dices: "Quiero una hamburguesa con queso, sin cebolla, con papas fritas".
+
+Mira la diferencia:
+
+**Prompt vago**: *Crea un dashboard de analíticas*.
+
+**Prompt específico**: *Crea un dashboard de analíticas. Incluye gráficos de barras para ventas mensuales, una tabla con los 10 productos más vendidos, y un filtro por fecha. Usa colores profesionales*.
+
+El segundo le da a Claude una imagen clara. El primero lo deja adivinando.
+
+Otro truco: **usa lenguaje imperativo**. Si escribes "¿podrías sugerir cambios?", Claude solo sugerirá. Si escribes "Cambia esta función", Claude la cambia. Los verbos de acción (cambia, crea, escribe, analiza) son tus amigos.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-imperativo"
+  question="Quieres que Claude reescriba una función, no solo que opine. ¿Qué instrucción funciona mejor?"
+  options='["¿Podrías sugerir algunas mejoras para esta función?","Reescribe esta función para mejorar su rendimiento.","Si tuvieras tiempo, tal vez la función necesitaría cambios.","Opina sobre esta función."]'
+  correctIndex="1"
+  explanation="Verbos imperativos como 'reescribe' hacen que Claude implemente los cambios. Preguntar si 'podría' sugerir solo trae sugerencias, no acción."
+/>
+
+<NarratedSection id="contexto-el-porque" heading="Dale contexto: explica el porqué" sourcePage="54">
+
+Claude entiende mejor cuando sabe **por qué** le pides algo. El contexto es como darle el mapa completo en vez de solo una dirección.
+
+Sin contexto: *NUNCA uses puntos suspensivos*.
+
+Con contexto: *Tu respuesta será leída por un motor de texto a voz. Nunca uses puntos suspensivos porque el motor no sabrá cómo pronunciarlos*.
+
+Cuando Claude entiende la razón, puede **generalizar**. En el segundo ejemplo, también evitará otros símbolos problemáticos para texto a voz, aunque tú no los hayas listado.
+
+Es como explicarle a un niño por qué no debe cruzar corriendo la calle. Si solo le dices "no lo hagas", no entiende. Si le explicas "porque vienen carros y es peligroso", tendrá cuidado incluso en situaciones que no le mencionaste.
+
+</NarratedSection>
+
+<NarratedSection id="ejemplos-few-shot" heading="Los ejemplos son tu arma secreta" sourcePage="55">
+
+En vez de describir lo que quieres con muchas palabras, **muéstralo**. Los ejemplos son la técnica más poderosa del prompting.
+
+Imagina que le pides a alguien que pinte tu casa. Puedes describir el color con palabras... o puedes mostrarle una foto. La foto siempre es más clara.
+
+Hay tres niveles, y los nombres suenan complicados pero son simples:
+
+- **Zero-shot**: cero ejemplos, solo instrucciones.
+- **One-shot**: un ejemplo.
+- **Few-shot**: entre 3 y 5 ejemplos. Es lo que Anthropic (la empresa que hace Claude) recomienda.
+
+Tus ejemplos deben cumplir tres reglas: ser **relevantes** (parecerse a tu caso real), **diversos** (cubrir distintos escenarios) y **estructurados** (envueltos en etiquetas como `<example>` para que Claude los distinga de las instrucciones).
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-few-shot"
+  question="Anthropic recomienda dar cuántos ejemplos para obtener mejores resultados (few-shot)?"
+  options='["Ninguno","Exactamente 1","Entre 3 y 5","Más de 50"]'
+  correctIndex="2"
+  explanation="Few-shot son 3 a 5 ejemplos diversos. Suficientes para que Claude entienda el patrón sin saturarlo."
+/>
+
+<NarratedSection id="etiquetas-xml" heading="Etiquetas XML: carpetas para tu prompt" sourcePage="56">
+
+Las **etiquetas XML** son como carpetas que organizan las partes de tu prompt. Le dicen a Claude: "esto son instrucciones", "esto es contexto", "esto es la pregunta".
+
+Piensa en un formulario de papel con campos: "Nombre", "Dirección", "Teléfono". Las etiquetas XML hacen lo mismo con un prompt.
+
+Las más usadas son: `<instructions>` (tus instrucciones principales), `<context>` (información de fondo), `<input>` (el dato a procesar), `<example>` (un caso de entrada y salida), `<output>` (el formato esperado), `<thinking>` (para que Claude razone) y `<answer>` (la respuesta final).
+
+Puedes inventar tus propias etiquetas. Lo importante es que el nombre sea descriptivo: `<datos_del_cliente>` es mucho mejor que `<d1>`.
+
+</NarratedSection>
+
+<NarratedSection id="pensar-paso-a-paso" heading="Pedirle que piense antes de hablar" sourcePage="60">
+
+Cuando la tarea es compleja, pedirle a Claude que **razone antes de responder** mejora mucho la precisión. Es como pedirle a un estudiante que muestre el procedimiento en un examen de mates, no solo la respuesta.
+
+La forma más simple es escribir: *Piensa paso a paso sobre este problema. Luego da tu respuesta final*.
+
+Para más control, puedes separar con etiquetas: `<thinking>` para el razonamiento y `<answer>` para la respuesta. Esta técnica se llama **Chain of Thought** (cadena de pensamiento) y es muy útil para matemáticas, lógica y programación.
+
+Un detalle importante sobre Claude Opus 4.5: este modelo es sensible a la palabra "think" cuando el pensamiento extendido está desactivado. Si notas comportamiento raro, usa alternativas como "consider", "evaluate" o "reason through". Por ejemplo, en lugar de *Think step by step*, prueba *Reason through this step by step*.
+
+</NarratedSection>
+
+<NarratedSection id="evitar-alucinaciones" heading="Dale permiso de decir &quot;no sé&quot;" sourcePage="60">
+
+A veces Claude **alucina**: responde con información que suena correcta pero es inventada. Es como un estudiante que no estudió pero intenta sonar convincente.
+
+La solución es sorprendentemente simple: dale permiso explícito de decir que no sabe.
+
+*Si no estás seguro de alguna información, dilo explícitamente. No adivines ni inventes datos*.
+
+Para tareas de código, hay una versión aún más fuerte: *Nunca especules sobre código que no hayas leído. Si el usuario menciona un archivo, DEBES leerlo antes de responder*.
+
+Los modelos Claude 4.x ya son mucho menos propensos a alucinar que versiones anteriores, pero esta instrucción sigue siendo buena práctica.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-alucinaciones"
+  question="¿Cuál de estas instrucciones reduce las alucinaciones (información inventada)?"
+  options='["Responde siempre con mucha seguridad, aunque no sepas.","Si no estás seguro, dilo. No adivines ni inventes datos.","Nunca admitas que no sabes algo.","Escribe lo primero que se te ocurra."]'
+  correctIndex="1"
+  explanation="Darle permiso explícito de decir 'no sé' reduce significativamente las alucinaciones. Forzarlo a responder con seguridad empeora el problema."
+/>
+
+<NarratedSection id="estructura-ideal-prompt" heading="La estructura ideal de un prompt" sourcePage="61">
+
+Ya tienes todas las piezas. Así se arma un prompt completo según Anthropic:
+
+1. **Rol**: quién es Claude en este contexto.
+2. **Contexto / Documentos**: información de referencia (al inicio si es larga).
+3. **Instrucciones**: qué debe hacer, paso a paso.
+4. **Ejemplos**: 3 a 5 casos del resultado esperado.
+5. **Formato de salida**: cómo quieres la respuesta.
+6. **Pregunta o tarea**: lo que quieres que haga (al final).
+
+No siempre necesitas las seis partes. Para una pregunta casual, con la pregunta sola basta. Pero para tareas importantes, esta estructura da los mejores resultados.
+
+**Dato clave**: pon los documentos largos al inicio y la pregunta al final. Pruebas de Anthropic muestran que esto mejora la calidad de la respuesta hasta un 30%.
+
+</NarratedSection>
+
+<TerminalTask
+  id="task-escribir-prompt"
+  instruction="Tómate 5 minutos para escribir tu primer prompt bien estructurado. Elige una tarea real que te interese (por ejemplo: clasificar mensajes, resumir un artículo, explicar un concepto). Escríbelo en un editor de texto siguiendo esta plantilla:
+
+1. Una línea para el rol: 'Eres un asistente especializado en ___'.
+2. Instrucciones claras con verbos imperativos.
+3. Uno o dos ejemplos dentro de etiquetas <example>.
+4. Al final, la tarea concreta dentro de una etiqueta <input>.
+5. Agrega al final: 'Si no estás seguro, dilo. No inventes datos.'
+
+No hace falta ejecutarlo todavía. El objetivo es practicar la estructura."
+  expectedOutcome="Tienes un archivo de texto con un prompt que incluye rol, instrucciones imperativas, al menos un ejemplo envuelto en <example>, una etiqueta <input> con la tarea y una instrucción anti-alucinaciones."
+  verifyHint="Léelo en voz alta como si se lo mostraras a un compañero nuevo. Si esa persona sabría exactamente qué hacer, tu prompt está bien."
+/>
+
+<NarratedSection id="errores-comunes" heading="Errores típicos de principiante" sourcePage="62">
+
+Estos son los tropiezos que casi todos cometemos al empezar. Reconocerlos te ahorra disgustos.
+
+**Error 1: ser demasiado vago.** No decir formato, largo ni nivel de detalle. Solución: indica formato exacto y longitud.
+
+**Error 2: pedir sugerencias cuando quieres acción.** Solución: usa verbos imperativos.
+
+**Error 3: formato no deseado.** Claude responde con muchos bullet points cuando querías prosa. Solución: usa instrucciones positivas ("escribe en prosa fluida") en vez de prohibiciones ("no uses markdown").
+
+**Error 4: preámbulos innecesarios.** Claude empieza con "Aquí tienes el resultado...". Solución: agrega *Responde directamente sin preámbulos*.
+
+**Error 5: no dar permiso de decir "no sé".** Claude inventa para no quedar mal. Solución: *Si no estás seguro, dilo. No adivines*.
+
+**Error 6: rol demasiado restrictivo.** Decirle que es "el mejor experto mundial que solo habla en jerga técnica" limita sus respuestas. Solución: mantén roles simples, como *Eres un asistente útil especializado en Python*. Menos es más.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-formato-positivo"
+  question="Quieres que Claude escriba en prosa fluida, sin tantas listas. ¿Qué instrucción funciona mejor según el capítulo?"
+  options='["No uses markdown en tu respuesta","No hagas listas, no uses bullets, no uses negritas","Tu respuesta debe estar compuesta de párrafos fluidos en prosa","Escribe raro"]'
+  correctIndex="2"
+  explanation="Las instrucciones positivas ('haz X') funcionan mejor que las prohibiciones ('no hagas Y'). Le dices a Claude qué SÍ hacer."
+/>
+
+<NarratedSection id="cierre" heading="Cierre del capítulo" sourcePage="65">
+
+Ya tienes los dos pilares para empezar a usar Claude en serio.
+
+Por un lado conoces **los tres modelos** (Haiku para lo rápido y barato, Sonnet como opción por defecto, Opus para lo más difícil) y sabes que puedes ahorrar con Batch API, Prompt Caching y eligiendo bien.
+
+Por otro lado, tienes las bases del **prompting**: sé claro y directo, da contexto, usa ejemplos, organiza con etiquetas XML, pídele que piense paso a paso y dale permiso de decir "no sé".
+
+En el siguiente capítulo vamos a empezar a usar Claude en la práctica, con la interfaz de Claude.ai. Llevas todas las herramientas necesarias para que tus primeros prompts funcionen bien.
+
+</NarratedSection>

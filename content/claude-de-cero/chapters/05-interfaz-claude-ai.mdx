@@ -1,0 +1,282 @@
+---
+chapterNumber: 5
+slug: interfaz-claude-ai
+title: 'La Interfaz de Claude.ai: archivos, búsqueda, conversaciones y planes'
+part: claude-ai
+estimatedMinutes: 31
+prerequisites:
+  - primeros-pasos-claude-ai
+status: approved
+generatedAt: '2025-01-20T12:00:00Z'
+sourcePagesFrom: 141
+sourcePagesTo: 175
+model: claude-opus-4-7
+---
+<NarratedSection id="intro-gancho" heading="Imagina una oficina digital" sourcePage="141">
+
+Imagina que Claude es como una oficina que te prestan. Dentro hay archivadores, un buscador, una libreta donde apuntan tus preferencias y una puerta para invitar a otros. En este capítulo vas a aprender a moverte por esa oficina.
+
+Vamos a ver cómo buscar en internet, cómo organizar tus conversaciones, cómo usar modo privado, cómo funciona la memoria de Claude y, al final, cuál plan te conviene según tu uso. Ve con calma: son muchos botones, pero cada uno tiene una razón de ser.
+
+</NarratedSection>
+
+<NarratedSection id="busqueda-web" heading="Búsqueda web: darle acceso a internet" sourcePage="141">
+
+Claude aprendió leyendo muchísimo texto, pero hay una **fecha de corte**: cosas que pasaron después de su entrenamiento, no las sabe. Por eso existe la **búsqueda web**.
+
+Cuando la activas, Claude puede buscar en internet en tiempo real usando Bing. Es como si le prestaras un buscador. Además, te muestra las fuentes de dónde sacó la información, para que puedas verificarla.
+
+Para activarla: en el campo donde escribes, busca el icono de **ajustes** (parece un deslizador). Haz click, busca la opción "Web search" y activa el interruptor. Listo. Está disponible en todos los planes, incluido el Free.
+
+</NarratedSection>
+
+<NarratedSection id="web-fetch-research" heading="Web Fetch y Research: dos niveles más" sourcePage="142">
+
+A veces no quieres que Claude busque, sino que **lea** una página concreta. Para eso sirve **Web Fetch**. Simplemente pegas la URL en tu mensaje y Claude entra, lee todo el contenido y te lo resume.
+
+Ojo: si estás en el plan Free, leer artículos largos consume mucho espacio de la conversación. Úsalo con moderación.
+
+**Research** es la versión potente. En vez de una sola búsqueda, Claude hace muchas búsquedas encadenadas, como un periodista que investiga a fondo. Puede trabajar hasta **45 minutos** de forma autónoma. Solo está disponible en planes pagados (Pro, Max, Team, Enterprise) y para activarlo necesitas tener la búsqueda web encendida primero. El botón está en la esquina inferior izquierda del chat: blanco es apagado, azul es encendido.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-busqueda"
+  question="¿Cuál es la diferencia principal entre la búsqueda web normal y Research?"
+  options='["La búsqueda web cuesta dinero y Research es gratis","La búsqueda web hace una sola consulta, mientras que Research encadena muchas búsquedas automáticamente durante hasta 45 minutos","Research solo funciona con PDFs","La búsqueda web no muestra fuentes"]'
+  correctIndex="1"
+  explanation="Research es investigación profunda: Claude hace muchas búsquedas encadenadas, se hace preguntas nuevas y vuelve a buscar. Puede durar hasta 45 minutos. La búsqueda web, en cambio, es una consulta puntual."
+/>
+
+<NarratedSection id="gestionar-conversaciones" heading="Organizar tus conversaciones" sourcePage="143">
+
+Después de usar Claude un tiempo, vas a acumular muchos chats. Es como una bandeja de entrada que crece y crece. Por suerte tienes varias herramientas.
+
+**Renombrar**: click en el nombre arriba del chat y elige "Rename". Ponle un título útil para encontrarlo después.
+
+**Eliminar**: click en el nombre y "Delete". Para borrar varios a la vez, ve a "Chats" en la barra lateral, pasa el mouse para ver los checkboxes y usa "Delete Selected". Cuando eliminas un chat, la información se borra de la memoria de Claude en las próximas 24 horas.
+
+**Destacar (Star)**: click en el icono de estrella. Las conversaciones destacadas quedan fijas arriba, como un post-it. También puedes mover chats sueltos a proyectos si pertenecen al mismo tema.
+
+</NarratedSection>
+
+<NarratedSection id="buscar-historial" heading="Buscar dentro de tus chats pasados" sourcePage="143">
+
+¿Recuerdas haber hablado de algo hace una semana pero no encuentras dónde? Puedes pedírselo a Claude con lenguaje natural. Por ejemplo: *¿Qué discutimos sobre la estrategia de marketing la semana pasada?*
+
+Claude usa una tecnología llamada **RAG** (Retrieval-Augmented Generation, se pronuncia "rag"). Es como darle un buscador privado para tu historial.
+
+Esta función solo está en planes pagados (Pro, Max, Team, Enterprise). Puedes desactivarla en Settings > Capabilities > "Search and reference chats" si prefieres que Claude no mire tus chats viejos.
+
+</NarratedSection>
+
+<NarratedSection id="compartir-chats" heading="Compartir una conversación" sourcePage="144">
+
+A veces quieres enseñarle a alguien lo que hablaste con Claude. Puedes generar un enlace: click en **Share** (esquina superior derecha), otra vez Share en el popup, y copias el link.
+
+Lo que se comparte es una **foto fija (snapshot)** de los mensajes hasta ese momento, incluidos los artifacts. Lo que envíes después queda privado: el enlace no se actualiza solo. Importante: los **archivos adjuntos NO se incluyen** en el snapshot.
+
+En planes Free, Pro y Max, cualquiera con el enlace lo puede ver. En Team y Enterprise, solo miembros de tu organización. Si cambias de opinión, entra al menú Share y pon la visibilidad en "Private" para desactivar el enlace.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-compartir"
+  question="Compartes un chat con un amigo y luego le escribes más mensajes a Claude. ¿Qué ve tu amigo?"
+  options='["Ve todos los mensajes nuevos automáticamente","Solo ve los mensajes que existían cuando generaste el enlace; los nuevos son privados","Ve los mensajes nuevos pero sin los artifacts","El enlace deja de funcionar al enviar nuevos mensajes"]'
+  correctIndex="1"
+  explanation="El enlace compartido es un snapshot: una foto fija del momento. Los mensajes nuevos no aparecen allí, son privados para ti."
+/>
+
+<NarratedSection id="chats-incognito" heading="Chats de incógnito: el modo privado" sourcePage="144">
+
+A veces quieres hacer una consulta sin que quede registro. Para eso existen los **chats de incógnito**. Es como el modo privado de un navegador: la conversación no se guarda en tu historial ni contribuye a la memoria de Claude.
+
+Para iniciarlo, click en el **icono de fantasma** en la esquina superior derecha, o usa el atajo **Ctrl+Shift+I**. Lo reconoces por el borde negro y la etiqueta "Incognito chat".
+
+Puntos importantes: está disponible en todos los planes, no se usa para entrenar a Claude y se retiene 30 días por seguridad. Pero **no se puede reabrir ni convertir en chat regular**. Consejo: si hay algo importante, cópialo antes de cerrar la ventana, porque después no hay vuelta atrás.
+
+</NarratedSection>
+
+<NarratedSection id="memoria-claude" heading="La memoria de Claude" sourcePage="145">
+
+Claude tiene **memoria**, pero no como imaginas. No recuerda cada palabra literal. Más bien, **sintetiza** lo que aprende de ti y lo guarda en una libretita personal.
+
+Ejemplo: si le dices que eres programador Python y prefieres explicaciones cortas, lo apunta. La próxima vez no tienes que repetirlo.
+
+Qué recuerda: tu rol profesional, tus proyectos, tus preferencias de comunicación y estilos de código. Qué NO recuerda: chats de incógnito y conversaciones eliminadas. La memoria se actualiza cada 24 horas y cada proyecto tiene su propio espacio separado.
+
+En Settings > Capabilities puedes: **Ver y editar** lo que aprendió, **Pausar** el aprendizaje nuevo, o **Resetear** todo. Ojo: resetear es **permanente e irreversible**.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-memoria"
+  question="¿Cuál de estas acciones SÍ contribuye a la memoria de Claude?"
+  options='["Un chat de incógnito sobre tus gustos musicales","Una conversación normal donde le cuentas que trabajas como diseñador","Una conversación que eliminaste ayer","Un mensaje en un chat compartido por alguien más"]'
+  correctIndex="1"
+  explanation="La memoria se alimenta de conversaciones normales. Los chats de incógnito y los eliminados no contribuyen a la memoria."
+/>
+
+<NarratedSection id="exportar-datos" heading="Exportar tus datos" sourcePage="146">
+
+Tus conversaciones son tuyas. Puedes descargar una copia cuando quieras.
+
+Pasos: click en tus iniciales (esquina inferior izquierda) → Settings → sección Privacy → "Export data". Recibes un email con un enlace de descarga. Importante: ese enlace **expira en 24 horas**. Si se te pasa, simplemente genera uno nuevo.
+
+Solo funciona desde la web o desktop, no desde apps móviles. El archivo incluye tus conversaciones, datos de cuenta, memoria y resúmenes de chat. Eso sí, no puedes migrar datos entre cuentas distintas de Claude: cada cuenta es una isla.
+
+</NarratedSection>
+
+<NarratedSection id="limites-uso" heading="Límites de uso: tu tanque de gasolina" sourcePage="147">
+
+Claude no es un buffet ilimitado. Cada plan tiene una cantidad de uso asignada. Piensa en ello como un **tanque de gasolina**: más grande si pagas más, más pequeño si usas el plan Free.
+
+Los límites se miden en **ventanas de 5 horas**. También hay un límite semanal que se resetea a los 7 días. Muy importante: **todas las superficies de Claude comparten el mismo tanque**. Si usas claude.ai, Claude Code y Claude Desktop, los tres descuentan del mismo lugar.
+
+Lo que consumes depende de: qué tan larga es la conversación, qué funciones usas (búsqueda, Research, extended thinking), qué modelo eliges y el tamaño de los archivos adjuntos. En **horas pico** (5am a 11am hora del Pacífico) los límites se gastan más rápido.
+
+</NarratedSection>
+
+<NarratedSection id="tips-optimizar" heading="Trucos para estirar tus mensajes" sourcePage="148">
+
+Si sientes que se te acaban muy rápido, prueba estas ideas del libro:
+
+• Usa **Proyectos con RAG** para manejar muchos archivos en lugar de subirlos en cada chat.
+• Mantén las instrucciones de proyecto **cortas y esenciales**.
+• Elimina archivos que ya no uses.
+• Desactiva **extended thinking** cuando no lo necesites: consume más.
+• Desactiva herramientas que no estés usando (búsqueda web, Research, conectores).
+• Empieza chats nuevos en vez de continuar conversaciones muy largas.
+
+Y si aún así te quedas corto, los planes pagados permiten activar **Extra Usage**: al alcanzar tu límite sigues usando Claude pagando a tarifas de API estándar. Se configura en Settings > Usage y solo desde la web, no desde móvil.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-limites"
+  question="Usas Claude en la web por la mañana y por la tarde abres Claude Code. ¿Qué pasa con tus límites?"
+  options='["Cada plataforma tiene su propio tanque separado","Claude Code no cuenta hacia los límites","Todas las superficies comparten el mismo límite: lo que gastas en una, lo descuentas de todas","Solo cuentan los mensajes en la web"]'
+  correctIndex="2"
+  explanation="Claude.ai, Claude Code y Claude Desktop comparten el mismo tanque. Es un detalle clave para no llevarte sorpresas."
+/>
+
+<NarratedSection id="planes-panorama" heading="Los 5 planes de Claude" sourcePage="156">
+
+Ahora vamos a los planes. Piensa en ellos como los paquetes de un servicio de streaming: Netflix tiene Básico, Estándar, Premium. Claude tiene algo parecido.
+
+Hay 5 planes en dos grupos:
+
+**Individuales** (una sola persona): Free, Pro y Max.
+**Organizacionales** (equipos y empresas): Team y Enterprise.
+
+A más precio, más funciones y más uso. Es una escalera. Además, existe la **API** de Claude, un producto aparte para programadores, con su propio sistema de precios.
+
+</NarratedSection>
+
+<NarratedSection id="plan-free" heading="Free: tu primer contacto" sourcePage="156">
+
+El plan **Free** es como una prueba de manejo. No pagas nada, solo creas cuenta en claude.ai.
+
+Incluye: Claude en web, iPhone y Android; modelos Sonnet 4.6, Sonnet 4.5 y Haiku 4.5; búsqueda web; Artifacts básicos; subir documentos e imágenes. Tienes aproximadamente **30 a 100 mensajes por día** con Sonnet, según la complejidad.
+
+Qué NO incluye: Opus 4.6 (el modelo más potente), más de 5 proyectos, Claude Code, Cowork, selector de modelos y búsqueda de chats. Perfecto para probar. Si lo vas a usar todos los días, se te queda corto rápido.
+
+</NarratedSection>
+
+<NarratedSection id="plan-pro" heading="Pro: para uso regular" sourcePage="157">
+
+**Pro** es el salto más importante. Cuesta $20/mes o ~$17/mes si pagas anual (te ahorras ~$36 al año, casi dos meses gratis).
+
+Te da al menos **5 veces más uso** que Free: unos 45 mensajes cada 5 horas con Sonnet. Se desbloquea: todos los modelos (incluido Opus 4.6), selector de modelos, Projects ilimitados, Extended Thinking, Claude Code, Cowork (preview), Google Workspace, acceso prioritario y acceso anticipado a nuevas funciones.
+
+La ventana de contexto es de **200,000 tokens** (unas 500 páginas). Detalle importante: **Pro no incluye acceso a la API**. La API es un producto separado que se paga aparte en la Consola.
+
+</NarratedSection>
+
+<NarratedSection id="plan-max" heading="Max: para uso intensivo" sourcePage="158">
+
+Si usas Claude todo el día, Pro se te queda chico. Para eso está **Max**.
+
+**Max 5x**: $100/mes. 5 veces más uso que Pro (unos 225 mensajes cada 5 horas).
+**Max 20x**: $200/mes. 20 veces más uso que Pro (unos 900 mensajes cada 5 horas).
+
+Ambos incluyen todo lo de Pro más: prioridad máxima (no esperas en horas pico), primero en fila para nuevos modelos, Claude Code completo y Cowork para tareas multi-paso en Claude Desktop.
+
+Detalle: **Max solo se vende mensual**, no hay opción anual. Si haces upgrade desde Pro, el cobro se prorratea: solo pagas la diferencia por los días restantes del mes.
+
+</NarratedSection>
+
+<NarratedSection id="plan-team-enterprise" heading="Team y Enterprise: para organizaciones" sourcePage="159">
+
+**Team** es para equipos de 5 a 150 personas. Cada miembro ocupa un **asiento**. Hay dos tipos: Estándar ($25/mes o $20 anual, 1.25x Pro) y Premium ($125/mes o $100 anual, 6.25x Pro). Puedes mezclarlos según necesidad. Incluye administración centralizada, facturación única, **SSO** (Single Sign-On, entrar con credenciales de empresa), roles y permisos, conectores (Google Drive, Gmail, GitHub, Slack…) y proyectos compartidos.
+
+**Enterprise** es el plan más completo, con precio personalizado. Se cobra por asiento y el uso se factura aparte a tasas de API (sin límites de plan). Incluye ventana de contexto ampliada (**500K tokens** en chat, hasta **1M con Claude Code**), auditoría, SCIM, HIPAA BAA disponible, IP allowlisting y más. Se compra en autoservicio, asistido por ventas o vía AWS Marketplace.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-planes"
+  question="Trabajas solo, usas Claude varias veces al día y quieres acceso a Opus y Claude Code. ¿Qué plan te recomienda el libro?"
+  options='["Free: es suficiente para cualquier uso","Pro a $20/mes: el salto más importante en funciones para uso individual regular","Enterprise: siempre el más completo","Team Premium: aunque trabajes solo"]'
+  correctIndex="1"
+  explanation="El libro dice que Pro es la mejor opción para la mayoría de usuarios que usan Claude a diario. Por $20/mes desbloquea Opus, Claude Code, Extended Thinking y Projects ilimitados."
+/>
+
+<NarratedSection id="api-precios" heading="La API: precios por tokens" sourcePage="162">
+
+La **API** (Interfaz de Programación de Aplicaciones) es la puerta trasera para programadores. Conectas tu propio programa a Claude, sin usar el chat. Tiene su propio sistema de precios.
+
+Cobra por **tokens**. Un token es un pedacito de texto (más o menos una palabra o parte de ella). Precios por millón de tokens:
+
+• **Haiku 4.5**: $1 entrada / $5 salida. El más barato.
+• **Sonnet 4.6**: $3 entrada / $15 salida. Buen equilibrio.
+• **Opus 4.6**: $5 entrada / $25 salida. El más potente y caro.
+
+Trucos para ahorrar: **Batch API** (50% de descuento si no necesitas respuesta al instante) y **Prompt Caching** (guardar en caché lo que se repite, un cache read cuesta solo 0.1x, un 90% menos).
+
+</NarratedSection>
+
+<NarratedSection id="cambiar-cancelar" heading="Cambiar de plan y cancelar" sourcePage="164">
+
+Los planes no son un matrimonio. Puedes cambiar cuando quieras.
+
+**Upgrade de Free a Pro**: ve a claude.ai/upgrade e ingresa tu tarjeta. **De Pro a Max**: Settings > Billing y eliges; solo pagas la diferencia prorrateada.
+
+**Cancelar**: Settings > Billing > Cancel. La cancelación toma efecto al final del período de facturación. Sigues con acceso hasta entonces, después vuelves a Free automáticamente. Consejo: cancela al menos 24 horas antes de la próxima fecha de cobro.
+
+**Reembolsos**: los pagos son generalmente **no reembolsables**, salvo excepciones legales. Si pagaste por App Store o Google Play, el reembolso lo manejan ellos, no Anthropic. Los suscriptores anuales no reciben reembolsos prorrateados, pero mantienen acceso todo el período pagado.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-reembolso"
+  question="Pagaste Claude Pro a través de la App Store de Apple y quieres un reembolso. ¿A quién contactas?"
+  options='["A Anthropic por el formulario Claude Refund Request","A Apple Support: Anthropic no puede procesar reembolsos de pagos hechos por App Store","A tu banco directamente","A ningún sitio, los reembolsos nunca existen"]'
+  correctIndex="1"
+  explanation="Si pagaste por App Store o Google Play, Anthropic no puede procesar el reembolso. Tienes que contactar a Apple Support o Google Support según el caso."
+/>
+
+<TerminalTask
+  id="tarea-activar-busqueda"
+  instruction="Entra a claude.ai, abre un chat nuevo y activa la búsqueda web siguiendo los pasos del libro: busca el icono de ajustes en el campo de mensaje, haz click, localiza la opción 'Web search' y activa el toggle. Luego haz una pregunta que requiera información actual, por ejemplo: '¿Cuáles son las últimas noticias sobre inteligencia artificial?'"
+  expectedOutcome="Claude responde con información actualizada incluyendo enlaces y citas a las fuentes originales (proporcionadas por Bing). Confirmas que la búsqueda web está funcionando porque aparecen referencias al final de la respuesta."
+  verifyHint="Si Claude responde sin citar fuentes ni enlaces, revisa que el toggle 'Web search' esté realmente activado. También puedes forzarlo escribiendo en el prompt: 'Busca en la web'."
+/>
+
+<TerminalTask
+  id="tarea-incognito"
+  instruction="Abre un chat de incógnito en claude.ai usando el atajo de teclado Ctrl+Shift+I (o haz click en el icono de fantasma en la esquina superior derecha). Verifica que aparece el borde negro y la etiqueta 'Incognito chat'. Haz una pregunta cualquiera y luego cierra la ventana."
+  expectedOutcome="El chat aparece con borde negro y la etiqueta de incógnito. Al cerrarlo, no queda guardado en tu historial de 'Chats' ni aparece en los chats recientes. La conversación no contribuye a la memoria de Claude."
+  verifyHint="Después de cerrar el chat, abre la sección 'Chats' en el sidebar y confirma que no aparece listado allí."
+/>
+
+<NarratedSection id="cierre" heading="Lo que llevas de este capítulo" sourcePage="169">
+
+Hoy recorriste la oficina digital de Claude. Sabes activar la búsqueda web, pedirle que lea una URL completa con Web Fetch, o lanzar una investigación profunda con Research. Sabes organizar, destacar, compartir y eliminar conversaciones, y usar el modo incógnito cuando algo es privado.
+
+También entiendes cómo funciona la memoria (y cómo pausarla o borrarla), cómo exportar todos tus datos y cómo se miden los límites de uso en ventanas de 5 horas compartidas entre todas las superficies.
+
+Y finalmente, conoces los 5 planes: Free, Pro, Max, Team y Enterprise, más la API con sus precios por token. En el próximo capítulo damos el salto a la Parte 3: **Claude Code**, el asistente de programación en la terminal.
+
+</NarratedSection>

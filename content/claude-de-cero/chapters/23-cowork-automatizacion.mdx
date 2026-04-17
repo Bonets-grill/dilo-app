@@ -1,0 +1,147 @@
+---
+chapterNumber: 23
+slug: cowork-automatizacion
+title: 'Cowork y Automatización: el changelog de abril 2026'
+part: avanzado
+estimatedMinutes: 11
+prerequisites:
+  - 'Haber leído capítulos previos sobre Claude.ai, Claude Code y la API'
+  - Entender qué es una ventana de contexto y un token
+status: approved
+generatedAt: '2026-04-10T00:00:00Z'
+sourcePagesFrom: 646
+sourcePagesTo: 652
+model: claude-opus-4-7
+---
+<NarratedSection id="intro-gancho" heading="Un mes muy movido" sourcePage="646">
+
+Imagina que tienes un videojuego favorito y cada mes sacan un parche con cosas nuevas: personajes, mapas, bugs corregidos. Los libros técnicos también necesitan parches, y se llaman **changelogs** (se pronuncia 'cheinch-logs'). Un changelog es simplemente una lista de qué cambió y cuándo.
+
+Este capítulo es el primer changelog de la guía: cubre del 13 de marzo al 6 de abril de 2026. En ese mes pasaron muchas cosas en el mundo de Claude: salió oficial la ventana de **1 millón de tokens**, Claude Code tuvo 11 versiones nuevas, y Anthropic hizo varios anuncios. Vamos a repasarlo con calma.
+
+</NarratedSection>
+
+<NarratedSection id="modelos-cambios" heading="Novedades en los modelos" sourcePage="646">
+
+Primero, los **modelos** (los 'cerebros' de Claude, como Opus o Sonnet). El cambio estrella fue el 13 de marzo: la ventana de 1 millón de tokens pasó de beta a **GA**. GA significa 'General Availability', o sea, disponible para todos sin requisitos especiales. Antes necesitabas un header beta (una especie de pase VIP); ahora ya no.
+
+Eso aplica a **Opus 4.6** y **Sonnet 4.6**. Los modelos más viejos, Sonnet 4.5 y Sonnet 4, sí tenían 1M en beta, pero se retira el 30 de abril de 2026. Si los usas, migra a 4.6.
+
+Otro cambio útil: ahora puedes enviar hasta **600 imágenes o páginas de PDF** en un solo request (antes eran 100). Y apareció un campo nuevo llamado `thinking.display: 'omitted'` que permite ocultar el 'pensamiento' de Claude en la respuesta para que el streaming sea más rápido. Streaming es cuando las palabras van apareciendo una por una, como si Claude escribiera en vivo.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-ga"
+  question="¿Qué significa que la ventana de 1M tokens pasó a 'GA'?"
+  options='["Que sólo está disponible en Georgia","Que está disponible para todos sin necesitar un header beta especial","Que se retira el 30 de abril","Que sólo funciona con Haiku"]'
+  correctIndex="1"
+  explanation="GA = General Availability. Significa que ya no es experimental: cualquiera puede usarla sin el pase VIP del header beta."
+/>
+
+<NarratedSection id="claude-ai-apps" heading="Cambios en Claude.ai y las apps" sourcePage="646">
+
+En **Claude.ai** (la versión web) y las apps móviles también hubo novedades. El 23 de marzo llegó **computer use** en preview para planes Pro y Max: esto permite que Claude controle tu computadora, por ejemplo moviendo el ratón o haciendo clic, pero bajo supervisión tuya. Piénsalo como un amigo que te pide el teclado un momento.
+
+El 25 de marzo, las apps de iOS y Android aprendieron a mostrar **gráficos en vivo** y diagramas interactivos dentro de la respuesta. Ya no es sólo texto plano.
+
+Y lo más importante para este capítulo: el 17 de marzo llegó el **hilo persistente en Cowork desde móviles**. Cowork es la función donde Claude trabaja contigo en tareas programadas. 'Hilo persistente' significa que si empiezas una conversación en el celular, no pierde el contexto cuando vuelves a ella. Es como dejar un chat de WhatsApp abierto: al volver, sigues donde lo dejaste.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-cowork-movil"
+  question="¿Qué permite el 'hilo persistente en Cowork desde móviles'?"
+  options='["Colgar tu celular en una pared","Controlar hilos de Cowork desde el celular sin perder el contexto","Enviar 1 millón de mensajes por SMS","Desactivar el modo incógnito"]'
+  correctIndex="1"
+  explanation="Es como dejar tu conversación abierta: vuelves al hilo desde el móvil y Claude sigue recordando de qué hablaban."
+/>
+
+<NarratedSection id="claude-code-cambios" heading="Claude Code: 11 versiones en tres semanas" sourcePage="647">
+
+**Claude Code** es la herramienta de terminal donde Claude te ayuda a programar. En tres semanas salieron 11 versiones nuevas (de la 2.1.81 a la 2.1.92). Repasemos las más interesantes.
+
+- **PowerShell tool para Windows** (v2.1.84): Claude Code ya puede usar PowerShell nativo en Windows. Antes necesitabas WSL (un Linux dentro de Windows) para casi todo; ahora no.
+- **/powerup** (v2.1.90): un comando que te enseña funciones de Claude Code con demos animadas. Como un tutorial integrado.
+- **Named subagents con @** (v2.1.89): puedes llamar a tus subagentes por nombre escribiendo `@` y sale un menú. Igual que etiquetar a alguien en Twitter.
+- **--bare flag** (v2.1.81): una bandera que hace que la salida sea 'limpia', sin colores ni adornos. Útil cuando conectas Claude Code a otros programas (pipelines).
+- **Desglose por modelo en /cost** (v2.1.92): el comando `/cost` ahora muestra cuánto gastaste separado por modelo y por cache.
+
+</NarratedSection>
+
+<NarratedSection id="hooks-nuevos" heading="Hooks y configuración" sourcePage="647">
+
+Los **hooks** son ganchos: código tuyo que se dispara automáticamente cuando pasa algo dentro de Claude Code. Por ejemplo, 'cuando se cree una tarea, envíame un mensaje'. En esta actualización se añadieron 5 eventos nuevos: `TaskCreated`, `WorktreeCreate`, `CwdChanged`, `FileChanged` y `PermissionDenied`.
+
+También apareció la decisión `defer` para posponer un permiso en `PreToolUse`, y un campo `if` que permite poner **condiciones**: 'ejecuta este hook sólo si se cumple tal regla'.
+
+Además, los administradores ganaron un directorio nuevo llamado `managed-settings.d/` (v2.1.83) donde pueden dejar archivos de configuración modulares. 'Drop-in' significa justo eso: dejas el archivo ahí y funciona.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-bare"
+  question="¿Para qué sirve el flag `--bare` en Claude Code?"
+  options='["Para ejecutar Claude sin ropa","Para salida limpia sin decoración, ideal para pipelines","Para eliminar archivos temporales","Para activar 1M tokens"]'
+  correctIndex="1"
+  explanation="`--bare` produce texto pelado, sin colores ni formato extra. Así otros programas pueden procesar la salida fácilmente."
+/>
+
+<TerminalTask
+  id="task-cost"
+  instruction="Si tienes Claude Code instalado, prueba el comando que ahora muestra el gasto separado por modelo y por cache. Sólo muestra información de uso; no modifica nada."
+  command="claude /cost"
+  expectedOutcome="Verás un desglose de tu consumo separado por modelo (Opus, Sonnet, Haiku) y por tipo de cache. Si no tienes Claude Code instalado, simplemente anota el comando para cuando lo tengas."
+  verifyHint="Si el comando no se reconoce, puede que tu versión sea anterior a 2.1.92. Actualiza o salta este paso."
+/>
+
+<NarratedSection id="noticias-anthropic" heading="Noticias de Anthropic" sourcePage="648">
+
+Fuera del producto, Anthropic (la empresa que hace Claude) tuvo movimiento. Firmó un **MOU con el gobierno australiano** el 31 de marzo para cooperar en seguridad de IA. MOU significa 'Memorandum of Understanding', algo así como un apretón de manos formal entre dos organizaciones.
+
+También lanzó el **Anthropic Institute** (11 de marzo), dedicado a investigar seguridad en IA, y abrió una oficina en Sydney. Antes, en febrero, cerró una **Serie G de $30 mil millones** con una valuación de $380 mil millones. Una Serie G es una ronda de inversión avanzada: cuanto más alta la letra, más madura la empresa.
+
+Y publicó una **nueva constitución de Claude** el 22 de enero: los principios que guían cómo se comporta el modelo. Piensa en la constitución como las reglas del colegio que todo alumno debe seguir.
+
+</NarratedSection>
+
+<NarratedSection id="modelos-activos" heading="Modelos vivos, modelos jubilados" sourcePage="650">
+
+A abril de 2026, estos son los modelos de Claude que puedes usar:
+
+- **Opus 4.6**: el más inteligente. Tiene Adaptive Thinking (piensa solo cuando hace falta) y Fast Mode 2.5x más rápido. Ventana de 1M tokens GA.
+- **Sonnet 4.6**: el equilibrado. Bueno para código y agentes. También 1M tokens GA.
+- **Haiku 4.5**: el rápido y barato. Para respuestas cortas sin gastar mucho.
+- **Opus 4.5** y **Sonnet 4.5**: las generaciones anteriores, todavía disponibles.
+- **Sonnet 4** y **Opus 4**: aún funcionan, pero Opus 4 está como 'legacy' (antiguo).
+- **Haiku 3**: deprecado, se retira el 19 de abril de 2026.
+
+Y ya están **retirados** (si los llamas, recibes error): Claude 1, Claude 2.0 y 2.1, Sonnet 3, Sonnet 3.5, Opus 3, Sonnet 3.7 y Haiku 3.5. Si tu código los usa, hay que actualizarlo.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-modelos"
+  question="Según el changelog, ¿qué dos modelos soportan 1M tokens como GA (sin header beta)?"
+  options='["Haiku 3 y Haiku 4.5","Opus 4.6 y Sonnet 4.6","Sonnet 4 y Sonnet 4.5","Opus 4 y Opus 4.5"]'
+  correctIndex="1"
+  explanation="Sólo Opus 4.6 y Sonnet 4.6 tienen 1M tokens como GA. Los Sonnet 4.5 y Sonnet 4 lo tenían en beta, pero se retira el 30 de abril de 2026."
+/>
+
+<NarratedSection id="estado-cowork" heading="Estado actual de Cowork" sourcePage="652">
+
+Cerramos con el protagonista del capítulo: **Cowork**. Es la función que permite a Claude ejecutar **tareas programadas** por ti. Disponible hoy en Pro (sólo macOS) y Max. Piensa en Cowork como un asistente que trabaja turnos: le dejas una tarea, le dices cuándo hacerla, y él la ejecuta aunque tú estés haciendo otra cosa.
+
+La novedad es el **control de hilo persistente desde el celular** (research preview). 'Research preview' significa que está en pruebas abiertas: funciona, pero puede cambiar. Esto te deja retomar la conversación desde el móvil sin perder el contexto que Claude ya tenía.
+
+En conjunto, el mes mostró un patrón claro: Anthropic está empujando fuerte hacia la **automatización** (Cowork, hooks, /loop, Agent Teams) y hacia **contextos gigantes** (1M tokens GA, 600 imágenes por request). En el próximo capítulo veremos cómo aprovechar todo esto sin pasarte del presupuesto.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-cowork-plan"
+  question="¿En qué planes está disponible Cowork con tareas programadas?"
+  options='["Sólo en Free","En Pro (macOS) y Max","Sólo en Enterprise","En todos los planes sin excepción"]'
+  correctIndex="1"
+  explanation="El changelog indica que Cowork con tareas programadas está disponible en Pro (limitado a macOS) y Max. El control desde móvil es research preview dentro de esos planes."
+/>

@@ -1,0 +1,243 @@
+---
+chapterNumber: 22
+slug: construir-con-claude
+title: 'Construir con Claude: glosario del constructor'
+part: avanzado
+estimatedMinutes: 15
+prerequisites:
+  - introduccion-a-claude
+  - api-y-sdk-basicos
+status: approved
+generatedAt: '2025-01-20T00:00:00Z'
+sourcePagesFrom: 631
+sourcePagesTo: 645
+model: claude-opus-4-7
+---
+<NarratedSection id="intro-gancho" heading="Imagina que vas a construir una casa" sourcePage="631">
+
+Cuando alguien construye una casa, necesita conocer palabras especiales: ladrillo, viga, cimiento, plano. Si no las conoces, no puedes hablar con el arquitecto. Construir software con Claude es parecido: hay un vocabulario propio que usan los desarrolladores.
+
+En este capítulo vamos a recorrer ese vocabulario. No para memorizarlo, sino para que cuando alguien te diga 'usé RAG con una base vectorial', tú puedas asentir con la cabeza y entender de qué habla. Piensa en esta lección como un pequeño diccionario ilustrado.
+
+Vamos a dividirlo en cuatro zonas: **empresa** (cosas que importan a compañías grandes), **desarrollo** (herramientas del día a día), **benchmarks** (exámenes para la IA) y **conceptos generales** (lo básico de toda programación).
+
+</NarratedSection>
+
+<NarratedSection id="niveles-y-workbench" heading="Niveles de uso y el Workbench" sourcePage="631">
+
+Cuando usas la API de Claude —la forma técnica en que un programa le habla a Claude— Anthropic te asigna un **Usage Tier** o nivel de uso. Funciona como un programa de fidelidad de supermercado: cuanto más gastas, más peticiones por minuto puedes hacer. Subes de nivel solo.
+
+Para probar ideas sin escribir código, existe el **Workbench**. Es una página en platform.claude.com donde eliges el modelo, escribes un prompt y ves la respuesta en vivo. Como un laboratorio de cocina antes de montar un restaurante.
+
+Y si tu equipo tiene varios proyectos, puedes separar gastos con un **Workspace**. Por ejemplo: un workspace 'Desarrollo' y otro 'Producción', cada uno con su propio límite de gasto. Como tener cuentas bancarias separadas para no mezclar el dinero del negocio con el personal.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-workbench"
+  question="¿Para qué sirve el Workbench?"
+  options='["Para facturar a los clientes de tu empresa","Para probar prompts y la API desde el navegador sin escribir código","Para guardar copias de seguridad de tus conversaciones"]'
+  correctIndex="1"
+  explanation="El Workbench es una herramienta interactiva en la consola de Claude que permite experimentar con prompts y parámetros sin necesidad de escribir código."
+/>
+
+<NarratedSection id="empresa-seguridad" heading="Lenguaje de empresa: llaves, gafetes y auditoría" sourcePage="632">
+
+En una empresa grande, la seguridad no es opcional. Por eso existe la **Admin Console**: un panel web donde los administradores controlan usuarios, permisos y facturación. Es el centro de mando.
+
+Todo lo que hace la gente queda anotado en el **Audit Log** o registro de auditoría: quién hizo qué, cuándo y desde dónde. Como una cámara de seguridad digital. Muchas regulaciones lo exigen.
+
+Para entrar a Claude sin crear otra contraseña, las empresas usan **SSO** (Single Sign-On): inicias sesión una vez con tu cuenta corporativa y ya puedes entrar a todo. **SAML** es el estándar técnico que hace esto posible, como enseñar tu gafete en la puerta. Y **SCIM** automatiza crear y borrar cuentas: si te contratan, tienes acceso; si te despiden, lo pierdes, todo sin intervención manual.
+
+Los permisos se organizan con **RBAC** (Role-Based Access Control): en lugar de dar permisos persona por persona, los asignas a roles (administrador, editor, lector). Cambias el rol y los permisos se actualizan solos.
+
+</NarratedSection>
+
+<NarratedSection id="compliance-zdr" heading="Compliance, SLA y Zero Data Retention" sourcePage="633">
+
+Antes de que una empresa grande use Claude, suele exigir certificados: **SOC2** (un sello de calidad para el manejo seguro de datos) y, si trabaja con datos médicos en EE.UU., **HIPAA**. A este conjunto de reglas cumplidas se le llama **compliance** o cumplimiento.
+
+Algunas empresas también piden **Data Residency**: la garantía de que sus datos se quedan en una región concreta, por ejemplo solo en Europa. Es importante cuando la ley local lo exige.
+
+Un **SLA** (Service Level Agreement) es una promesa por contrato: 'el servicio estará disponible el 99.9% del tiempo'. Si no se cumple, hay compensación. Y cuando no quieres que Anthropic guarde nada de lo que envías, existe **Zero Data Retention (ZDR)**: los datos se procesan y se borran al instante. Como una conversación que se olvida en el momento.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-rbac-scim"
+  question="Una empresa contrata a 50 personas nuevas y quiere que todas tengan acceso a Claude automáticamente. ¿Qué estándar le conviene más?"
+  options='["SOC2","SCIM","HIPAA","SLA"]'
+  correctIndex="1"
+  explanation="SCIM automatiza la creación (y eliminación) de cuentas. Cuando la empresa contrata a alguien, SCIM le da acceso; cuando lo despide, se lo quita."
+/>
+
+<NarratedSection id="rag-y-evals" heading="RAG: dejarle consultar un libro a Claude" sourcePage="636">
+
+Imagina que tienes que responder un examen difícil. Lo haces mejor si te dejan consultar un libro, ¿verdad? Eso es **RAG** (Retrieval-Augmented Generation): antes de responder, Claude busca documentos relevantes y los usa como referencia. Reduce las alucinaciones (respuestas inventadas) porque se basa en información real.
+
+Para que RAG funcione, primero hay que hacer **chunking**: cortar documentos largos en pedazos pequeños, como rebanar un pastel. Cada pedazo se convierte en números y se guarda en una **Vector Database** (base de datos vectorial) como Pinecone, Weaviate o ChromaDB.
+
+Para buscar, se usa la **Cosine Similarity**: una medida de qué tan parecidos son dos textos. 1.0 = idénticos, 0.0 = nada que ver. Así Claude encuentra los fragmentos más relacionados con tu pregunta.
+
+Un problema relacionado es el **Context Rot**: cuando la conversación se hace muy larga, Claude empieza a perder de vista lo importante. La ventana de contexto tiene límites, y cuanto más la llenas, más calidad se degrada.
+
+</NarratedSection>
+
+<NarratedSection id="evaluaciones" heading="Evals: poner a prueba a tu IA" sourcePage="634">
+
+¿Cómo sabes si tu sistema con Claude funciona bien? Con **evals** (evaluaciones): pruebas sistemáticas que miden precisión, coherencia y si Claude sigue instrucciones. Son como los tests unitarios en programación, pero para IA.
+
+Hay varias métricas clave:
+
+- **Precisión**: de los resultados que devolviste, ¿qué porcentaje son realmente relevantes? Alta precisión = poca basura.
+- **Recall**: de todos los resultados relevantes que existen, ¿cuántos encontraste? Alto recall = no se te escapa nada.
+- **F1 Score**: combina precisión y recall en un solo número entre 0 y 1.
+- **MRR** (Mean Reciprocal Rank): mide en qué posición aparece el primer resultado correcto. Mientras más arriba, mejor.
+- **ROUGE-L**: compara una respuesta generada con una de referencia, útil para evaluar resúmenes.
+
+No necesitas memorizar las fórmulas. Solo recuerda que cada métrica responde una pregunta distinta sobre la calidad.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-rag"
+  question="¿Cuál es la idea central de RAG?"
+  options='["Hacer que Claude responda más rápido bloqueando peticiones","Darle a Claude documentos externos como referencia antes de responder","Entrenar un modelo nuevo desde cero con tus datos"]'
+  correctIndex="1"
+  explanation="RAG significa Retrieval-Augmented Generation: primero se recuperan documentos relevantes y luego se pasan a Claude junto con la pregunta, como dejarle consultar un libro antes de responder."
+/>
+
+<Quiz
+  id="quiz-precision-recall"
+  question="Un buscador devuelve 10 resultados y 9 son relevantes. ¿Qué métrica es alta?"
+  options='["La precisión","El recall","El context rot"]'
+  correctIndex="0"
+  explanation="La precisión mide qué porcentaje de los resultados devueltos son realmente relevantes. 9 de 10 = 90% de precisión."
+/>
+
+<NarratedSection id="benchmarks" heading="Benchmarks: los exámenes de la IA" sourcePage="637">
+
+Un **benchmark** es una prueba estandarizada para comparar modelos de IA. Como un examen que se le pone a todos los alumnos para ver quién sabe más. Hay varios famosos:
+
+- **MMLU**: evalúa conocimiento en 57 materias académicas (matemáticas, derecho, medicina…). Un examen de cultura general muy completo.
+- **GPQA**: preguntas de nivel posgrado tan difíciles que no se pueden contestar simplemente buscando en Google.
+- **ARC-AGI**: mide razonamiento abstracto con patrones visuales nuevos. Como un test de IQ para IA.
+- **SWE-bench**: pone a la IA a resolver bugs reales de proyectos de software. El examen práctico de programación.
+- **Elo Rating**: sistema de ranking tomado del ajedrez. Humanos votan entre dos modelos y se calcula una puntuación. Se usa en Chatbot Arena.
+
+</NarratedSection>
+
+<NarratedSection id="plataformas-nube" heading="Claude en otras nubes" sourcePage="638">
+
+No solo puedes usar Claude desde Anthropic directamente. También está disponible en dos grandes plataformas en la nube:
+
+- **AWS Bedrock**: si tu empresa ya vive en Amazon Web Services, puedes llamar a Claude desde ahí sin salir del ecosistema.
+- **Google Vertex AI**: lo mismo pero en Google Cloud.
+
+La ventaja es mantener todo con un solo proveedor: misma factura, misma seguridad, mismos controles. La funcionalidad de Claude es la misma, cambia solo la puerta por la que entras.
+
+</NarratedSection>
+
+<NarratedSection id="conceptos-basicos" heading="Conceptos generales de programación" sourcePage="640">
+
+Hay palabras que aparecen todo el tiempo cuando construyes con Claude. No son exclusivas de Anthropic, pero conviene tenerlas claras:
+
+- **API**: forma en que dos programas se comunican. Como un mesero que lleva tu pedido a la cocina y te trae la respuesta.
+- **API Key**: contraseña secreta que identifica a tu programa. Sin ella, la API no te abre.
+- **SDK**: un kit de herramientas listas para usar la API sin construir todo desde cero. Anthropic ofrece SDKs en Python, TypeScript, Java, Go, Ruby, C# y PHP.
+- **CLI**: una forma de usar un programa escribiendo comandos en una terminal, en vez de hacer clic. Claude Code es un CLI.
+- **Terminal**: la ventana negra (o blanca) donde escribes comandos. En Mac se llama Terminal, en Windows Command Prompt o PowerShell.
+- **JSON**: un formato de texto para organizar datos. Ejemplo: `{"nombre": "Claude", "version": 4}`.
+- **Markdown**: un lenguaje de formato sencillo. `#` para títulos, `**` para negritas, `-` para listas. Los archivos CLAUDE.md lo usan.
+
+</NarratedSection>
+
+<NarratedSection id="herramientas-desarrollo" heading="Más herramientas del día a día" sourcePage="640">
+
+Sigamos con el vocabulario que vas a oír cuando programes con Claude Code o la API:
+
+- **Git**: sistema que rastrea los cambios en tus archivos. Puedes ver qué cambió y volver atrás si algo sale mal.
+- **IDE**: programa para escribir código con todas las herramientas integradas (editor, terminal, depurador). Ejemplos: VS Code, JetBrains.
+- **Docker**: ejecuta programas dentro de 'cajas' aisladas llamadas contenedores. Claude Code puede correr en Docker para mayor seguridad.
+- **npm**: gestor de paquetes de JavaScript. Se usa para instalar Claude Code.
+- **Variable de entorno**: una nota de configuración pegada al sistema. Claude Code usa `ANTHROPIC_API_KEY` para tu clave y `CLAUDE_MODEL` para el modelo por defecto.
+- **Regex**: un patrón para buscar texto, como un comodín inteligente.
+- **Linter**: revisa el código buscando errores, como un corrector ortográfico para programadores.
+- **Formatter**: reorganiza el código para que tenga estilo consistente. Ejemplos: Prettier, Black.
+- **CI/CD**: sistema que integra y despliega cambios automáticamente. **GitHub Actions** es un ejemplo popular. Un **Pull Request (PR)** es una propuesta de cambios que otros revisan antes de aceptar.
+- **Pipeline**: secuencia de pasos automatizados, como una línea de ensamblaje.
+
+</NarratedSection>
+
+<NarratedSection id="patrones-resiliencia" heading="Cuando las cosas fallan: patrones de resiliencia" sourcePage="642">
+
+A veces la red falla o el servidor se satura. Para eso existen dos patrones clásicos:
+
+- **Exponential Backoff**: si una petición falla, la reintentas, pero esperando cada vez más. 1 segundo, luego 2, luego 4… Se añade un poco de aleatoriedad llamada 'jitter' para que mil clientes no reintenten a la vez y provoquen una avalancha.
+- **Circuit Breaker** (cortacircuitos): si detecta muchos fallos seguidos, deja de enviar peticiones para proteger el sistema. Cuando todo se estabiliza, vuelve a activarse. Como el fusible eléctrico de tu casa.
+
+Y para ahorrar dinero y tiempo, está el **cache** o **caching**: guardar temporalmente respuestas para no recalcularlas. En Claude, el prompt caching puede ahorrar hasta un 90% en costos.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-backoff"
+  question="Tu programa falla al llamar a la API. Aplicas exponential backoff. ¿Cuánto esperas entre el segundo y el tercer intento?"
+  options='["1 segundo","2 segundos","4 segundos","Siempre lo mismo"]'
+  correctIndex="2"
+  explanation="Con exponential backoff, el tiempo se duplica: 1s, 2s, 4s, 8s... Entre el segundo y el tercer intento esperas 4 segundos."
+/>
+
+<NarratedSection id="artifacts-visuales" heading="Librerías visuales dentro de Artifacts" sourcePage="643">
+
+Cuando Claude crea algo visual dentro de un Artifact (una mini-app que aparece al lado del chat), puede usar varias librerías famosas de JavaScript:
+
+- **React**: para construir interfaces interactivas.
+- **Tailwind CSS**: clases predefinidas como `text-blue-500` para dar estilo rápido sin escribir CSS a mano.
+- **Shadcn/ui**: componentes listos (botones, menús, formularios) con apariencia profesional.
+- **Lucide React**: cientos de iconos listos para usar.
+- **Recharts**: gráficos de barras, líneas y torta fáciles de generar.
+- **D3.js**: visualizaciones de datos complejas y personalizadas.
+- **Three.js**: gráficos 3D en el navegador, desde un cubo giratorio hasta mundos enteros.
+- **SVG**: formato de imagen basado en texto que se escala sin pixelarse.
+- **Mermaid**: texto que se convierte en diagramas de flujo, secuencia o Gantt.
+
+No tienes que saber usarlas tú: Claude las maneja. Solo necesitas reconocerlas cuando aparezcan en tus artifacts.
+
+</NarratedSection>
+
+<NarratedSection id="changelog" heading="El changelog: el diario de cambios" sourcePage="645">
+
+Claude evoluciona rápido. Para no perderte, Anthropic publica sus novedades en tres 'tablones de anuncios':
+
+1. **Platform Release Notes** (platform.claude.com/docs/en/release-notes): cambios de API, SDKs y consola. Para programadores.
+2. **Claude Apps Release Notes** (support.claude.com): cambios en claude.ai, las apps móviles, la de escritorio y Cowork. Para usuarios finales.
+3. **Claude Code Changelog** (code.claude.com/docs/en/changelog): todas las versiones del CLI. Para desarrolladores que usan Claude Code.
+
+Si alguna vez dudas si una función existe o cuándo apareció, esos tres sitios son la fuente oficial. Piensa en el changelog como el libro de mantenimiento de un carro: cada cambio queda anotado.
+
+</NarratedSection>
+
+<TerminalTask
+  id="task-explorar-changelog"
+  instruction="Abre en tu navegador la página oficial del changelog de Claude Code para ver las últimas novedades. No necesitas instalar nada; solo visitar la URL y leer las entradas más recientes."
+  command="open https://code.claude.com/docs/en/changelog"
+  expectedOutcome="Se abre en tu navegador la página del Claude Code Changelog con la lista de versiones publicadas, de la más reciente a la más antigua."
+  verifyHint="Si estás en Windows usa 'start https://code.claude.com/docs/en/changelog'; en Linux 'xdg-open'. Deberías ver una lista con fechas y números de versión."
+/>
+
+<Quiz
+  id="quiz-changelog"
+  question="¿Dónde deberías mirar si quieres enterarte de cambios en la API y los SDKs de Claude?"
+  options='["Claude Apps Release Notes en support.claude.com","Claude Code Changelog en code.claude.com","Platform Release Notes en platform.claude.com/docs/en/release-notes"]'
+  correctIndex="2"
+  explanation="Platform Release Notes es el tablón para programadores: cambios en la API, los SDKs y la consola de desarrollo."
+/>
+
+<NarratedSection id="cierre" heading="Cierre: ya hablas el idioma del constructor" sourcePage="644">
+
+Acabas de recorrer un glosario enorme: desde SSO hasta Three.js, pasando por RAG, F1 Score y exponential backoff. No hace falta que recuerdes cada definición. Basta con que, cuando las veas en un documento o en una conversación, puedas decir: 'ah, esto va de seguridad de empresa' o 'esto va de evaluar resultados'.
+
+La próxima vez que leas documentación técnica de Claude, vuelve a esta lección si una palabra te suena extraña. El vocabulario es la base para entender todo lo demás.
+
+</NarratedSection>

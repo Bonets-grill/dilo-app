@@ -1,0 +1,127 @@
+---
+chapterNumber: 25
+slug: troubleshooting
+title: Troubleshooting y Mejores Prácticas
+part: avanzado
+estimatedMinutes: 10
+prerequisites:
+  - claude-code-basico
+  - modelos-claude
+status: approved
+generatedAt: '2026-05-15T10:00:00Z'
+sourcePagesFrom: 657
+sourcePagesTo: 659
+model: claude-opus-4-7
+---
+<NarratedSection id="intro-hook" heading="¿Por qué esto importa?" sourcePage="657">
+
+Imagina que tienes una app en el móvil que se actualiza cada semana. Si no la actualizas, algunos botones dejan de funcionar. Con las herramientas de Claude pasa algo parecido: cambian rápido.
+
+En este capítulo vas a ver los errores más comunes que comete la gente al intentar seguirles el ritmo, y un plan simple para no volverte loco. No necesitas revisar nada a diario: con una mirada al mes basta.
+
+</NarratedSection>
+
+<NarratedSection id="changelog-formato" heading="El changelog: tu mapa de cambios" sourcePage="657">
+
+Un **changelog** (se pronuncia 'cheinch-log') es una lista con los cambios que ha tenido un producto. Piensa en él como el diario de un pueblo: cuenta qué pasó cada mes.
+
+En la guía de Claude, cada versión tiene una fecha y un resumen. Por ejemplo: la versión 1.0 salió en marzo de 2026 (primera edición), y la 1.1 en abril de 2026 con novedades como '1M GA' y 11 releases de Claude Code.
+
+Lo importante: cada entrada te dice **qué capítulos cambiaron**. Así vas directo a lo que te interesa en vez de releer todo.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-changelog"
+  question="¿Para qué sirve el changelog de la guía?"
+  options='["Para aprender Claude desde cero","Para saber qué cambió y en qué capítulos, sin releer todo","Para descargar modelos nuevos automáticamente"]'
+  correctIndex="1"
+  explanation="El changelog te dice qué cambió y dónde, para que vayas directo a los capítulos actualizados."
+/>
+
+<NarratedSection id="error-modelos" heading="Error 1: confundir versiones de modelos" sourcePage="658">
+
+Hay muchos modelos: Opus 4, 4.1, 4.5, 4.6 y Sonnet 4, 4.5, 4.6. Decir 'usa Opus' ya no basta, como decir 'compra un iPhone' sin aclarar cuál.
+
+**Solución**: usa siempre el **ID canónico** del modelo. Un ID canónico es el nombre completo y oficial, por ejemplo `claude-opus-4-6-20260205`. Incluye la familia, la versión y la fecha. Así no hay confusión.
+
+</NarratedSection>
+
+<NarratedSection id="error-retirado" heading="Error 2: usar un modelo retirado" sourcePage="658">
+
+Si tu código llama a un modelo que ya no existe, la API te devuelve un error. Es como marcar un teléfono que ya fue desconectado.
+
+**Solución**: revisa la lista de modelos retirados en el apéndice. Si uno de los que usas va a retirarse, migra al modelo recomendado **antes** de la fecha de retiro. No esperes al último día.
+
+</NarratedSection>
+
+<NarratedSection id="error-beta-headers" heading="Error 3: beta headers innecesarios" sourcePage="658">
+
+Un **beta header** es una etiqueta que le mandas a la API para activar funciones experimentales (en prueba). Se llama 'beta' porque todavía no es la versión final.
+
+Muchas funciones pasaron de **beta** a **GA** en el primer trimestre de 2026. GA significa 'General Availability': la función ya es estable y está disponible para todos. Si la función ya es GA, el beta header sobra.
+
+**Solución**: los headers de más no rompen nada, pero ensucian tu código. Quítalos cuando la función ya sea oficial.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-beta"
+  question="Una función pasó de beta a GA. ¿Qué deberías hacer con el beta header que tenías en tu código?"
+  options='["Dejarlo, es obligatorio para siempre","Quitarlo para mantener el código limpio, aunque no rompe nada","Duplicarlo para que la función funcione mejor"]'
+  correctIndex="1"
+  explanation="Los beta headers extra no causan errores, pero es mejor quitarlos cuando la función ya es GA."
+/>
+
+<NarratedSection id="error-claude-code" heading="Error 4: Claude Code desactualizado" sourcePage="658">
+
+Claude Code (la herramienta de terminal) se actualiza casi a diario. Una versión de hace dos semanas ya puede ser vieja.
+
+Primero comprueba qué versión tienes. Luego, si hay una más nueva, actualiza. También puedes hacerlo desde el menú `/config` dentro de Claude Code.
+
+</NarratedSection>
+
+<TerminalTask
+  id="task-version"
+  instruction="Comprueba qué versión de Claude Code tienes instalada. Este comando le pregunta a la herramienta su propio número de versión, sin modificar nada."
+  command="claude --version"
+  expectedOutcome="La terminal muestra un número de versión, algo como '2.1.XX'. Si ves un error 'command not found', Claude Code no está instalado en tu máquina."
+  verifyHint="Si el número es más bajo que la última versión publicada, considera actualizar con: npm install -g @anthropic-ai/claude-code"
+/>
+
+<Quiz
+  id="quiz-actualizar"
+  question="¿Cuál es el comando oficial para actualizar Claude Code a la última versión?"
+  options='["claude --update","npm install -g @anthropic-ai/claude-code","apt-get upgrade claude"]'
+  correctIndex="1"
+  explanation="Según el libro, actualizas con 'npm install -g @anthropic-ai/claude-code', o desde el menú /config dentro de Claude Code."
+/>
+
+<NarratedSection id="plan-mantenerse-al-dia" heading="Tu plan mensual para no perderte nada" sourcePage="659">
+
+El ecosistema Claude cambia rápido, pero no necesitas vivir pendiente. Con **una revisión al mes** basta. Aquí el plan:
+
+1. **Descarga la edición más reciente** de la guía cada mes. Cada edición recoge los cambios en los capítulos afectados.
+2. **Revisa el changelog primero**, antes que nada. Te dice qué cambió y dónde.
+3. **Mantén Claude Code actualizado** con `claude --version` y actualiza si hace falta.
+4. **Visita las fuentes oficiales**: platform.claude.com, support.claude.com y code.claude.com.
+
+El apéndice hace el trabajo pesado por ti. Tú solo lo lees.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-plan"
+  question="¿Con qué frecuencia recomienda el libro revisar novedades para no volverse loco?"
+  options='["Cada día","Una vez al mes","Solo cuando algo se rompe"]'
+  correctIndex="1"
+  explanation="El libro dice claramente: 'No necesitas revisar todo a diario. Con una revisión mensual basta.'"
+/>
+
+<NarratedSection id="cierre" heading="Para cerrar" sourcePage="659">
+
+Los cuatro errores típicos son: confundir versiones de modelos, usar un modelo retirado, dejar beta headers de sobra y tener Claude Code desactualizado. Todos se resuelven con buenos hábitos, no con trucos raros.
+
+Usa IDs canónicos, migra antes de las fechas de retiro, limpia tu código cuando algo pase a GA y actualiza Claude Code una vez al mes. Con eso tu flujo de trabajo se mantiene tranquilo aunque el ecosistema cambie rápido.
+
+</NarratedSection>

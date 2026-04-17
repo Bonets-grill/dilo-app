@@ -1,0 +1,509 @@
+---
+chapterNumber: 12
+slug: comandos-cli
+title: 'Comandos y Flags del CLI: Integraciones, Agentes y Subagentes'
+part: claude-code
+estimatedMinutes: 36
+prerequisites:
+  - Conocer qué es Claude Code
+  - Haber usado la terminal alguna vez
+  - Entender qué es un editor de código (VS Code o similar)
+status: approved
+generatedAt: '2025-01-20T10:00:00Z'
+sourcePagesFrom: 356
+sourcePagesTo: 395
+model: claude-opus-4-7
+---
+<NarratedSection id="intro-gancho" heading="Claude Code vive en muchos lugares" sourcePage="364">
+
+Imagina que tu ayudante favorito pudiera aparecer en tu casa, en tu oficina y también en tu teléfono. En cada sitio se adapta a lo que necesitas. Así funciona **Claude Code**: puede correr en la terminal, dentro de tu editor **VS Code**, en editores de **JetBrains** (como PyCharm o IntelliJ) o como una app de escritorio llamada **Claude Desktop**.
+
+En este capítulo vas a ver cómo usarlo en cada uno de esos lugares. También vamos a entrar a dos temas potentes: **subagentes** (pequeños asistentes especializados) y **worktrees** (copias paralelas de tu proyecto). Tranquilo, vamos paso a paso.
+
+</NarratedSection>
+
+<NarratedSection id="problemas-mcp-comunes" heading="Primero: problemas típicos con MCP y cómo arreglarlos" sourcePage="356">
+
+Antes de entrar a los editores, veamos algunos tropiezos frecuentes con **MCP** (el protocolo que conecta Claude con servicios externos como GitHub o bases de datos). No son errores tuyos; le pasan a todo el mundo.
+
+Si en Windows ves el mensaje "Connection closed" al arrancar un servidor, suele ser porque falta un envoltorio llamado `cmd /c`. La solución es registrar el servidor así: `claude mcp add --transport stdio mi-server -- cmd /c npx -y @some/package`.
+
+Si aparece "spawn claude ENOENT", significa que el sistema no encuentra el ejecutable `claude`. Usa `which claude` en la terminal para localizar la ruta completa y úsala. Si ves "Failed to parse .mcp.json", probablemente falta una variable de entorno; puedes darle un valor por defecto con la sintaxis `${VAR:-default}`.
+
+</NarratedSection>
+
+<NarratedSection id="mcp-timeouts-stdout" heading="Timeouts y el peligro de escribir a stdout" sourcePage="356">
+
+Si tu servidor MCP tarda mucho en arrancar, puedes darle más tiempo así: `MCP_TIMEOUT=10000 claude`. Esto le dice a Claude "espera hasta 10 segundos antes de rendirte".
+
+Hay una regla muy importante con los servidores **stdio** (los que se comunican por la entrada y salida estándar de la terminal): **nunca escribas mensajes de debug con `print()` o `console.log()`**. Eso corrompe la comunicación. En su lugar, escribe a `stderr` (la salida de errores). Stdout es sagrado: solo para mensajes del protocolo MCP.
+
+Si la respuesta de tu servidor es muy larga, ajusta el límite con `MAX_MCP_OUTPUT_TOKENS=50000 claude` o haz que el servidor devuelva resultados por páginas.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-stdio"
+  question="¿Por qué no debes usar `print()` dentro de un servidor MCP que usa transporte stdio?"
+  options='["Porque print() es lento en Python","Porque stdout está reservado para mensajes del protocolo MCP y se corrompería la comunicación","Porque print() no funciona en Windows","Porque Anthropic lo prohíbe por razones legales"]'
+  correctIndex="1"
+  explanation="En stdio, la salida estándar (stdout) es el canal exclusivo para los mensajes del protocolo MCP. Si escribes ahí con print(), mezclas basura con los mensajes y todo se rompe. Usa stderr para logs."
+/>
+
+<NarratedSection id="mcp-ejemplo-github" heading="Ejemplo real: conectar GitHub" sourcePage="357">
+
+Veamos cómo se ve todo junto. Para que Claude Code pueda trabajar con tus repositorios de GitHub, ejecutas un comando como este:
+
+`claude mcp add --transport http github https://api.githubcopilot.com/mcp/`
+
+Eso registra el servidor. Luego, dentro de Claude Code, escribes `/mcp` y eliges "Authenticate GitHub". Tu navegador se abre, das permiso, y ya está. Después puedes decirle cosas como "Revisa el PR #42 y dame un resumen" y Claude lo hará.
+
+Para compartir servidores con tu equipo, usa el flag `--scope project`. Eso guarda la configuración en un archivo `.mcp.json` dentro del proyecto. Si lo subes a Git, todo el equipo tendrá los mismos servidores configurados.
+
+</NarratedSection>
+
+<NarratedSection id="mcp-secretos" heading="Nunca subas secretos a Git" sourcePage="359">
+
+Imagina que guardas la llave de tu casa en un cartel a la vista de todos. Mal plan, ¿verdad? Pues eso pasa cuando alguien escribe su contraseña o token directamente en `.mcp.json` y sube el archivo a GitHub.
+
+La solución es usar **variables de entorno**. En vez de escribir el token, pones `$API_TOKEN`. El archivo queda así:
+
+```
+"Authorization": "Bearer ${API_TOKEN}"
+```
+
+Así el archivo se puede compartir sin exponer secretos. Cada persona del equipo define su propia variable `API_TOKEN` en su máquina. También puedes dar un valor por defecto con `${VAR:-default}`.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-scope-project"
+  question="¿Qué hace el flag `--scope project` al agregar un servidor MCP?"
+  options='["Hace el servidor más rápido","Guarda la configuración en .mcp.json para compartirla con el equipo vía Git","Limita el servidor a solo lectura","Borra los servidores anteriores"]'
+  correctIndex="1"
+  explanation="Con --scope project, la configuración se escribe en .mcp.json dentro del proyecto. Al commitear ese archivo, todo tu equipo tendrá acceso a los mismos servidores."
+/>
+
+<NarratedSection id="tres-formas-claude-code" heading="Tres formas de usar Claude Code" sourcePage="364">
+
+Ahora pasemos a los editores. Claude Code puede correr en cuatro sitios principales:
+
+- **VS Code**: con una extensión oficial (más de 6.5 millones de instalaciones).
+- **JetBrains**: con un plugin dedicado, todavía en Beta, para IntelliJ, PyCharm, WebStorm y similares.
+- **Claude Desktop**: una app independiente con funciones extras como vista previa de apps y tareas programadas.
+- **Terminal integrado**: el comando `claude` de toda la vida, pero dentro del terminal de tu editor.
+
+Lo bueno: todos comparten la misma base. Tus archivos `CLAUDE.md`, tus servidores MCP y tu historial funcionan igual en todos lados. Un detalle que confunde: los servidores MCP de la **app de chat** de Claude Desktop (el archivo `claude_desktop_config.json`) son separados del Code tab. No se mezclan.
+
+</NarratedSection>
+
+<NarratedSection id="vscode-instalacion" heading="Instalar la extensión en VS Code" sourcePage="365">
+
+Para usar Claude Code dentro de VS Code necesitas la versión 1.98.0 o superior del editor y una cuenta de Anthropic. Los pasos son simples:
+
+1. Abre VS Code.
+2. Presiona `Cmd+Shift+X` (Mac) o `Ctrl+Shift+X` (Windows/Linux) para abrir el panel de extensiones.
+3. Busca "Claude Code".
+4. Haz clic en **Install**.
+
+Si no aparece, reinicia el editor o ejecuta "Developer: Reload Window" desde la paleta de comandos. La extensión también funciona en Cursor, Windsurf y VSCodium.
+
+Una vez instalada, tienes varias formas de abrirla: el icono de chispa (**Spark**) arriba a la derecha, el icono en la barra lateral izquierda, la paleta de comandos (`Cmd+Shift+P` → "Claude Code") o el botón en la barra de estado abajo a la derecha.
+
+</NarratedSection>
+
+<NarratedSection id="menciones-arroba" heading="El sistema de @-menciones: señalar lo que Claude debe mirar" sourcePage="366">
+
+Cuando hablas con Claude dentro de VS Code, a veces necesitas decirle "mira exactamente esto". Para eso sirven las **@-menciones**. Son como etiquetar a alguien en WhatsApp, pero con archivos.
+
+Estas son las más útiles:
+
+- `@archivo.ts` menciona un archivo. Soporta búsqueda aproximada: si escribes `@auth`, encuentra `auth.js`, `AuthService.ts`, etc.
+- `@carpeta/` menciona una carpeta entera (no olvides la barra final).
+- `@archivo.ts#5-10` se refiere a líneas específicas. El atajo `Option+K` (Mac) o `Alt+K` (Win/Linux) lo inserta automáticamente cuando tienes código seleccionado.
+- `@terminal:nombre` se refiere a la salida de una terminal por su título. Te ahorra copiar y pegar errores.
+- `@browser` conecta con Chrome para tareas de navegador (necesita la extensión Claude in Chrome).
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-terminal-mencion"
+  question="Tienes un error en tu terminal integrado y quieres que Claude lo analice. ¿Cuál es la forma más eficiente?"
+  options='["Copiar y pegar el error completo en el chat","Usar @terminal:nombre para que Claude lea la salida directamente","Tomar una captura de pantalla y adjuntarla","Reiniciar VS Code y reproducir el error"]'
+  correctIndex="1"
+  explanation="Nombrar tus terminales y usar @terminal:nombre evita copiar y pegar. Claude lee la salida del terminal que le indicas y puede analizar errores al vuelo."
+/>
+
+<NarratedSection id="modos-permisos" heading="Modos de permisos: cuánta libertad le das a Claude" sourcePage="366">
+
+Claude puede hacer muchas cosas: editar archivos, ejecutar comandos, instalar paquetes. Pero tú decides cuánto le permites. Hay cuatro **modos de permisos**:
+
+- **Ask permissions** (el predeterminado): Claude pregunta antes de cada acción. Es el más seguro.
+- **Auto accept edits**: edita archivos sin preguntar, pero pide permiso para comandos de terminal.
+- **Plan mode**: Claude analiza y propone un plan, pero no modifica nada. Perfecto para tareas complejas.
+- **Bypass permissions**: Claude hace todo sin preguntar. **Solo para entornos de prueba aislados** (sandbox). Nunca lo uses en proyectos con datos sensibles.
+
+Puedes cambiar el modo en cualquier momento durante la sesión.
+
+</NarratedSection>
+
+<NarratedSection id="checkpoints" heading="Checkpoints: tu máquina del tiempo" sourcePage="366">
+
+¿Qué pasa si Claude rompe algo sin querer? Los **checkpoints** son puntos de control. Cada vez que Claude modifica algo, se guarda un checkpoint automáticamente. Si algo sale mal, retrocedes.
+
+Al pasar el cursor sobre cualquier mensaje en el chat, tienes tres opciones:
+
+- **Fork conversation from here**: crea una nueva rama de conversación desde ese punto. Mantiene los cambios en el código.
+- **Rewind code to here**: deshace los cambios en los archivos, pero conserva el historial del chat.
+- **Fork conversation and rewind code**: las dos cosas juntas.
+
+Es básicamente un `Ctrl+Z` con esteroides. Úsalo sin miedo: está ahí para experimentar.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-plan-mode"
+  question="Tienes que hacer una refactorización grande y riesgosa. ¿Qué modo de permisos usarías primero?"
+  options='["Bypass permissions, para que vaya rápido","Plan mode, para revisar qué hará Claude antes de tocar nada","Auto accept edits, para no tener que confirmar cada cambio","Ninguno, mejor hacerlo a mano"]'
+  correctIndex="1"
+  explanation="En Plan mode, Claude analiza el problema y te muestra un plan sin modificar archivos. Revisas, ajustas, y solo entonces cambias a Auto accept o Ask para ejecutar. Es como revisar el plano antes de construir."
+/>
+
+<NarratedSection id="sesiones-paralelas" heading="Sesiones paralelas: varios Claudes al mismo tiempo" sourcePage="367">
+
+Puedes tener varias conversaciones con Claude abiertas a la vez, cada una con su propio contexto. Es útil cuando trabajas en dos cosas en paralelo: por ejemplo, en una sesión refactorizas una función y en otra le pides que escriba los tests.
+
+Para abrir una nueva sesión:
+
+- `Cmd+Shift+Esc` (Mac) o `Ctrl+Shift+Esc` (Win/Linux) abre una nueva sesión como pestaña.
+- Desde la paleta de comandos, "Open in New Window" abre una sesión en una ventana aparte.
+
+Dos indicadores útiles: un **punto azul** significa que Claude necesita un permiso en esa pestaña. Un **punto naranja** significa que Claude terminó mientras la pestaña estaba oculta.
+
+</NarratedSection>
+
+<NarratedSection id="settings-vscode" heading="Settings importantes de la extensión" sourcePage="368">
+
+La extensión tiene bastantes opciones, pero hay unas pocas que vale la pena conocer. Abre los settings con `Cmd+,` (Mac) o `Ctrl+,` (Win/Linux) y busca "Claude Code".
+
+- `claudeCode.selectedModel`: qué modelo usar. Por defecto es `default`. Puedes cambiarlo por sesión con el comando `/model`.
+- `claudeCode.preferredLocation`: dónde se abre Claude. Valores: `sidebar` (derecha) o `panel` (nueva pestaña).
+- `claudeCode.autosave`: guarda tus archivos automáticamente antes de que Claude los lea. Déjalo en `true`.
+- `claudeCode.useCtrlEnterToSend`: si activas esto, envías el mensaje con `Ctrl/Cmd+Enter` en vez de solo Enter. Útil si envías mensajes por accidente.
+- `claudeCode.respectGitIgnore`: excluye archivos de `.gitignore` en las búsquedas. Por defecto: `true`.
+- `claudeCode.initialPermissionMode`: qué modo de permisos se usa al iniciar una sesión.
+
+</NarratedSection>
+
+<TerminalTask
+  id="task-autocompletado-settings"
+  instruction="Vamos a habilitar el autocompletado inteligente en tu archivo de settings global de Claude Code. Abre (o crea) el archivo `~/.claude/settings.json` y añade esta línea al inicio del objeto JSON. Con eso, VS Code te sugerirá los nombres de settings válidos y te avisará si escribes algo mal."
+  command="&quot;$schema&quot;: &quot;https://json.schemastore.org/claude-code-settings.json&quot;"
+  expectedOutcome="Al abrir ~/.claude/settings.json en VS Code, deberías ver sugerencias automáticas al escribir opciones de configuración, y VS Code validará el archivo en tiempo real."
+  verifyHint="Escribe una opción inventada como &quot;asdf&quot;: true y VS Code debería subrayarla como inválida."
+/>
+
+<NarratedSection id="jetbrains" heading="Claude Code en JetBrains" sourcePage="370">
+
+Si usas IntelliJ IDEA, PyCharm, WebStorm, PhpStorm, GoLand o Android Studio, existe un plugin dedicado. Está en **Beta**, así que puede tener errores raros de vez en cuando, pero funciona.
+
+A diferencia de VS Code, aquí necesitas dos cosas:
+
+1. El CLI de Claude Code instalado globalmente: `npm install -g @anthropic-ai/claude-code`.
+2. El plugin de JetBrains: busca "Claude Code" en el Marketplace e instala el de Anthropic PBC.
+
+Después reinicia el IDE (a veces más de una vez). **Cuidado**: existe otro producto llamado "Claude Agent in JetBrains IDEs" que pertenece a la suscripción de JetBrains AI. Es otra cosa. Aquí hablamos del plugin oficial de Anthropic.
+
+</NarratedSection>
+
+<NarratedSection id="jetbrains-wsl" heading="JetBrains con WSL en Windows" sourcePage="371">
+
+**WSL** significa Windows Subsystem for Linux: una forma de correr Linux dentro de Windows. Mucha gente programa así en Windows. Si es tu caso, el comando de Claude se configura diferente.
+
+Ve a Settings > Tools > Claude Code [Beta] > Claude command y escribe:
+
+`wsl -d Ubuntu -- bash -lic "claude"`
+
+Cámbialo por el nombre de tu distribución (si no es Ubuntu). Esto le dice a JetBrains: "para ejecutar `claude`, primero entra a WSL, abre una shell de login interactiva y ahí corre el comando".
+
+Otro problema frecuente: presionas `ESC` esperando que Claude se detenga y no pasa nada. Es porque JetBrains tiene un atajo en conflicto. Ve a Settings > Tools > Terminal y desmarca "Move focus to the editor with Escape".
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-jetbrains-install"
+  question="¿Qué necesitas instalar para usar Claude Code en JetBrains (además del plugin del Marketplace)?"
+  options='["Nada más, el plugin lo trae todo","El CLI de Claude Code instalado globalmente con npm","Una licencia especial de JetBrains AI","Docker Desktop"]'
+  correctIndex="1"
+  explanation="En JetBrains el plugin se apoya en el CLI. Hay que instalar el CLI con `npm install -g @anthropic-ai/claude-code` antes de que el plugin funcione."
+/>
+
+<NarratedSection id="terminal-integrado-ide" heading="El CLI dentro del terminal de cualquier IDE" sourcePage="372">
+
+Si no quieres lidiar con extensiones, hay una opción aún más simple: abre el terminal integrado de tu editor (en VS Code: `Cmd+` o `Ctrl+``) y escribe `claude`. Listo.
+
+Cuando haces esto dentro de VS Code o JetBrains, el CLI detecta el IDE automáticamente y activa funciones como el visor de diffs nativo y el intercambio de diagnósticos (errores del linter, etc.).
+
+Si usas un terminal **externo** (fuera del IDE), puedes conectarte a mano. Ejecuta `claude` y escribe `/ide` dentro. Un detalle importante: inicia Claude desde el mismo directorio raíz del proyecto del IDE. Si no, Claude no verá los archivos correctos.
+
+La extensión y el CLI comparten historial. Puedes empezar una conversación en la extensión y continuarla en el CLI con `claude --resume`.
+
+</NarratedSection>
+
+<TerminalTask
+  id="task-resume-cli"
+  instruction="Practica continuar una conversación desde la terminal. Abre tu terminal (el integrado de VS Code sirve), navega a un proyecto donde ya hayas usado Claude antes, y ejecuta el siguiente comando para ver el selector de sesiones previas."
+  command="claude --resume"
+  expectedOutcome="Aparece un menú interactivo con tus conversaciones anteriores. Puedes buscar, seleccionar una con las flechas y presionar Enter para continuarla exactamente donde la dejaste."
+  verifyHint="Si no aparecen sesiones, es que no tienes historial en ese directorio. Prueba con un proyecto donde ya hayas conversado con Claude."
+/>
+
+<NarratedSection id="claude-desktop" heading="Claude Desktop: la app con más funciones visuales" sourcePage="373">
+
+**Claude Desktop** es una app independiente para macOS y Windows (no hay versión para Linux). Tiene una pestaña llamada **Code** que incluye funciones que no existen en la extensión ni en el CLI:
+
+- **Visual diff review con comentarios inline**: puedes dejar comentarios en los cambios, como en una revisión de código en GitHub.
+- **Preview de apps**: Claude inicia tu servidor de desarrollo, abre un navegador embebido, toma capturas de pantalla, inspecciona el DOM y corrige problemas automáticamente.
+- **Monitoreo de Pull Requests**: después de abrir un PR, aparece una barra de estado del CI; Claude puede arreglar checks fallidos.
+- **Tareas programadas**: ejecutan solas en horarios que tú defines (por ejemplo, un resumen diario a las 9:00 AM).
+- **Conectores**: Google Calendar, Slack, GitHub, Linear, Notion.
+- **Sesiones SSH y remotas en la nube**.
+
+En Windows necesitas Git instalado para que la pestaña Code funcione.
+
+</NarratedSection>
+
+<NarratedSection id="worktrees-desktop" heading="Worktrees: dos Claudes sin pisarse" sourcePage="373">
+
+Un **worktree** (árbol de trabajo, en inglés) es una copia independiente de tu proyecto. Tiene sus propios archivos y su propia rama de Git, pero comparte el mismo historial del repositorio.
+
+Imagina que tienes un documento de Word. Si dos personas editan el mismo archivo al mismo tiempo, se pisan. Pero si cada una tiene su copia, pueden trabajar en paralelo sin chocar. Eso son los worktrees.
+
+En Claude Desktop, cada nueva sesión recibe su propio worktree automáticamente. Desde el CLI puedes hacerlo así:
+
+`claude --worktree feature-auth`
+
+O la forma corta: `claude -w feature-auth`. Los worktrees se guardan en `<proyecto>/.claude/worktrees/` por defecto. Se recomienda agregar `.claude/worktrees/` a tu `.gitignore` para no subirlos al repositorio.
+
+</NarratedSection>
+
+<NarratedSection id="launch-json-preview" heading="Configurar el preview de apps con launch.json" sourcePage="374">
+
+Para que el preview de apps de Desktop funcione, crea un archivo en `.claude/launch.json` de tu proyecto:
+
+```json
+{
+  "version": "0.0.1",
+  "autoVerify": true,
+  "configurations": [
+    {
+      "name": "web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000
+    }
+  ]
+}
+```
+
+Los campos son bastante legibles: `runtimeExecutable` es el comando (npm, yarn, node), `runtimeArgs` son los argumentos (`["run", "dev"]`), `port` es donde corre tu servidor (por defecto 3000) y `autoVerify` le dice a Claude si debe verificar cambios automáticamente.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-desktop-linux"
+  question="Trabajas en Linux y quieres usar las tareas programadas de Claude Desktop. ¿Qué opciones tienes?"
+  options='["Instalar Claude Desktop para Linux desde la página oficial","Claude Desktop no está disponible para Linux; tendrás que usar el CLI con cron jobs o CI pipelines","Usar Wine para emular la versión de Windows","Pedirle a Anthropic acceso beta"]'
+  correctIndex="1"
+  explanation="Claude Desktop solo existe para macOS y Windows. En Linux tus opciones son la extensión de VS Code o el CLI, y para tareas programadas debes usar herramientas del sistema como cron o pipelines de CI."
+/>
+
+<NarratedSection id="intro-subagentes" heading="Ahora sí: ¿qué es un subagente?" sourcePage="386">
+
+Cambiamos de tema. Imagina una empresa. El jefe es bueno, pero no puede hacer todo. Tiene empleados especializados: uno revisa facturas, otro habla con clientes, otro organiza reuniones. Cuando llega una tarea, el jefe la delega al empleado adecuado.
+
+En Claude Code, el **agente principal** es el Claude con el que tú conversas. Los **subagentes** son como esos empleados especializados. Cada subagente tiene:
+
+- **Su propio prompt**: instrucciones sobre cómo comportarse.
+- **Sus propias herramientas**: por ejemplo, algunos solo pueden leer archivos, otros pueden editarlos.
+- **Su propia ventana de contexto**: su memoria es independiente.
+
+Cuando Claude ve una tarea que encaja con la descripción de un subagente, se la pasa. El subagente trabaja por su cuenta y devuelve solo el **resultado final**. El trabajo intermedio se queda en el subagente, lo que mantiene tu conversación principal limpia.
+
+</NarratedSection>
+
+<NarratedSection id="regla-cadena" heading="Una regla clave: los subagentes no crean subagentes" sourcePage="386">
+
+Esto es importante para no armar un lío mental: **solo el agente principal puede crear subagentes**. Los subagentes NO pueden crear otros subagentes.
+
+¿Por qué? Para evitar cadenas infinitas de delegación donde nadie sabe quién está haciendo qué. Si necesitas una secuencia de trabajo (primero investigar, luego revisar, luego corregir), encadénalos tú mismo desde la conversación principal.
+
+¿Cuándo usar un subagente y cuándo no? Usa la **conversación principal** cuando necesites ida y vuelta frecuente o cuando la latencia importa (los subagentes añaden un poco de tiempo). Usa **subagentes** cuando la tarea genera mucho output (como logs o resultados de tests), cuando quieres restringir herramientas (solo lectura, por ejemplo), o cuando quieres correr varias cosas en paralelo.
+
+</NarratedSection>
+
+<NarratedSection id="subagentes-builtin" heading="Los subagentes que vienen de fábrica" sourcePage="387">
+
+Claude Code trae varios subagentes integrados. No hay que configurar nada; Claude los usa automáticamente cuando tiene sentido.
+
+- **Explore**: es el explorador del equipo. Busca y analiza código sin modificar nada. Usa el modelo Haiku (rápido y barato). Admite tres niveles de profundidad: `quick`, `medium` y `very thorough`.
+- **Plan**: es el arquitecto. Investiga el codebase para darte un plan de acción. También es de solo lectura. Se activa cuando estás en plan mode.
+- **General-purpose**: el todoterreno. Tiene acceso a todas las herramientas: leer, escribir, ejecutar. Se usa cuando una tarea requiere tanto explorar como modificar.
+- **Bash**: ejecuta comandos de terminal en un contexto separado.
+- **statusline-setup**: configura la línea de estado (se activa con `/statusline`).
+- **Claude Code Guide**: responde preguntas sobre las funciones del propio Claude Code.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-subagente-solo-lectura"
+  question="Quieres que un subagente analice todo tu código en busca de patrones problemáticos, pero sin que pueda modificar nada. ¿Qué herramientas le darías en el frontmatter?"
+  options='["Read, Write, Edit, Bash","Solo Read, Glob, Grep","bypassPermissions: true","Ninguna, un subagente siempre puede modificar archivos"]'
+  correctIndex="1"
+  explanation="Limitando las tools a Read, Glob y Grep, el subagente solo puede leer y buscar. No puede editar ni ejecutar comandos. Es la forma más segura de hacer revisiones automáticas."
+/>
+
+<NarratedSection id="crear-subagente-archivo" heading="Crear tu propio subagente con un archivo Markdown" sourcePage="389">
+
+La forma más clara de crear un subagente es un archivo `.md` con dos partes: el **frontmatter** (la configuración, entre tres guiones `---`) y el **prompt** (las instrucciones).
+
+Ejemplo de un revisor de código seguro (solo lectura):
+
+```markdown
+---
+name: code-reviewer
+description: Reviews code for quality and best practices
+tools: Read, Glob, Grep
+model: sonnet
+---
+
+You are a code reviewer. When invoked, analyze the code
+and provide specific, actionable feedback on quality,
+security, and best practices.
+```
+
+Con ese archivo, el subagente solo puede leer y buscar archivos. Nunca va a editar nada. Si prefieres la vía interactiva, dentro de Claude escribe `/agents` y tendrás un menú que te guía paso a paso.
+
+</NarratedSection>
+
+<NarratedSection id="ubicacion-subagentes" heading="Dónde guardar los archivos de subagentes" sourcePage="389">
+
+La ubicación del archivo decide quién puede usar el subagente. Hay cinco niveles, ordenados de mayor a menor prioridad:
+
+1. **Managed settings**: subagentes organizacionales desplegados por administradores. Ganan sobre todo lo demás.
+2. **Flag `--agents`**: solo vive durante esa sesión. Se pasa como JSON al lanzar `claude`.
+3. **`.claude/agents/`**: subagentes del proyecto. Se pueden commitear para compartir con el equipo.
+4. **`~/.claude/agents/`**: subagentes personales, disponibles en todos tus proyectos.
+5. **Plugins**: vienen incluidos con plugins instalados.
+
+Si dos subagentes tienen el mismo nombre, gana el de mayor prioridad. Verificas con `/agents` dentro de Claude o `claude agents` desde la terminal.
+
+Dato útil: los directorios agregados con `--add-dir` NO se escanean en busca de subagentes.
+
+</NarratedSection>
+
+<NarratedSection id="frontmatter-campos" heading="Los campos del frontmatter (el menú completo)" sourcePage="390">
+
+El frontmatter tiene muchos campos. No hay que memorizarlos; basta saber que existen para cuando los necesites:
+
+- `name` (obligatorio): identificador único. Solo minúsculas y guiones.
+- `description` (obligatorio): cuándo Claude debe usar este subagente. Escribe algo claro porque Claude lo lee para decidir si delegar. Truco: agregar "use proactively" hace que Claude lo use sin que se lo pidas.
+- `tools`: lista de herramientas permitidas (Read, Write, Edit, Bash, Grep, Glob, Agent).
+- `disallowedTools`: lo opuesto, para excluir unas pocas cuando heredas muchas.
+- `permissionMode`: `default`, `acceptEdits`, `auto`, `dontAsk`, `bypassPermissions`, `plan`.
+- `model`: alias (`sonnet`, `opus`, `haiku`) o ID completo.
+- `maxTurns`: límite de turnos antes de detenerse.
+- `color`: para distinguirlo visualmente (red, blue, green, yellow, purple, orange, pink, cyan).
+
+</NarratedSection>
+
+<NarratedSection id="modelo-prioridad" heading="Qué modelo usa realmente un subagente" sourcePage="391">
+
+Puede haber varios sitios definiendo qué modelo usar. Se resuelve así, de mayor a menor prioridad:
+
+1. La variable de entorno `CLAUDE_CODE_SUBAGENT_MODEL`. Si la defines, sobreescribe a todos los subagentes. Útil para controlar costos: `export CLAUDE_CODE_SUBAGENT_MODEL=haiku`.
+2. El parámetro que el agente principal pasa al invocar.
+3. El campo `model` del frontmatter.
+4. Si nada de lo anterior está definido, el subagente hereda el modelo de la conversación principal.
+
+**Cuidado con los modos de permisos**: si el agente padre usa `bypassPermissions` o `auto`, los subagentes lo heredan y no pueden cambiarlo. El `permissionMode` del frontmatter se ignora en esos casos.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-prioridad-modelo"
+  question="Tienes un subagente con `model: opus` en su frontmatter, pero quieres forzar que todos los subagentes usen `haiku` para abaratar costos durante una semana. ¿Qué haces?"
+  options='["Editar cada archivo .md y cambiarlo a haiku","Exportar la variable de entorno CLAUDE_CODE_SUBAGENT_MODEL=haiku","Borrar los subagentes y recrearlos","No se puede, el frontmatter siempre gana"]'
+  correctIndex="1"
+  explanation="La variable de entorno CLAUDE_CODE_SUBAGENT_MODEL tiene la prioridad más alta y sobreescribe el frontmatter. Al terminar la semana, simplemente quitas la variable y los subagentes vuelven a su modelo original."
+/>
+
+<NarratedSection id="invocar-subagentes" heading="Cómo invocar un subagente" sourcePage="392">
+
+Hay cuatro formas de activar un subagente:
+
+- **Automática**: Claude lee la descripción de cada uno y decide. Si le pides "revisa este código" y existe un subagente cuya descripción dice "Reviews code for quality", Claude lo invoca solo.
+- **Explícita por nombre**: `Use the code-reviewer subagent to check the auth module`. Puedes encadenar: "Usa code-reviewer para encontrar problemas, luego usa optimizer para arreglarlos". O pedir ejecución en paralelo.
+- **Con @-mention**: escribe `@` en tu mensaje y aparece un menú con todos los subagentes. Es más confiable que mencionarlos por nombre porque no hay ambigüedad.
+- **Con `--agent`**: toda la sesión adopta el system prompt, las herramientas y el modelo del subagente. Ejemplo: `claude --agent code-reviewer`.
+
+</NarratedSection>
+
+<TerminalTask
+  id="task-ver-agentes"
+  instruction="Vamos a ver qué subagentes tienes disponibles en tu instalación. Abre la terminal y ejecuta el siguiente comando. Te mostrará todos los subagentes activos, tanto los integrados como los personales o de proyecto."
+  command="claude agents"
+  expectedOutcome="Aparece una lista con los subagentes disponibles: los built-in (Explore, Plan, General-purpose, etc.) y los que tú hayas creado en ~/.claude/agents/ o .claude/agents/ del proyecto actual."
+  verifyHint="Si el comando falla con 'command not found', verifica que tienes Claude Code instalado globalmente con: npm list -g @anthropic-ai/claude-code"
+/>
+
+<NarratedSection id="worktrees-subagentes" heading="Worktrees para subagentes: aislar sin miedo" sourcePage="394">
+
+¿Recuerdas los worktrees de Desktop? También funcionan para subagentes. Añade `isolation: worktree` en el frontmatter y el subagente recibe su propia copia del repositorio:
+
+```markdown
+---
+name: feature-builder
+description: Build features in isolation
+isolation: worktree
+tools: Read, Write, Edit, Bash
+---
+```
+
+Si el subagente no hace cambios, el worktree se limpia automáticamente al terminar. Si hace cambios, Claude te pregunta si quieres conservarlos o descartarlos.
+
+Hay un detalle práctico: cuando se crea un worktree, los archivos en `.gitignore` (como `.env`) no se copian. Pero muchos proyectos no funcionan sin ellos. Para eso existe `.worktreeinclude`: crea ese archivo en la raíz y lista los archivos gitignored que quieres copiar a cada worktree nuevo.
+
+</NarratedSection>
+
+<NarratedSection id="memoria-persistente" heading="Memoria persistente: un cuaderno de notas para el subagente" sourcePage="395">
+
+Por defecto, un subagente empieza sin recuerdos cada vez. Es una hoja en blanco. La **memoria persistente** le da un cuaderno de notas que conserva entre conversaciones.
+
+Actívala con el campo `memory` en el frontmatter. Hay tres alcances:
+
+- `user`: se guarda en `~/.claude/agent-memory/<nombre>/`. Disponible en todos tus proyectos.
+- `project`: se guarda en `.claude/agent-memory/<nombre>/`. Específico del proyecto. Se puede commitear.
+- `local`: se guarda en `.claude/agent-memory-local/<nombre>/`. Local, no se commitea.
+
+Cuando la memoria está habilitada, el subagente recibe instrucciones automáticas para leer y escribir en su directorio. Además, las primeras 200 líneas de su `MEMORY.md` se incluyen en el contexto. Así el subagente recuerda convenciones del proyecto, patrones recurrentes o cosas que aprendió en sesiones anteriores.
+
+</NarratedSection>
+
+<Quiz
+  id="quiz-memoria-alcance"
+  question="Quieres que un subagente recuerde las convenciones de código específicas de un proyecto, y que esa memoria se comparta con el resto del equipo vía Git. ¿Qué alcance de memory eliges?"
+  options='["user, porque es lo más duradero","project, porque se guarda en .claude/agent-memory/ y se puede commitear","local, porque es más rápido","Ninguno, la memoria no se puede compartir"]'
+  correctIndex="1"
+  explanation="El alcance project guarda la memoria en .claude/agent-memory/<nombre>/, dentro del repositorio. Al commitear ese directorio, todo el equipo tiene acceso a los mismos recuerdos del subagente."
+/>
+
+<NarratedSection id="cierre" heading="Resumen y cierre" sourcePage="384">
+
+Hemos cubierto mucho terreno. Ahora ya conoces cómo funciona Claude Code en VS Code, JetBrains, Desktop y en el terminal integrado, y viste que todos comparten configuración, historial y MCP servers.
+
+También entraste al mundo de los **subagentes**: asistentes especializados con sus propias herramientas, modelo y memoria. Entendiste los integrados (Explore, Plan, General-purpose), cómo crear los tuyos con un archivo Markdown, cómo invocarlos y cómo darles aislamiento con **worktrees** o memoria persistente.
+
+Consejos finales que vale la pena recordar: empieza tareas complejas en **Plan mode**, nombra tus terminales para usar `@terminal:nombre`, y usa `/compact` cuando la conversación se haga muy larga para que Claude libere contexto. En el próximo capítulo profundizaremos en cómo coordinar varios subagentes trabajando en paralelo.
+
+</NarratedSection>
