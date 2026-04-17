@@ -182,10 +182,15 @@ REGLAS:
 
     if (channel?.instance_name && channel?.phone) {
       try {
-        await fetch(`${EVO_URL}/message/sendText/${channel.instance_name}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", apikey: EVO_KEY },
-          body: JSON.stringify({ number: channel.phone, text: `🌅 ${briefing}` }),
+        // Morning briefing is PROACTIVE (not a reply) → most ban-risky. Goes
+        // through anti-ban: typing delay + cap + warmup + kill-switch.
+        const { safeSendWhatsAppText } = await import("@/lib/wa/anti-ban");
+        await safeSendWhatsAppText({
+          instance: channel.instance_name,
+          to: channel.phone,
+          text: `🌅 ${briefing}`,
+          userId: user.id,
+          proactive: true,
         });
       } catch { /* WhatsApp send is best-effort */ }
     }

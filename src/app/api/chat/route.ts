@@ -455,12 +455,18 @@ async function executeTool(name: string, input: Record<string, unknown>, userId:
       }
 
       try {
-        const res = await fetch(`${evoUrl}/message/sendText/${instName}`, {
-          method: "POST", headers: { "Content-Type": "application/json", apikey: evoKey },
-          body: JSON.stringify({ number: to, text: finalMessage }),
+        // User-confirmed WhatsApp send through anti-ban layer. proactive=false
+        // because the user explicitly asked to send; spacing/typing/cap rules
+        // still apply so a scripted caller can't blast.
+        const { safeSendWhatsAppText } = await import("@/lib/wa/anti-ban");
+        const r = await safeSendWhatsAppText({
+          instance: instName,
+          to,
+          text: finalMessage,
+          userId,
+          proactive: false,
         });
-        const data = await res.json();
-        if (!res.ok) return JSON.stringify({ error: "Failed to send", details: data });
+        if (!r.ok) return JSON.stringify({ error: "Failed to send", reason: r.reason });
         return JSON.stringify({ success: true, sent_to: to, message: finalMessage });
       } catch { return JSON.stringify({ error: "WhatsApp not connected" }); }
     }

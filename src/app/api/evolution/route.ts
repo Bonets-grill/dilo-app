@@ -50,12 +50,19 @@ export async function POST(req: NextRequest) {
     }
 
     case "send": {
-      const { ok, data } = await evoFetch(`/message/sendText/${instanceName}`, {
-        method: "POST",
-        body: JSON.stringify({ number: to, text }),
+      // Goes through anti-ban so admin/test sends from this proxy also
+      // respect spacing + cap. Proactive defaults to true because this
+      // proxy is typically used from scripts/admin (no prior inbound).
+      const { safeSendWhatsAppText } = await import("@/lib/wa/anti-ban");
+      const r = await safeSendWhatsAppText({
+        instance: instanceName,
+        to,
+        text,
+        userId: null,
+        proactive: true,
       });
-      if (!ok) return NextResponse.json({ error: data }, { status: 400 });
-      return NextResponse.json({ success: true, data });
+      if (!r.ok) return NextResponse.json({ error: r.reason || "send_failed" }, { status: 400 });
+      return NextResponse.json({ success: true });
     }
 
     case "contacts": {
