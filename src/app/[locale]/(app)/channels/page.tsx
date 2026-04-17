@@ -158,10 +158,21 @@ export default function ChannelsPage() {
         return;
       }
 
+      // Si Evolution responde con state=open en vez de pairingCode, ya está conectada
+      const currentState = data?.instance?.state || data?.state;
+      if (currentState === "open") {
+        setWaStatus("connected");
+        return;
+      }
       // Solo aceptamos el campo pairingCode — data.code es el QR codificado, no sirve.
       const raw: string | undefined = data?.pairingCode;
       if (!raw) {
-        setError("Evolution no devolvió pairingCode. Revisa que el número tenga prefijo país y vuelve a intentar.");
+        // Si la instance está `close` y no dio code, pedir logout+retry explícitamente
+        if (currentState === "close" || currentState === "disconnected") {
+          setError("La sesión anterior quedó cerrada. Pulsa 'Desconectar' abajo y vuelve a pedir el código.");
+        } else {
+          setError(`Evolution no devolvió código. Estado: ${currentState || "desconocido"}. Prueba con el QR o reinicia la conexión.`);
+        }
         setWaStatus("disconnected");
         return;
       }
